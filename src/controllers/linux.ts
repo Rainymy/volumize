@@ -1,9 +1,9 @@
-import { type IVolumeController } from "../volumeController";
+import { VolumeController } from "../volumeController";
 
 import { spawnExec } from "../shell";
 import { logMessage, LOG_TYPE } from "../log";
 
-export class LinuxVolumeController implements IVolumeController {
+export class LinuxVolumeController extends VolumeController {
   async _exec(cmd: string): Promise<string | null> {
     const output = await spawnExec(cmd);
 
@@ -15,6 +15,10 @@ export class LinuxVolumeController implements IVolumeController {
     console.log(output);
 
     return null;
+  }
+
+  async listSessions() {
+    return []
   }
 
   async getPlaybackDevices() {

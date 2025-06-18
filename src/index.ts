@@ -10,7 +10,12 @@ async function main() {
     process.exit(1);
   }
 
-  volumeManager;
+  console.log("Listing all of the sessions:");
+  console.log(await volumeManager.listSessions());
+
+  // const masterVolume = await volumeManager.getMasterVolume();
+  // console.log(masterVolume);
+
 }
 
 main();

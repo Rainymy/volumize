@@ -1,0 +1,29 @@
+{
+  "name": "volumize",
+  "version": "0.1.0",
+  "description": "Cross-platform master & per-app volume controller for Node.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rainymy/volumize.git"
+  },
+  "author": "Rainymy",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.0.3",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

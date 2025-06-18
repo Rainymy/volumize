@@ -17,10 +17,17 @@ export class WindowsVolumeController implements IVolumeController {
   getSVVPath() {
     const arch = os.arch() === "x64" ? "x64" : "x32";
     return `./SoundVolumeView-${arch}.exe`;
+import SoundView64 from "../../bin/SoundVolumeView-64x.exe";
+import SoundView32 from "../../bin/SoundVolumeView-32x.exe";
+  private svvPath: string;
+  constructor() {
+    super();
+    const svvPath = os.arch() === "x64" ? SoundView64 : SoundView32;
+    this.svvPath = path.join(__dirname, svvPath);
   }
 
   async _exec(args: string[]): Promise<string | null> {
-    const output = await spawnExecFile(this.#svvPath, args);
+    const output = await spawnExecFile(this.svvPath, args);
 
     if (typeof output === "string") {
       return output;

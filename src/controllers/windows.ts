@@ -4,21 +4,28 @@ import os from "node:os";
 import { spawnExecFile } from "../shell";
 import { logMessage, LOG_TYPE } from "../log";
 
-import type {
-  IVolumeController,
-  VolumePercent,
-  PlaybackDevice,
-  AppIdentifier
+import {
+  VolumeController,
+  type VolumePercent,
+  type PlaybackDevice,
+  type AppIdentifier,
+  type ISoundViewSession,
+  type AudioSession,
+  type SessionType
 } from "../volumeController";
 
-export class WindowsVolumeController implements IVolumeController {
-  #svvPath: string = path.join(__dirname, this.getSVVPath());
-
-  getSVVPath() {
-    const arch = os.arch() === "x64" ? "x64" : "x32";
-    return `./SoundVolumeView-${arch}.exe`;
 import SoundView64 from "../../bin/SoundVolumeView-64x.exe";
 import SoundView32 from "../../bin/SoundVolumeView-32x.exe";
+
+/**
+* Parse `any` into `number`. Returns `undefined` if it fails.
+*/
+export function getNumber(num: unknown) {
+  const number = Number(num);
+  return Number.isInteger(number) ? number : undefined;
+}
+
+export class WindowsVolumeController extends VolumeController {
   private svvPath: string;
   constructor() {
     super();

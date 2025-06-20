@@ -1,5 +1,10 @@
 import type { VolumePercent } from "../volumeController";
 
+export function getNumber(num: unknown) {
+  const number = Number(num);
+  return Number.isInteger(number) ? number : undefined;
+}
+
 export function isEnumValue<T extends string>(
   enumObject: Record<string, T>,
   value: unknown

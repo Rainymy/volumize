@@ -1,13 +1,9 @@
-import { getNumber } from "../controllers/windows";
-import { getEnumIncludes } from "./generic";
+import { getEnumIncludes, getNumber } from "./generic";
 
 import {
   SessionTypeEnum,
   SessionDirectionEnum,
   type AudioSession,
-  type SessionType,
-  type GetSessionType,
-  type SessionDirectionType
 } from "../volumeController";
 
 enum WindowsTypeEnum {
@@ -48,14 +44,14 @@ export interface ISoundViewSession {
   "Default Format": string;
 }
 
-const WindowsToSessionTypeMap: Record<WindowsTypeEnum, SessionType> = {
-  [WindowsTypeEnum.Application]: SessionTypeEnum[SessionTypeEnum.Application] as SessionType,
-  [WindowsTypeEnum.Device]: SessionTypeEnum[SessionTypeEnum.Device] as SessionType,
+const WindowsToSessionTypeMap: Record<WindowsTypeEnum, SessionTypeEnum> = {
+  [WindowsTypeEnum.Application]: SessionTypeEnum.Application,
+  [WindowsTypeEnum.Device]: SessionTypeEnum.Device,
 }
 
-const WindowsToDirectionTypeMap: Record<WindowsDirectionEnum, SessionDirectionType> = {
-  [WindowsDirectionEnum.Render]: SessionDirectionEnum[SessionDirectionEnum.Render] as SessionDirectionType,
-  [WindowsDirectionEnum.Capture]: SessionDirectionEnum[SessionDirectionEnum.Capture] as SessionDirectionType,
+const WindowsToDirectionTypeMap: Record<WindowsDirectionEnum, SessionDirectionEnum> = {
+  [WindowsDirectionEnum.Render]: SessionDirectionEnum.Render,
+  [WindowsDirectionEnum.Capture]: SessionDirectionEnum.Capture,
 }
 
 function convertPercent(value: string) {
@@ -75,7 +71,6 @@ export function convertIntoSession(sessions: ISoundViewSession[]): AudioSession[
       deviceName: item["Device Name"],
       id: item["Command-Line Friendly ID"],
       windowTitle: item["Window Title"],
-      volume: convertPercent(item["Volume dB"]),
       volumePercent: convertPercent(item["Volume Percent"]),
       muted: item.Muted !== "No",
       active: item["Device State"] === "Active"

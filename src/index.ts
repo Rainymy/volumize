@@ -13,7 +13,18 @@ async function main() {
   console.log("Updating all of the sessions.");
   await volumeManager.loadSessions()
 
-  console.log(await volumeManager.getPlaybackDevices());
+  const playbackDevices = await volumeManager.getPlaybackDevices();
+  // const currentDevice = await volumeManager.getCurrentPlaybackDevice();
+  // const applications = await volumeManager.getAllApplications();
+
+  // console.log(
+  //   playbackDevices.map(item => {
+  //     return `${item.name} (${item.deviceName})`
+  //   })
+  // );
+  console.log(playbackDevices);
+
+  // console.log(applications);
 
   // const masterVolume = await volumeManager.getMasterVolume();
   // console.log(masterVolume);

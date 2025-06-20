@@ -4,27 +4,27 @@ export type AppIdentifier = string;
 export type VolumePercent = number & { __brand: "VolumePercent" }
 
 export enum SessionTypeEnum {
-  Application,
-  Device
+  Application = "Application",
+  Device = "Device"
 }
 
 export enum SessionDirectionEnum {
-  Render,
-  Capture
+  Render = "Render",
+  Capture = "Capture"
 }
 
-export type SessionType = Extract<keyof typeof SessionTypeEnum, string>;
-export type SessionDirectionType = Extract<keyof typeof SessionDirectionEnum, string>;
+type SessionType = Extract<keyof typeof SessionTypeEnum, string>;
+type SessionDirectionType = Extract<keyof typeof SessionDirectionEnum, string>;
 export type GetSessionType<T extends SessionTypeEnum> = EnumKeyFromValue<typeof SessionTypeEnum, T>
 
 export interface AudioSession {
   name: string;
-  type: SessionType;
-  direction: SessionDirectionType,
+  type: SessionTypeEnum;
+  direction: SessionDirectionEnum,
   deviceName: string;
   id: string;
   windowTitle: string;
-  volume: number;
+  // volume: number;
   volumePercent: number;
   muted: boolean;
   active: boolean;
@@ -41,4 +41,5 @@ export abstract class VolumeController {
   abstract muteApp(app: AppIdentifier): Promise<void>;
   abstract unmuteApp(app: AppIdentifier): Promise<void>;
   abstract loadSessions(): Promise<AudioSession[]>;
+  abstract getAllApplications(): Promise<AudioSession[]>;
 }

@@ -6,27 +6,22 @@ import { spawnExecFile } from "../shell";
 import { logMessage, LOG_TYPE } from "../log";
 
 import {
+  SessionTypeEnum,
   VolumeController,
   type VolumePercent,
   type AppIdentifier,
   type AudioSession,
+  SessionDirectionEnum
 } from "../volumeController";
 
 import SoundView64 from "../../bin/SoundVolumeView-64x.exe";
 import SoundView32 from "../../bin/SoundVolumeView-32x.exe";
 import { convertIntoSession, type ISoundViewSession } from "../utils/windows";
 
-/**
-* Parse `any` into `number`. Returns `undefined` if it fails.
-*/
-export function getNumber(num: unknown) {
-  const number = Number(num);
-  return Number.isInteger(number) ? number : undefined;
-}
-
 export class WindowsVolumeController extends VolumeController {
   readonly svvPath: string;
   readonly soundTempFile: string;
+
   private audioSessions: AudioSession[] = [];
 
   constructor() {
@@ -49,6 +44,14 @@ export class WindowsVolumeController extends VolumeController {
     return null;
   }
 
+  filterSessoinsBy(type: SessionTypeEnum) {
+    return this.audioSessions.filter(item => {
+      // make sure to filter device. (audio playable)
+      const direction = item.direction === SessionDirectionEnum.Render;
+      return item.type === type && direction && item.active;
+    });
+  }
+
   async loadSessions() {
     const output = await this._exec(["/sjson", this.soundTempFile]);
     if (output === null) return [];
@@ -58,8 +61,12 @@ export class WindowsVolumeController extends VolumeController {
     return this.audioSessions;
   }
 
+  async getAllApplications() {
+    return this.filterSessoinsBy(SessionTypeEnum.Application);
+  }
+
   async getPlaybackDevices() {
-    return this.audioSessions.filter(item => item.type === "Device");
+    return this.filterSessoinsBy(SessionTypeEnum.Device);
   }
 
   async getCurrentPlaybackDevice() {

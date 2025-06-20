@@ -10,8 +10,10 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("Listing all of the sessions:");
-  console.log(await volumeManager.loadSessions());
+  console.log("Updating all of the sessions.");
+  await volumeManager.loadSessions()
+
+  console.log(await volumeManager.getPlaybackDevices());
 
   // const masterVolume = await volumeManager.getMasterVolume();
   // console.log(masterVolume);

@@ -3,14 +3,21 @@ import { getEnumIncludes } from "./generic";
 
 import {
   SessionTypeEnum,
+  SessionDirectionEnum,
   type AudioSession,
   type SessionType,
-  type GetSessionType
+  type GetSessionType,
+  type SessionDirectionType
 } from "../volumeController";
 
-export enum WindowsTypeEnum {
+enum WindowsTypeEnum {
   Application = "Application",
   Device = "Device",
+}
+
+enum WindowsDirectionEnum {
+  Capture = "Capture",
+  Render = "Render",
 }
 
 export interface ISoundViewSession {
@@ -46,6 +53,11 @@ const WindowsToSessionTypeMap: Record<WindowsTypeEnum, SessionType> = {
   [WindowsTypeEnum.Device]: SessionTypeEnum[SessionTypeEnum.Device] as SessionType,
 }
 
+const WindowsToDirectionTypeMap: Record<WindowsDirectionEnum, SessionDirectionType> = {
+  [WindowsDirectionEnum.Render]: SessionDirectionEnum[SessionDirectionEnum.Render] as SessionDirectionType,
+  [WindowsDirectionEnum.Capture]: SessionDirectionEnum[SessionDirectionEnum.Capture] as SessionDirectionType,
+}
+
 function convertPercent(value: string) {
   return getNumber(value.substring(0, value.length - 1)) ?? 0;
 }
@@ -53,11 +65,13 @@ function convertPercent(value: string) {
 export function convertIntoSession(sessions: ISoundViewSession[]): AudioSession[] {
   return sessions.map(item => {
     const type = getEnumIncludes(WindowsTypeEnum, item.Type);
-    if (type === null) return null;
+    const directionType = getEnumIncludes(WindowsDirectionEnum, item.Direction);
+    if (type === null || directionType === null) return null;
 
     const audioSessions: AudioSession = {
       name: item.Name,
       type: WindowsToSessionTypeMap[type],
+      direction: WindowsToDirectionTypeMap[directionType],
       deviceName: item["Device Name"],
       id: item["Command-Line Friendly ID"],
       windowTitle: item["Window Title"],

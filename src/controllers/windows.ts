@@ -5,16 +5,11 @@ import fs from "node:fs/promises";
 import { spawnExecFile } from "../shell";
 import { logMessage, LOG_TYPE } from "../log";
 
-import { isEnumValue } from "../utils/generic";
-
 import {
   VolumeController,
   type VolumePercent,
-  type PlaybackDevice,
   type AppIdentifier,
   type AudioSession,
-  type SessionType,
-  SessionTypeEnum
 } from "../volumeController";
 
 import SoundView64 from "../../bin/SoundVolumeView-64x.exe";
@@ -64,11 +59,17 @@ export class WindowsVolumeController extends VolumeController {
   }
 
   async getPlaybackDevices() {
-    return [] as PlaybackDevice[];
+    return this.audioSessions.filter(item => item.type === "Device");
   }
 
   async getCurrentPlaybackDevice() {
-    return "master" as PlaybackDevice;
+    for (const session of this.audioSessions) {
+      if (session.active) {
+        return session;
+      }
+    }
+
+    return null;
   }
 
   async getMasterVolume() {

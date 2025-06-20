@@ -17,7 +17,7 @@ export class LinuxVolumeController extends VolumeController {
     return null;
   }
 
-  async listSessions() {
+  async loadSessions() {
     return []
   }
 

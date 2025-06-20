@@ -36,5 +36,5 @@ export abstract class VolumeController {
   abstract setAppVolume(app: AppIdentifier, percent: VolumePercent): Promise<void>;
   abstract muteApp(app: AppIdentifier): Promise<void>;
   abstract unmuteApp(app: AppIdentifier): Promise<void>;
-  abstract listSessions(): Promise<AudioSession[]>;
+  abstract loadSessions(): Promise<AudioSession[]>;
 }

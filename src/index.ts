@@ -11,7 +11,7 @@ async function main() {
   }
 
   console.log("Listing all of the sessions:");
-  console.log(await volumeManager.listSessions());
+  console.log(await volumeManager.loadSessions());
 
   // const masterVolume = await volumeManager.getMasterVolume();
   // console.log(masterVolume);

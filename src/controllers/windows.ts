@@ -32,6 +32,7 @@ export function getNumber(num: unknown) {
 export class WindowsVolumeController extends VolumeController {
   readonly svvPath: string;
   readonly soundTempFile: string;
+  private audioSessions: AudioSession[] = [];
 
   constructor() {
     super();
@@ -53,12 +54,13 @@ export class WindowsVolumeController extends VolumeController {
     return null;
   }
 
-  async listSessions() {
+  async loadSessions() {
     const output = await this._exec(["/sjson", this.soundTempFile]);
     if (output === null) return [];
 
     const content = await fs.readFile(this.soundTempFile);
-    return convertIntoSession(parseTempFile(content) ?? []);
+    this.audioSessions = convertIntoSession(parseTempFile(content));
+    return this.audioSessions;
   }
 
   async getPlaybackDevices() {
@@ -102,7 +104,7 @@ export class WindowsVolumeController extends VolumeController {
   }
 }
 
-function parseTempFile(content: Buffer): ISoundViewSession[] | null {
+function parseTempFile(content: Buffer): ISoundViewSession[] {
   let text: string = "";
   try {
     // Needed for handling BOM (Byte Order Mark)
@@ -117,6 +119,6 @@ function parseTempFile(content: Buffer): ISoundViewSession[] | null {
       await logMessage(LOG_TYPE.PARSE_OR_DECODING_ERROR, error);
       await logMessage(LOG_TYPE.EMPTY, text);
     })()
-    return null;
   }
+  return [];
 }

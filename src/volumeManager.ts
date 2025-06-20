@@ -2,9 +2,12 @@ import os from "node:os";
 
 import { WindowsVolumeController } from "./controllers/windows";
 import { LinuxVolumeController } from "./controllers/linux";
-import type { VolumeController } from "./volumeController";
 
-export function getVolumeManager(): VolumeController | null {
+export type AvailableControllers = NonNullable<
+  ReturnType<typeof getVolumeManager>
+>;
+
+export function getVolumeManager() {
   const platform = os.platform();
 
   if (platform === "win32") {

@@ -1,9 +1,18 @@
+import type { EnumKeyFromValue } from "./utils/type";
+
 export type PlaybackDevice = string;
 export type AppIdentifier = string;
 
 export type VolumePercent = number & { __brand: "VolumePercent" }
 
-export type SessionType = "Application" | "Device";
+export enum SessionTypeEnum {
+  Application,
+  Device,
+  Program
+}
+
+export type SessionType = Extract<keyof typeof SessionTypeEnum, string>;
+export type GetSessionType<T extends SessionTypeEnum> = EnumKeyFromValue<typeof SessionTypeEnum, T>
 
 export interface AudioSession {
   name: string;
@@ -28,32 +37,4 @@ export abstract class VolumeController {
   abstract muteApp(app: AppIdentifier): Promise<void>;
   abstract unmuteApp(app: AppIdentifier): Promise<void>;
   abstract listSessions(): Promise<AudioSession[]>;
-}
-
-export interface ISoundViewSession {
-  "Name": string;
-  "Type": string;
-  "Direction": string;
-  "Device Name": string;
-  "Default": string;
-  "Default Multimedia": string;
-  "Default Communications": string;
-  "Device State": string;
-  "Muted": string;
-  "Volume dB": string;
-  "Volume Percent": string;
-  "Min Volume dB": string;
-  "Max Volume dB": string;
-  "Volume Step": string;
-  "Channels Count": string;
-  "Channels dB": string;
-  "Channels Percent": string;
-  "Item ID": string;
-  "Command-Line Friendly ID": string;
-  "Process Path": string;
-  "Process ID": string;
-  "Window Title": string;
-  "Registry Key": string;
-  "Speakers Config": string;
-  "Default Format": string;
 }

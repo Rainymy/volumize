@@ -1,7 +1,6 @@
 import os from "node:os";
 
 import { WindowsVolumeController } from "./controllers/windows";
-import { LinuxVolumeController } from "./controllers/linux";
 
 export type AvailableControllers = NonNullable<
   ReturnType<typeof getVolumeManager>
@@ -15,7 +14,7 @@ export function getVolumeManager() {
   }
 
   if (platform === "linux") {
-    return new LinuxVolumeController();
+    return null;
   }
 
   if (platform === "darwin") {

@@ -1,30 +1,25 @@
-import type { EnumKeyFromValue } from "./utils/type";
-
 export type AppIdentifier = string;
 export type VolumePercent = number & { __brand: "VolumePercent" }
 
-export enum SessionTypeEnum {
+export enum SessionType {
   Application = "Application",
   Device = "Device"
 }
 
-export enum SessionDirectionEnum {
+export enum SessionDirection {
   Render = "Render",
-  Capture = "Capture"
+  Capture = "Capture",
+  NOOP = "Noop"
 }
-
-type SessionType = Extract<keyof typeof SessionTypeEnum, string>;
-type SessionDirectionType = Extract<keyof typeof SessionDirectionEnum, string>;
-export type GetSessionType<T extends SessionTypeEnum> = EnumKeyFromValue<typeof SessionTypeEnum, T>
 
 export interface AudioSession {
   name: string;
-  type: SessionTypeEnum;
-  direction: SessionDirectionEnum,
+  type: SessionType;
+  direction: SessionDirection;
+  deviceOutput: SessionDirection;
   deviceName: string;
   id: string;
   windowTitle: string;
-  // volume: number;
   volumePercent: number;
   muted: boolean;
   active: boolean;

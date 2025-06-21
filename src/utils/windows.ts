@@ -1,8 +1,8 @@
-import { getEnumIncludes, getNumber } from "./generic";
+import { getEnumIncludes, getNumber, isEnumValue } from "./generic";
 
 import {
-  SessionTypeEnum,
-  SessionDirectionEnum,
+  SessionType,
+  SessionDirection,
   type AudioSession,
 } from "../volumeController";
 
@@ -44,14 +44,14 @@ export interface ISoundViewSession {
   "Default Format": string;
 }
 
-const WindowsToSessionTypeMap: Record<WindowsTypeEnum, SessionTypeEnum> = {
-  [WindowsTypeEnum.Application]: SessionTypeEnum.Application,
-  [WindowsTypeEnum.Device]: SessionTypeEnum.Device,
+const WindowsToSessionTypeMap: Record<WindowsTypeEnum, SessionType> = {
+  [WindowsTypeEnum.Application]: SessionType.Application,
+  [WindowsTypeEnum.Device]: SessionType.Device,
 }
 
-const WindowsToDirectionTypeMap: Record<WindowsDirectionEnum, SessionDirectionEnum> = {
-  [WindowsDirectionEnum.Render]: SessionDirectionEnum.Render,
-  [WindowsDirectionEnum.Capture]: SessionDirectionEnum.Capture,
+const WindowsToDirectionTypeMap: Record<WindowsDirectionEnum, SessionDirection> = {
+  [WindowsDirectionEnum.Render]: SessionDirection.Render,
+  [WindowsDirectionEnum.Capture]: SessionDirection.Capture,
 }
 
 function convertPercent(value: string) {
@@ -62,12 +62,19 @@ export function convertIntoSession(sessions: ISoundViewSession[]): AudioSession[
   return sessions.map(item => {
     const type = getEnumIncludes(WindowsTypeEnum, item.Type);
     const directionType = getEnumIncludes(WindowsDirectionEnum, item.Direction);
-    if (type === null || directionType === null) return null;
+    if (type === null || directionType === null) {
+      return null
+    }
+
+    const currentAudioDevice = isEnumValue(WindowsDirectionEnum, item.Default)
+      ? WindowsToDirectionTypeMap[item.Default]
+      : SessionDirection.NOOP
 
     const audioSessions: AudioSession = {
       name: item.Name,
       type: WindowsToSessionTypeMap[type],
       direction: WindowsToDirectionTypeMap[directionType],
+      deviceOutput: currentAudioDevice,
       deviceName: item["Device Name"],
       id: item["Command-Line Friendly ID"],
       windowTitle: item["Window Title"],

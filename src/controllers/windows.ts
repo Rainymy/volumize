@@ -6,12 +6,12 @@ import { spawnExecFile } from "../shell";
 import { logMessage, LOG_TYPE } from "../log";
 
 import {
-  SessionTypeEnum,
+  SessionType,
   VolumeController,
   type VolumePercent,
   type AppIdentifier,
   type AudioSession,
-  SessionDirectionEnum
+  SessionDirection
 } from "../volumeController";
 
 import SoundView64 from "../../bin/SoundVolumeView-64x.exe";
@@ -44,10 +44,10 @@ export class WindowsVolumeController extends VolumeController {
     return null;
   }
 
-  filterSessoinsBy(type: SessionTypeEnum) {
+  filterSessoinsBy(type: SessionType) {
     return this.audioSessions.filter(item => {
       // make sure to filter device. (audio playable)
-      const direction = item.direction === SessionDirectionEnum.Render;
+      const direction = item.direction === SessionDirection.Render;
       return item.type === type && direction && item.active;
     });
   }
@@ -62,16 +62,18 @@ export class WindowsVolumeController extends VolumeController {
   }
 
   async getAllApplications() {
-    return this.filterSessoinsBy(SessionTypeEnum.Application);
+    return this.filterSessoinsBy(SessionType.Application);
   }
 
   async getPlaybackDevices() {
-    return this.filterSessoinsBy(SessionTypeEnum.Device);
+    return this.filterSessoinsBy(SessionType.Device);
   }
 
   async getCurrentPlaybackDevice() {
-    for (const session of this.audioSessions) {
-      if (session.active) {
+    const playbackDevices = await this.getPlaybackDevices();
+
+    for (const session of playbackDevices) {
+      if (session.deviceOutput === SessionDirection.Render) {
         return session;
       }
     }

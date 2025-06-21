@@ -11,18 +11,21 @@ async function main() {
   }
 
   console.log("Updating all of the sessions.");
-  await volumeManager.loadSessions()
+  const sessions = await volumeManager.loadSessions();
+  if (sessions.length === 0) {
+    console.log(`[${volumeManager.loadSessions.name}] returned empty array!`)
+  }
 
   const playbackDevices = await volumeManager.getPlaybackDevices();
-  // const currentDevice = await volumeManager.getCurrentPlaybackDevice();
+  const currentDevice = await volumeManager.getCurrentPlaybackDevice();
   // const applications = await volumeManager.getAllApplications();
 
-  // console.log(
-  //   playbackDevices.map(item => {
-  //     return `${item.name} (${item.deviceName})`
-  //   })
-  // );
-  console.log(playbackDevices);
+  console.log(
+    playbackDevices.map(item => {
+      return `${item.name} (${item.deviceName})`
+    })
+  );
+  console.log(currentDevice);
 
   // console.log(applications);
 

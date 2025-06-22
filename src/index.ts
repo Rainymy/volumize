@@ -11,29 +11,28 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("Updating all of the sessions.");
   const sessions = await volumeManager.loadSessions();
   if (sessions.length === 0) {
     console.log(`[${volumeManager.loadSessions.name}] returned empty array!`)
   }
 
-  // const playbackDevices = await volumeManager.getPlaybackDevices();
-  // console.log(
-  //   playbackDevices.map(item => {
-  //     return `${item.name} (${item.deviceName})`
-  //   })
-  // );
-
   // const currentDevice = await volumeManager.getCurrentPlaybackDevice();
   // console.log(currentDevice);
 
-  const masterVolume = await volumeManager.getMasterVolume();
-  console.log("masterVolume:", masterVolume);
-
-  // while (true) {
-  //   console.log("Sleeping");
-  //   await sleep(1000);
-  // }
+  // const masterVolume = await volumeManager.getMasterVolume();
+  // console.log("masterVolume:", masterVolume);
 }
 
-main();
+(async () => {
+  try {
+    await main();
+  }
+  catch (error) {
+    console.log(error)
+  }
+
+  while (true) {
+    console.log("Sleeping");
+    await sleep(1000);
+  }
+})()

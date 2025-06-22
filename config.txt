@@ -1,0 +1,2 @@
+requirements:
+ - https://jrsoftware.org/isdl.php#stable

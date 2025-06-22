@@ -19,6 +19,13 @@
     /* If your code doesn't run in the DOM: */
     "lib": [
       "ES7"
-    ]
-  }
+    ],
+  },
+  "include": [
+    "./src",
+    "./types"
+  ],
+  "exclude": [
+    "./build.js"
+  ]
 }

@@ -2,7 +2,7 @@ import type { VolumePercent } from "../volumeController";
 
 export function getNumber(num: unknown) {
   const number = Number(num);
-  return Number.isInteger(number) ? number : undefined;
+  return Number.isFinite(number) ? number : undefined;
 }
 
 export async function sleep(timeMs: number) {

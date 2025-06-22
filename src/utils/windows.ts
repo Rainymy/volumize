@@ -54,8 +54,10 @@ const WindowsToDirectionTypeMap: Record<WindowsDirectionEnum, SessionDirection> 
   [WindowsDirectionEnum.Capture]: SessionDirection.Capture,
 }
 
-function convertPercent(value: string) {
-  return getNumber(value.substring(0, value.length - 1)) ?? 0;
+function convertPercent(value: string): number {
+  // remove the % symbol.
+  const numberStr = value.substring(0, value.length - 1);
+  return getNumber(numberStr) ?? 0;
 }
 
 export function convertIntoSession(sessions: ISoundViewSession[]): AudioSession[] {

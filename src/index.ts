@@ -1,5 +1,6 @@
 import { getVolumeManager } from "./volumeManager";
 import { logMessage, LOG_TYPE } from "./log";
+import { sleep } from "./utils/generic";
 
 async function main() {
   const volumeManager = getVolumeManager();
@@ -16,22 +17,23 @@ async function main() {
     console.log(`[${volumeManager.loadSessions.name}] returned empty array!`)
   }
 
-  const playbackDevices = await volumeManager.getPlaybackDevices();
-  const currentDevice = await volumeManager.getCurrentPlaybackDevice();
-  // const applications = await volumeManager.getAllApplications();
+  // const playbackDevices = await volumeManager.getPlaybackDevices();
+  // console.log(
+  //   playbackDevices.map(item => {
+  //     return `${item.name} (${item.deviceName})`
+  //   })
+  // );
 
-  console.log(
-    playbackDevices.map(item => {
-      return `${item.name} (${item.deviceName})`
-    })
-  );
-  console.log(currentDevice);
+  // const currentDevice = await volumeManager.getCurrentPlaybackDevice();
+  // console.log(currentDevice);
 
-  // console.log(applications);
+  const masterVolume = await volumeManager.getMasterVolume();
+  console.log("masterVolume:", masterVolume);
 
-  // const masterVolume = await volumeManager.getMasterVolume();
-  // console.log(masterVolume);
-
+  // while (true) {
+  //   console.log("Sleeping");
+  //   await sleep(1000);
+  // }
 }
 
 main();

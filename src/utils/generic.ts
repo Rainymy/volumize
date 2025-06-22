@@ -5,6 +5,12 @@ export function getNumber(num: unknown) {
   return Number.isInteger(number) ? number : undefined;
 }
 
+export async function sleep(timeMs: number) {
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, timeMs, true);
+  });
+}
+
 export function isEnumValue<T extends string>(
   enumObject: Record<string, T>,
   value: unknown

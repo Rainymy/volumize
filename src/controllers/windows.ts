@@ -82,9 +82,12 @@ export class WindowsVolumeController extends VolumeController {
   }
 
   async getMasterVolume() {
-    const out = await this._exec(["/GetPercent", "\"DefaultRenderDevice\""]); // Doesn't work
-    const match = (out ?? "").match(/Volume: (\d+)/);
-    return match ? parseInt(match[0], 10) : null;
+    const currentDevice = await this.getCurrentPlaybackDevice();
+    if (currentDevice === null) {
+      return null;
+    }
+
+    return currentDevice.volumePercent;
   }
 
   // Decrease the volume of Speakers device by 5% :

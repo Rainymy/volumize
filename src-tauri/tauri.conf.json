@@ -13,6 +13,9 @@
     "windows": [
       {
         "title": "volumize",
+        "visible": true,
+        "resizable": true,
+        "decorations": true,
         "width": 800,
         "height": 600
       }
@@ -23,7 +26,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "msi"
+    ],
     "icon": [
       "./icon/icon.ico"
     ]

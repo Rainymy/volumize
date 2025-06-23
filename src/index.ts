@@ -1,6 +1,6 @@
-import { getVolumeManager } from "./volumeManager";
-import { logMessage, LOG_TYPE } from "./log";
-import { sleep } from "./utils/generic";
+import { getVolumeManager } from "./components/volumeManager";
+import { logMessage, LOG_TYPE } from "./components/log";
+import { sleep } from "./components/utils/generic";
 
 async function main() {
   const volumeManager = getVolumeManager();

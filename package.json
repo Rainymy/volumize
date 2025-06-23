@@ -1,15 +1,16 @@
 {
   "name": "volumize",
   "version": "0.1.0",
+  "private": true,
+  "type": "module",
   "description": "Cross-platform master & per-app volume controller for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsup",
-    "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
-    "start": "npm run build && node dist/index.js"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "repository": {
     "type": "git",
@@ -17,12 +18,20 @@
   },
   "author": "Rainymy",
   "license": "MIT",
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "@types/node": "^24.0.3",
-    "nexe": "^5.0.0-beta.4",
-    "rimraf": "^6.0.1",
-    "tsup": "^8.5.0",
-    "typescript": "^5.4.0"
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.4.0",
+    "vite": "^6.0.3"
   },
   "engines": {
     "node": ">=20"

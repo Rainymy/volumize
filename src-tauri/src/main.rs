@@ -5,6 +5,6 @@ mod types;
 mod win32;
 
 fn main() {
-    win32::windows::windows_controller();
+    let _ = win32::windows::windows_controller();
     volumize_lib::run();
 }

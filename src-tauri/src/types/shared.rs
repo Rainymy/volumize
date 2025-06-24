@@ -3,18 +3,20 @@ use thiserror::Error;
 pub type VolumePercent = f32;
 pub type AppIdentifier = String;
 
+#[derive(Debug, Clone)]
 pub enum SessionType {
     Application,
     Device,
 }
 
-enum SessionDirection {
+#[derive(Debug, Clone)]
+pub enum SessionDirection {
     Render,
     Capture,
     Noop,
 }
 
-// #[derive(Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct AudioSession {
     pub name: String,
     pub session_type: SessionType,
@@ -37,18 +39,17 @@ pub enum VolumeControllerError {
     #[error("Invalid volume percentage: {0}")]
     InvalidVolumePercentage(f32),
     #[error("Operating system audio API error: {0}")]
-    OsApiError(String), // For errors from the underlying OS API
+    OsApiError(String),
     #[error("Windows API error: {0}")]
     WindowsApiError(#[from] windows::core::Error),
     #[error("IPC communication error: {0}")]
-    IpcError(String), // If your system uses inter-process communication
+    IpcError(String),
     #[error("Serialization/deserialization error: {0}")]
-    SerdeError(#[from] serde_json::Error), // Example of converting from another error type
+    SerdeError(#[from] serde_json::Error),
     #[error("COM initialization error: {0}")]
     ComInitializationError(String),
     #[error("Unknown error: {0}")]
     Unknown(String),
-    // Add more specific error variants as needed
 }
 
 pub type VolumeResult<T> = Result<T, VolumeControllerError>;

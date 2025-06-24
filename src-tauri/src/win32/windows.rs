@@ -1,4 +1,3 @@
-use windows::Win32::Media::Audio::IAudioEndpointVolume;
 use windows::{
     // core::*,
     Win32::{
@@ -8,47 +7,40 @@ use windows::{
     },
 };
 
-use crate::types::shared::VolumeControllerError;
 use crate::types::shared::VolumeResult;
 use crate::types::shared::{AppIdentifier, AudioSession, VolumeController, VolumePercent};
+use crate::win32::com_scope::ComScope;
+
+pub fn com_initialized_scope<F, R>(callback: F) -> VolumeResult<R>
+where
+    F: FnOnce(IMMDeviceEnumerator) -> VolumeResult<R>,
+{
+    unsafe {
+        // bind COM to this variable.
+        // Auto cleanup on scope exit.
+        let _com_guard = ComScope::new()?;
+
+        let device_enumerator: IMMDeviceEnumerator =
+            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
+
+        callback(device_enumerator)
+    }
+}
 
 pub fn windows_controller() -> VolumeResult<f32> {
-    // Specify the return Result type here
-    unsafe {
-        CoInitializeEx(None, COINIT_MULTITHREADED)
-            .ok()
-            .map_err(|e| {
-                VolumeControllerError::ComInitializationError(format!(
-                    "Failed to initialize COM: {}",
-                    e
-                ))
-            })?;
+    return com_initialized_scope(|device_enumerator| unsafe {
+        let _default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
 
-        let result = (|| -> VolumeResult<f32> {
-            let device_enumerator: IMMDeviceEnumerator =
-                CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
+        let volume: f32 = 0.0;
 
-            let default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
-            let endpoint_volume: IAudioEndpointVolume =
-                default_device.Activate(CLSCTX_ALL, None)?;
-
-            let mut volume: f32 = 0.0;
-            endpoint_volume.GetMasterVolumeLevelScalar(&mut volume)?;
-
-            Ok(volume)
-        })();
-
-        CoUninitialize();
-
-        result
-    }
+        Ok(volume)
+    });
 }
 
 pub struct WindowsVolumeController;
 
 impl VolumeController for WindowsVolumeController {
     fn get_playback_devices(&self) -> VolumeResult<Vec<AudioSession>> {
-        // implement it!
         Ok(vec![])
     }
 

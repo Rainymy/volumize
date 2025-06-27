@@ -27,10 +27,12 @@
   "bundle": {
     "active": true,
     "targets": [
-      "msi"
+      "msi",
+      "deb"
     ],
     "icon": [
-      "./icon/icon.ico"
+      "./icon/icon.ico",
+      "./icon/icon.png"
     ]
   }
 }

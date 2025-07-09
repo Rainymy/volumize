@@ -1,41 +1,5 @@
-use windows::{
-    // core::*,
-    Win32::{
-        // Foundation::HWND,
-        Media::Audio::*,
-        System::Com::*,
-    },
-};
-
 use crate::types::shared::VolumeResult;
 use crate::types::shared::{AppIdentifier, AudioSession, VolumeControllerTrait, VolumePercent};
-use crate::win32::com_scope::ComScope;
-
-pub fn com_initialized_scope<F, R>(callback: F) -> VolumeResult<R>
-where
-    F: FnOnce(IMMDeviceEnumerator) -> VolumeResult<R>,
-{
-    unsafe {
-        // bind COM to this variable.
-        // Auto cleanup on scope exit.
-        let _com_guard = ComScope::new()?;
-
-        let device_enumerator: IMMDeviceEnumerator =
-            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
-
-        callback(device_enumerator)
-    }
-}
-
-pub fn windows_controller() -> VolumeResult<f32> {
-    return com_initialized_scope(|device_enumerator| unsafe {
-        let _default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
-
-        let volume: f32 = 0.0;
-
-        Ok(volume)
-    });
-}
 
 pub struct VolumeController;
 

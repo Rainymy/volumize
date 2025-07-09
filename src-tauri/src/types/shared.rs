@@ -40,6 +40,7 @@ pub enum VolumeControllerError {
     InvalidVolumePercentage(f32),
     #[error("Operating system audio API error: {0}")]
     OsApiError(String),
+    #[cfg(target_os = "windows")]
     #[error("Windows API error: {0}")]
     WindowsApiError(#[from] windows::core::Error),
     #[error("IPC communication error: {0}")]
@@ -54,7 +55,7 @@ pub enum VolumeControllerError {
 
 pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 
-pub trait VolumeController {
+pub trait VolumeControllerTrait {
     fn get_playback_devices(&self) -> VolumeResult<Vec<AudioSession>>;
     fn get_current_playback_device(&self) -> VolumeResult<Option<AudioSession>>;
     fn get_master_volume(&self) -> VolumeResult<Option<VolumePercent>>;

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use thiserror::Error;
 
 pub type VolumePercent = f32;

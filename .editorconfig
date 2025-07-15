@@ -2,5 +2,19 @@
 root = true
 
 [*]
+# Character encoding
+charset = utf-8
+
+# Line endings
 end_of_line = lf
 insert_final_newline = false
+
+# Whitespace
+trim_trailing_whitespace = true
+
+# Indentation
+indent_style = tab
+indent_size = 4
+
+# Max line length (optional)
+max_line_length = 90

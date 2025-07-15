@@ -1,9 +1,6 @@
-use windows::{
-    // core::*,
-    Win32::{
-        // Foundation::HWND,
-        Media::Audio::*,
-    },
+use windows::Win32::{
+    // Foundation::HWND,
+    Media::Audio::{Endpoints::IAudioEndpointVolume, *},
 };
 
 use crate::types::shared::VolumeResult;
@@ -12,9 +9,17 @@ mod com_scope;
 
 pub fn windows_controller() -> VolumeResult<Vec<AudioSession>> {
     return com_scope::com_initialized_scope(|device_enumerator| unsafe {
+        // Options: eMultimedia - eConsole;
         let _default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
 
-        let _volume: f32 = 0.0;
+        let hello: IAudioEndpointVolume =
+            _default_device.Activate(windows::Win32::System::Com::CLSCTX_ALL, None)?;
+
+        // GetMasterVolumeLevelScalar = volume %
+        // GetMasterVolumeLevel       = volume DB
+        let world = hello.GetMasterVolumeLevelScalar().unwrap();
+
+        dbg!(world);
 
         Ok(vec![])
     });

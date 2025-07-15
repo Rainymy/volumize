@@ -13,5 +13,7 @@ mod platform;
 
 fn main() {
     let _controller = platform::make_controller();
+
+    let _device = _controller.get_playback_devices();
     volumize_lib::run();
 }

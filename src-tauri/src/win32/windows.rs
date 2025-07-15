@@ -3,37 +3,20 @@ use windows::{
     Win32::{
         // Foundation::HWND,
         Media::Audio::*,
-        System::Com::*,
     },
 };
 
 use crate::types::shared::VolumeResult;
 use crate::types::shared::{AppIdentifier, AudioSession, VolumeControllerTrait, VolumePercent};
-use crate::win32::com_scope::ComScope;
+mod com_scope;
 
-pub fn com_initialized_scope<F, R>(callback: F) -> VolumeResult<R>
-where
-    F: FnOnce(IMMDeviceEnumerator) -> VolumeResult<R>,
-{
-    unsafe {
-        // bind COM to this variable.
-        // Auto cleanup on scope exit.
-        let _com_guard = ComScope::new()?;
-
-        let device_enumerator: IMMDeviceEnumerator =
-            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
-
-        callback(device_enumerator)
-    }
-}
-
-pub fn windows_controller() -> VolumeResult<f32> {
-    return com_initialized_scope(|device_enumerator| unsafe {
+pub fn windows_controller() -> VolumeResult<Vec<AudioSession>> {
+    return com_scope::com_initialized_scope(|device_enumerator| unsafe {
         let _default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
 
-        let volume: f32 = 0.0;
+        let _volume: f32 = 0.0;
 
-        Ok(volume)
+        Ok(vec![])
     });
 }
 
@@ -45,7 +28,7 @@ pub fn make_controller() -> Box<dyn VolumeControllerTrait> {
 
 impl VolumeControllerTrait for VolumeController {
     fn get_playback_devices(&self) -> VolumeResult<Vec<AudioSession>> {
-        Ok(vec![])
+        return windows_controller();
     }
 
     fn get_current_playback_device(&self) -> VolumeResult<Option<AudioSession>> {

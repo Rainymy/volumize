@@ -1,8 +1,25 @@
-use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_MULTITHREADED};
+use windows::Win32::{
+    Media::Audio::{IMMDeviceEnumerator, MMDeviceEnumerator},
+    System::Com::{
+        CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_ALL, COINIT_MULTITHREADED,
+    },
+};
 
 use crate::types::shared::{VolumeControllerError, VolumeResult};
 
 pub struct ComScope;
+
+pub fn com_initialized_scope<F, R>(callback: F) -> VolumeResult<R>
+where
+    F: FnOnce(IMMDeviceEnumerator) -> VolumeResult<R>,
+{
+    // bind COM to this variable.
+    // Auto cleanup on scope exit.
+    let _com_guard = ComScope::new()?;
+    let device_enumerator = unsafe { CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)? };
+
+    return callback(device_enumerator);
+}
 
 impl ComScope {
     pub fn new() -> VolumeResult<Self> {

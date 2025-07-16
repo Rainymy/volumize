@@ -8,7 +8,7 @@ use crate::types::shared::{AppIdentifier, AudioSession, VolumeControllerTrait, V
 mod com_scope;
 
 pub fn windows_controller() -> VolumeResult<Vec<AudioSession>> {
-    return com_scope::com_initialized_scope(|device_enumerator| unsafe {
+    return com_scope::with_com_initialized(|device_enumerator| unsafe {
         // Options: eMultimedia - eConsole;
         let _default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
 

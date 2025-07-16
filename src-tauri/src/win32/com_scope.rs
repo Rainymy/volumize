@@ -7,22 +7,24 @@ use windows::Win32::{
 
 use crate::types::shared::{VolumeControllerError, VolumeResult};
 
+#[must_use = "ComScope must be kept alive to maintain COM initialization"]
 pub struct ComScope;
 
-pub fn com_initialized_scope<F, R>(callback: F) -> VolumeResult<R>
+pub fn with_com_initialized<F, R>(callback: F) -> VolumeResult<R>
 where
     F: FnOnce(IMMDeviceEnumerator) -> VolumeResult<R>,
 {
-    // bind COM to this variable.
-    // Auto cleanup on scope exit.
-    let _com_guard = ComScope::new()?;
+    // bind COM to this variable. Else value is immediately dropped!
+    let _com_guard = ComScope::try_new()?;
     let device_enumerator = unsafe { CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)? };
-
-    return callback(device_enumerator);
+    callback(device_enumerator)
 }
 
 impl ComScope {
-    pub fn new() -> VolumeResult<Self> {
+    pub fn try_new() -> VolumeResult<Self> {
+        #[cfg(debug_assertions)]
+        println!("ComScope initialized!");
+
         unsafe {
             CoInitializeEx(None, COINIT_MULTITHREADED)
                 .ok()
@@ -41,6 +43,9 @@ impl Drop for ComScope {
     fn drop(&mut self) {
         unsafe {
             CoUninitialize();
-        }
+        };
+
+        #[cfg(debug_assertions)]
+        println!("ComScope Dropped!");
     }
 }

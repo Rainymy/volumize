@@ -1,8 +1,10 @@
 #![allow(dead_code)]
+use std::path::PathBuf;
 use thiserror::Error;
 
 pub type VolumePercent = f32;
 pub type AppIdentifier = String;
+pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 
 #[derive(Debug, Clone)]
 pub enum SessionType {
@@ -18,17 +20,33 @@ pub enum SessionDirection {
 }
 
 #[derive(Debug, Clone)]
-pub struct AudioSession {
+pub struct ProcessInfo {
+    pub id: u32,
     pub name: String,
+    pub path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AudioSession {
+    pub process: ProcessInfo,
     pub session_type: SessionType,
     pub direction: SessionDirection,
-    pub device_output: SessionDirection,
-    pub device_name: String,
-    pub id: String,
-    pub window_title: String,
-    pub volume_percent: VolumePercent,
-    pub muted: bool,
+    pub device: AudioDevice,
+    pub volume: AudioVolume,
     pub active: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct AudioDevice {
+    pub id: String,
+    pub name: String,
+    pub direction: SessionDirection,
+}
+
+#[derive(Debug, Clone)]
+pub struct AudioVolume {
+    pub current: VolumePercent,
+    pub muted: bool,
 }
 
 #[derive(Debug, Error)]
@@ -54,18 +72,43 @@ pub enum VolumeControllerError {
     Unknown(String),
 }
 
-pub type VolumeResult<T> = Result<T, VolumeControllerError>;
-
-pub trait VolumeControllerTrait {
-    fn get_playback_devices(&self) -> VolumeResult<Vec<AudioSession>>;
-    fn get_current_playback_device(&self) -> VolumeResult<Option<AudioSession>>;
+pub trait MasterVolumeControl {
     fn get_master_volume(&self) -> VolumeResult<Option<VolumePercent>>;
     fn set_master_volume(&self, percent: VolumePercent) -> VolumeResult<()>;
     fn mute_master(&self) -> VolumeResult<()>;
     fn unmute_master(&self) -> VolumeResult<()>;
+}
+
+pub trait ApplicationVolumeControl {
     fn set_app_volume(&self, app: AppIdentifier, percent: VolumePercent) -> VolumeResult<()>;
     fn mute_app(&self, app: AppIdentifier) -> VolumeResult<()>;
     fn unmute_app(&self, app: AppIdentifier) -> VolumeResult<()>;
-    fn load_sessions(&self) -> VolumeResult<Vec<AudioSession>>;
     fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>>;
+}
+
+pub trait DeviceControl {
+    fn get_playback_devices(&self) -> VolumeResult<Vec<AudioSession>>;
+    fn get_current_playback_device(&self) -> VolumeResult<Option<AudioSession>>;
+}
+
+pub trait VolumeControllerTrait:
+    MasterVolumeControl + ApplicationVolumeControl + DeviceControl
+{
+    fn load_sessions(&self) -> VolumeResult<Vec<AudioSession>>;
+}
+
+impl AudioVolume {
+    pub const MIN: VolumePercent = 0.0;
+    pub const MAX: VolumePercent = 1.0;
+    pub const DEFAULT: VolumePercent = 1.0;
+
+    pub fn new(volume: VolumePercent) -> VolumeResult<Self> {
+        if !(Self::MIN..=Self::MAX).contains(&volume) {
+            return Err(VolumeControllerError::InvalidVolumePercentage(volume));
+        }
+        Ok(Self {
+            current: volume,
+            muted: false,
+        })
+    }
 }

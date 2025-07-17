@@ -1,3 +1,4 @@
+use windows::core::Interface;
 use windows::Win32::{
     // Foundation::HWND,
     Media::Audio::{Endpoints::IAudioEndpointVolume, *},
@@ -17,26 +18,29 @@ pub fn make_controller() -> Box<dyn VolumeControllerTrait> {
 }
 
 impl VolumeController {
+    fn with_default_generic_activate<'a, F, T, R>(&self, callback: F) -> VolumeResult<R>
+    where
+        F: FnOnce(&T) -> VolumeResult<R>,
+        T: Interface + 'a,
+    {
+        com_scope::with_com_initialized(|device_enumerator| unsafe {
+            let default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
+            let endpoint_volume = default_device.Activate::<T>(CLSCTX_ALL, None)?;
+            callback(&endpoint_volume)
+        })
+    }
+
     fn with_default_audio_endpoint<F, R>(&self, callback: F) -> VolumeResult<R>
     where
         F: FnOnce(&IAudioEndpointVolume) -> VolumeResult<R>,
     {
-        com_scope::with_com_initialized(|device_enumerator| unsafe {
-            let default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
-            let endpoint_volume: IAudioEndpointVolume =
-                default_device.Activate(CLSCTX_ALL, None)?;
-            callback(&endpoint_volume)
-        })
+        self.with_default_generic_activate::<F, IAudioEndpointVolume, R>(callback)
     }
+
     fn _with_default_audio_sessions<F, R>(&self, callback: F) -> VolumeResult<R>
     where
         F: FnOnce(&IAudioSessionManager2) -> VolumeResult<R>,
     {
-        com_scope::with_com_initialized(|device_enumerator| unsafe {
-            let default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
-            let session_manager: IAudioSessionManager2 =
-                default_device.Activate(CLSCTX_ALL, None)?;
-            callback(&session_manager)
-        })
+        self.with_default_generic_activate::<F, IAudioSessionManager2, R>(callback)
     }
 }

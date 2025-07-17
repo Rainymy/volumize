@@ -12,8 +12,11 @@ impl MasterVolumeControl for VolumeController {
         })
     }
 
-    fn set_master_volume(&self, _percent: VolumePercent) -> VolumeResult<()> {
-        Ok(())
+    fn set_master_volume(&self, percent: VolumePercent) -> VolumeResult<()> {
+        self.with_default_audio_endpoint(|endpoint| unsafe {
+            endpoint.SetMasterVolumeLevelScalar(percent, std::ptr::null())?;
+            Ok(())
+        })
     }
 
     fn mute_master(&self) -> VolumeResult<()> {

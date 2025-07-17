@@ -98,12 +98,12 @@ pub trait VolumeControllerTrait:
 }
 
 impl AudioVolume {
-    pub const MIN: VolumePercent = 0.0;
-    pub const MAX: VolumePercent = 1.0;
-    pub const DEFAULT: VolumePercent = 1.0;
+    pub const MIN_VOLUME: VolumePercent = 0.0;
+    pub const MAX_VOLUME: VolumePercent = 1.0;
+    pub const DEFAULT_VOLUME: VolumePercent = 1.0;
 
     pub fn new(volume: VolumePercent) -> VolumeResult<Self> {
-        if !(Self::MIN..=Self::MAX).contains(&volume) {
+        if !(Self::MIN_VOLUME..=Self::MAX_VOLUME).contains(&volume) {
             return Err(VolumeControllerError::InvalidVolumePercentage(volume));
         }
         Ok(Self {

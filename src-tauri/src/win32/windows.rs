@@ -1,23 +1,37 @@
-use windows::core::Interface;
+use windows::core::{Interface, GUID};
 use windows::Win32::{
-    // Foundation::HWND,
     Media::Audio::{Endpoints::IAudioEndpointVolume, *},
     System::Com::CLSCTX_ALL,
 };
 
-use crate::types::shared::VolumeControllerTrait;
 use crate::types::shared::VolumeResult;
+use crate::types::shared::{AudioVolume, VolumeControllerTrait, VolumePercent, VolumeValidation};
 
 mod com_scope;
+
+mod application_volume;
+mod device_control;
+mod master_volume;
 mod volume_controller_trait;
 
-pub struct VolumeController;
+pub struct VolumeController {
+    event_context: GUID,
+}
 
 pub fn make_controller() -> Box<dyn VolumeControllerTrait> {
-    return Box::new(VolumeController);
+    return Box::new(VolumeController::new());
 }
 
 impl VolumeController {
+    #[allow(dead_code)]
+    const NO_CONTEXT: *const GUID = std::ptr::null();
+
+    pub fn new() -> Self {
+        Self {
+            event_context: GUID::new().unwrap_or_default(),
+        }
+    }
+
     fn with_default_generic_activate<'a, F, T, R>(&self, callback: F) -> VolumeResult<R>
     where
         F: FnOnce(&T) -> VolumeResult<R>,
@@ -37,10 +51,17 @@ impl VolumeController {
         self.with_default_generic_activate::<F, IAudioEndpointVolume, R>(callback)
     }
 
-    fn _with_default_audio_sessions<F, R>(&self, callback: F) -> VolumeResult<R>
+    #[allow(dead_code)]
+    fn with_default_audio_sessions<F, R>(&self, callback: F) -> VolumeResult<R>
     where
         F: FnOnce(&IAudioSessionManager2) -> VolumeResult<R>,
     {
         self.with_default_generic_activate::<F, IAudioSessionManager2, R>(callback)
+    }
+}
+
+impl VolumeValidation for VolumeController {
+    fn validate_volume(volume: VolumePercent) -> VolumeResult<()> {
+        AudioVolume::validate_volume(volume)
     }
 }

@@ -12,8 +12,14 @@ mod platform;
 mod platform;
 
 fn main() {
-    let _controller = platform::make_controller();
+    match platform::make_controller() {
+        Ok(controller) => {
+            let _device = controller.get_playback_devices();
+        }
+        Err(err) => {
+            dbg!(err);
+        }
+    }
 
-    let _device = _controller.get_playback_devices();
     volumize_lib::run();
 }

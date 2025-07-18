@@ -97,18 +97,27 @@ pub trait VolumeControllerTrait:
     fn load_sessions(&self) -> VolumeResult<Vec<AudioSession>>;
 }
 
-impl AudioVolume {
-    pub const MIN_VOLUME: VolumePercent = 0.0;
-    pub const MAX_VOLUME: VolumePercent = 1.0;
-    pub const DEFAULT_VOLUME: VolumePercent = 1.0;
+pub trait VolumeValidation {
+    const MIN_VOLUME: VolumePercent = 0.0;
+    const MAX_VOLUME: VolumePercent = 1.0;
+    const DEFAULT_VOLUME: VolumePercent = 1.0;
+    fn validate_volume(volume: VolumePercent) -> VolumeResult<()>;
+}
 
-    pub fn new(volume: VolumePercent) -> VolumeResult<Self> {
+impl VolumeValidation for AudioVolume {
+    fn validate_volume(volume: VolumePercent) -> VolumeResult<()> {
         if !(Self::MIN_VOLUME..=Self::MAX_VOLUME).contains(&volume) {
             return Err(VolumeControllerError::InvalidVolumePercentage(volume));
         }
-        Ok(Self {
+        Ok(())
+    }
+}
+
+impl AudioVolume {
+    fn new(volume: VolumePercent) -> Self {
+        Self {
             current: volume,
             muted: false,
-        })
+        }
     }
 }

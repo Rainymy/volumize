@@ -16,20 +16,22 @@ mod volume_controller_trait;
 
 pub struct VolumeController {
     event_context: GUID,
+    com_guard: com_scope::ComScope,
 }
 
-pub fn make_controller() -> Box<dyn VolumeControllerTrait> {
-    return Box::new(VolumeController::new());
+pub fn make_controller() -> VolumeResult<Box<dyn VolumeControllerTrait>> {
+    return Ok(Box::new(VolumeController::new()?));
 }
 
 impl VolumeController {
     #[allow(dead_code)]
     const NO_CONTEXT: *const GUID = std::ptr::null();
 
-    pub fn new() -> Self {
-        Self {
-            event_context: GUID::new().unwrap_or_default(),
-        }
+    pub fn new() -> VolumeResult<Self> {
+        Ok(Self {
+            event_context: GUID::new()?,
+            com_guard: com_scope::ComScope::try_new()?,
+        })
     }
 
     fn with_default_generic_activate<'a, F, T, R>(&self, callback: F) -> VolumeResult<R>

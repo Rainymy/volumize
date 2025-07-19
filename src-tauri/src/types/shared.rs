@@ -10,6 +10,7 @@ pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 pub enum SessionType {
     Application,
     Device,
+    System,
 }
 
 #[derive(Debug, Clone)]
@@ -33,7 +34,7 @@ pub struct AudioSession {
     pub direction: SessionDirection,
     pub device: AudioDevice,
     pub volume: AudioVolume,
-    pub active: bool,
+    pub sound_playing: bool,
 }
 
 #[derive(Debug, Clone)]

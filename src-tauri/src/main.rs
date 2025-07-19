@@ -14,7 +14,9 @@ mod platform;
 fn main() {
     match platform::make_controller() {
         Ok(controller) => {
-            let _device = controller.get_playback_devices();
+            let _device = controller.get_all_applications();
+
+            dbg!(_device.ok());
         }
         Err(err) => {
             dbg!(err);

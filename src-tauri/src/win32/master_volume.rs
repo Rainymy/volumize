@@ -6,8 +6,7 @@ use crate::types::shared::{
 impl MasterVolumeControl for VolumeController {
     fn get_master_volume(&self) -> VolumeResult<Option<VolumePercent>> {
         self.with_default_audio_endpoint(|endpoint| unsafe {
-            let volume = endpoint.GetMasterVolumeLevelScalar()?;
-            Ok(Some(volume))
+            Ok(Some(endpoint.GetMasterVolumeLevelScalar()?))
         })
     }
 

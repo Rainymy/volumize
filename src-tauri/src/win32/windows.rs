@@ -14,20 +14,22 @@ mod device_control;
 mod master_volume;
 mod volume_controller_trait;
 
+mod util;
+
 pub struct VolumeController {
     event_context: GUID,
     _com_guard: com_scope::ComScope,
 }
 
 pub fn make_controller() -> VolumeResult<Box<dyn VolumeControllerTrait>> {
-    return Ok(Box::new(VolumeController::new()?));
+    return Ok(Box::new(VolumeController::try_new()?));
 }
 
 impl VolumeController {
     #[allow(dead_code)]
     const NO_CONTEXT: *const GUID = std::ptr::null();
 
-    pub fn new() -> VolumeResult<Self> {
+    pub fn try_new() -> VolumeResult<Self> {
         Ok(Self {
             event_context: GUID::new()?,
             _com_guard: com_scope::ComScope::try_new()?,
@@ -53,8 +55,15 @@ impl VolumeController {
         self.with_default_generic_activate::<F, IAudioEndpointVolume, R>(callback)
     }
 
+    fn _with_default_audio_session_control2<F, R>(&self, callback: F) -> VolumeResult<R>
+    where
+        F: FnOnce(&IAudioSessionControl2) -> VolumeResult<R>,
+    {
+        self.with_default_generic_activate::<F, IAudioSessionControl2, R>(callback)
+    }
+
     #[allow(dead_code)]
-    fn with_default_audio_sessions<F, R>(&self, callback: F) -> VolumeResult<R>
+    fn with_default_audio_sessions_manager2<F, R>(&self, callback: F) -> VolumeResult<R>
     where
         F: FnOnce(&IAudioSessionManager2) -> VolumeResult<R>,
     {

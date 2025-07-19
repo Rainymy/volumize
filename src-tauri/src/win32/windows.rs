@@ -4,8 +4,8 @@ use windows::Win32::{
     System::Com::CLSCTX_ALL,
 };
 
+use crate::types::shared::VolumeControllerTrait;
 use crate::types::shared::VolumeResult;
-use crate::types::shared::{AudioVolume, VolumeControllerTrait, VolumePercent, VolumeValidation};
 
 mod com_scope;
 
@@ -16,7 +16,7 @@ mod volume_controller_trait;
 
 pub struct VolumeController {
     event_context: GUID,
-    com_guard: com_scope::ComScope,
+    _com_guard: com_scope::ComScope,
 }
 
 pub fn make_controller() -> VolumeResult<Box<dyn VolumeControllerTrait>> {
@@ -30,7 +30,7 @@ impl VolumeController {
     pub fn new() -> VolumeResult<Self> {
         Ok(Self {
             event_context: GUID::new()?,
-            com_guard: com_scope::ComScope::try_new()?,
+            _com_guard: com_scope::ComScope::try_new()?,
         })
     }
 
@@ -41,8 +41,8 @@ impl VolumeController {
     {
         com_scope::with_com_initialized(|device_enumerator| unsafe {
             let default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
-            let endpoint_volume = default_device.Activate::<T>(CLSCTX_ALL, None)?;
-            callback(&endpoint_volume)
+            let endpoint = default_device.Activate::<T>(CLSCTX_ALL, None)?;
+            callback(&endpoint)
         })
     }
 
@@ -59,11 +59,5 @@ impl VolumeController {
         F: FnOnce(&IAudioSessionManager2) -> VolumeResult<R>,
     {
         self.with_default_generic_activate::<F, IAudioSessionManager2, R>(callback)
-    }
-}
-
-impl VolumeValidation for VolumeController {
-    fn validate_volume(volume: VolumePercent) -> VolumeResult<()> {
-        AudioVolume::validate_volume(volume)
     }
 }

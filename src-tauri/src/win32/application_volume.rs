@@ -1,7 +1,11 @@
 use windows::{
     core::{Interface, PWSTR},
-    Win32::Media::Audio::{
-        AudioSessionStateActive, IAudioSessionControl2, IAudioSessionEnumerator, ISimpleAudioVolume,
+    Win32::{
+        Foundation::S_OK,
+        Media::Audio::{
+            AudioSessionStateActive, IAudioSessionControl2, IAudioSessionEnumerator,
+            ISimpleAudioVolume,
+        },
     },
 };
 
@@ -36,7 +40,6 @@ unsafe fn process_sessions(sessions: &IAudioSessionEnumerator) -> VolumeResult<V
         let (current_volume, is_muted) = match session_control.cast::<ISimpleAudioVolume>() {
             Ok(simple_volume) => {
                 let volume = simple_volume.GetMasterVolume().unwrap_or(0.0);
-                dbg!(simple_volume.GetMute().map(|b| b.as_bool()).ok());
                 let muted = simple_volume
                     .GetMute()
                     .map(|b| b.as_bool())
@@ -47,9 +50,9 @@ unsafe fn process_sessions(sessions: &IAudioSessionEnumerator) -> VolumeResult<V
         };
 
         // Determine session type
-        let session_type = match session_control.IsSystemSoundsSession().ok() {
-            Ok(()) => SessionType::System,
-            Err(_) => SessionType::Application,
+        let session_type = match session_control.IsSystemSoundsSession() {
+            S_OK => SessionType::System,
+            _ => SessionType::Application,
         };
 
         // Use process name if available, otherwise fall back to display name

@@ -11,13 +11,14 @@ pub enum SessionType {
     Application,
     Device,
     System,
+    Unknown,
 }
 
 #[derive(Debug, Clone)]
 pub enum SessionDirection {
     Render,
     Capture,
-    Noop,
+    Unknown,
 }
 
 #[derive(Debug, Clone)]

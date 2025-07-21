@@ -13,8 +13,8 @@ use super::VolumeController;
 use crate::{
     platform::util,
     types::shared::{
-        AppIdentifier, ApplicationVolumeControl, AudioDevice, AudioSession, AudioVolume,
-        ProcessInfo, SessionDirection, SessionType, VolumePercent, VolumeResult,
+        AppIdentifier, ApplicationVolumeControl, AudioSession, AudioVolume, ProcessInfo,
+        SessionDirection, SessionType, VolumePercent, VolumeResult,
     },
 };
 
@@ -70,11 +70,6 @@ unsafe fn process_sessions(sessions: &IAudioSessionEnumerator) -> VolumeResult<V
             },
             session_type: session_type,
             direction: SessionDirection::Render,
-            device: AudioDevice {
-                id: String::new(),
-                name: String::new(),
-                direction: SessionDirection::Render,
-            },
             volume: AudioVolume {
                 current: current_volume,
                 muted: is_muted,
@@ -88,9 +83,11 @@ unsafe fn process_sessions(sessions: &IAudioSessionEnumerator) -> VolumeResult<V
 
 impl ApplicationVolumeControl for VolumeController {
     fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>> {
-        self.with_default_audio_sessions_manager2(|endpoint| unsafe {
-            process_sessions(&endpoint.GetSessionEnumerator()?)
-        })
+        // loop over all devices and get all application
+        self.com
+            .with_default_audio_sessions_manager2(|endpoint| unsafe {
+                process_sessions(&endpoint.GetSessionEnumerator()?)
+            })
     }
 
     fn set_app_volume(&self, _app: AppIdentifier, _percent: VolumePercent) -> VolumeResult<()> {

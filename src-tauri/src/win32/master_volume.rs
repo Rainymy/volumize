@@ -5,7 +5,7 @@ use crate::types::shared::{
 
 impl MasterVolumeControl for VolumeController {
     fn get_master_volume(&self) -> VolumeResult<Option<VolumePercent>> {
-        self.with_default_audio_endpoint(|endpoint| unsafe {
+        self.com.with_default_audio_endpoint(|endpoint| unsafe {
             Ok(Some(endpoint.GetMasterVolumeLevelScalar()?))
         })
     }
@@ -13,22 +13,22 @@ impl MasterVolumeControl for VolumeController {
     fn set_master_volume(&self, percent: VolumePercent) -> VolumeResult<()> {
         AudioVolume::validate_volume(percent)?;
 
-        self.with_default_audio_endpoint(|endpoint| unsafe {
-            endpoint.SetMasterVolumeLevelScalar(percent, &self.event_context)?;
+        self.com.with_default_audio_endpoint(|endpoint| unsafe {
+            endpoint.SetMasterVolumeLevelScalar(percent, self.com.get_event_context())?;
             Ok(())
         })
     }
 
     fn mute_master(&self) -> VolumeResult<()> {
-        self.with_default_audio_endpoint(|endpoint| unsafe {
-            endpoint.SetMute(true, &self.event_context)?;
+        self.com.with_default_audio_endpoint(|endpoint| unsafe {
+            endpoint.SetMute(true, self.com.get_event_context())?;
             Ok(())
         })
     }
 
     fn unmute_master(&self) -> VolumeResult<()> {
-        self.with_default_audio_endpoint(|endpoint| unsafe {
-            endpoint.SetMute(false, &self.event_context)?;
+        self.com.with_default_audio_endpoint(|endpoint| unsafe {
+            endpoint.SetMute(false, self.com.get_event_context())?;
             Ok(())
         })
     }

@@ -69,7 +69,7 @@ pub enum VolumeControllerError {
     #[error("Serialization/deserialization error: {0}")]
     SerdeError(#[from] serde_json::Error),
     #[error("COM initialization error: {0}")]
-    ComInitializationError(String),
+    ComError(String),
     #[error("Unknown error: {0}")]
     Unknown(String),
 }

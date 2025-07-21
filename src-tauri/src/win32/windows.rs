@@ -1,9 +1,3 @@
-use windows::core::{Interface, GUID};
-use windows::Win32::{
-    Media::Audio::{Endpoints::IAudioEndpointVolume, *},
-    System::Com::CLSCTX_ALL,
-};
-
 use crate::types::shared::VolumeControllerTrait;
 use crate::types::shared::VolumeResult;
 
@@ -17,8 +11,7 @@ mod volume_controller_trait;
 mod util;
 
 pub struct VolumeController {
-    event_context: GUID,
-    _com_guard: com_scope::ComScope,
+    com: com_scope::ComManager,
 }
 
 pub fn make_controller() -> VolumeResult<Box<dyn VolumeControllerTrait>> {
@@ -26,47 +19,9 @@ pub fn make_controller() -> VolumeResult<Box<dyn VolumeControllerTrait>> {
 }
 
 impl VolumeController {
-    #[allow(dead_code)]
-    const NO_CONTEXT: *const GUID = std::ptr::null();
-
     pub fn try_new() -> VolumeResult<Self> {
         Ok(Self {
-            event_context: GUID::new()?,
-            _com_guard: com_scope::ComScope::try_new()?,
+            com: com_scope::ComManager::try_new()?,
         })
-    }
-
-    fn with_default_generic_activate<'a, F, T, R>(&self, callback: F) -> VolumeResult<R>
-    where
-        F: FnOnce(&T) -> VolumeResult<R>,
-        T: Interface + 'a,
-    {
-        com_scope::with_com_initialized(|device_enumerator| unsafe {
-            let default_device = device_enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
-            let endpoint = default_device.Activate::<T>(CLSCTX_ALL, None)?;
-            callback(&endpoint)
-        })
-    }
-
-    fn with_default_audio_endpoint<F, R>(&self, callback: F) -> VolumeResult<R>
-    where
-        F: FnOnce(&IAudioEndpointVolume) -> VolumeResult<R>,
-    {
-        self.with_default_generic_activate::<F, IAudioEndpointVolume, R>(callback)
-    }
-
-    fn _with_default_audio_session_control2<F, R>(&self, callback: F) -> VolumeResult<R>
-    where
-        F: FnOnce(&IAudioSessionControl2) -> VolumeResult<R>,
-    {
-        self.with_default_generic_activate::<F, IAudioSessionControl2, R>(callback)
-    }
-
-    #[allow(dead_code)]
-    fn with_default_audio_sessions_manager2<F, R>(&self, callback: F) -> VolumeResult<R>
-    where
-        F: FnOnce(&IAudioSessionManager2) -> VolumeResult<R>,
-    {
-        self.with_default_generic_activate::<F, IAudioSessionManager2, R>(callback)
     }
 }

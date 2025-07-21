@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::path::PathBuf;
 
 use windows::{
@@ -66,5 +64,5 @@ pub fn pwstr_to_string(pwstr: PWSTR) -> String {
     if pwstr.is_null() {
         return "Unknown".to_string();
     }
-    unsafe { pwstr.to_string().unwrap_or("failed to parse".into()) }
+    unsafe { pwstr.to_string().unwrap_or("Failed to parse".into()) }
 }

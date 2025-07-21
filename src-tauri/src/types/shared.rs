@@ -33,7 +33,6 @@ pub struct AudioSession {
     pub process: ProcessInfo,
     pub session_type: SessionType,
     pub direction: SessionDirection,
-    pub device: AudioDevice,
     pub volume: AudioVolume,
     pub sound_playing: bool,
 }
@@ -89,8 +88,8 @@ pub trait ApplicationVolumeControl {
 }
 
 pub trait DeviceControl {
-    fn get_playback_devices(&self) -> VolumeResult<Vec<AudioSession>>;
-    fn get_current_playback_device(&self) -> VolumeResult<Option<AudioSession>>;
+    fn get_playback_devices(&self) -> VolumeResult<Vec<AudioDevice>>;
+    fn get_current_playback_device(&self) -> VolumeResult<AudioDevice>;
 }
 
 pub trait VolumeControllerTrait:

@@ -1,7 +1,8 @@
 use windows::{
-    core::Interface,
+    core::{Interface, PCWSTR},
     Win32::{
         Devices::FunctionDiscovery::PKEY_Device_FriendlyName,
+        Foundation::MAX_PATH,
         Media::Audio::{eCapture, eRender, IMMDevice, IMMEndpoint},
         System::Com::{
             StructuredStorage::{PropVariantToString, PROPVARIANT},
@@ -24,10 +25,10 @@ fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
         let props = device.OpenPropertyStore(STGM_READ)?;
         let name_prop: PROPVARIANT = props.GetValue(&PKEY_Device_FriendlyName)?;
 
-        let mut string_ptr: Vec<u16> = vec![];
-        PropVariantToString(&name_prop, &mut string_ptr)?;
+        let mut buffer = vec![0u16; MAX_PATH as usize];
+        PropVariantToString(&name_prop, &mut buffer)?;
 
-        String::from_utf16_lossy(&string_ptr)
+        String::from_utf16_lossy(&buffer)
     };
 
     // Get device direction
@@ -55,7 +56,7 @@ impl DeviceControl for VolumeController {
 
         let devices = device_ids
             .into_iter()
-            .filter_map(|val| self.com.get_device_with_id(val).ok())
+            .filter_map(|val| self.com.get_device_with_id(PCWSTR(val.as_ptr())).ok())
             .filter_map(|val| process_device(val).ok());
 
         Ok(devices.collect())

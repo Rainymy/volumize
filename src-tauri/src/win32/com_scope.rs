@@ -1,4 +1,4 @@
-use windows::core::{Error, Interface, GUID, PWSTR};
+use windows::core::{Error, Interface, GUID, PCWSTR, PWSTR};
 use windows::Win32::{
     Media::Audio::Endpoints::IAudioEndpointVolume,
     Media::Audio::{
@@ -137,7 +137,7 @@ impl ComManager {
         }
     }
 
-    pub fn get_device_with_id(&self, id: PWSTR) -> Result<IMMDevice, Error> {
+    pub fn get_device_with_id(&self, id: PCWSTR) -> Result<IMMDevice, Error> {
         unsafe { Ok(self.device_enumerator.GetDevice(id)?) }
     }
 }

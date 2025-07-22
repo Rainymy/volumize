@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use windows::core::{Interface, GUID, PCWSTR};
 use windows::Win32::{
     Media::Audio::Endpoints::IAudioEndpointVolume,
@@ -13,11 +15,40 @@ use windows::Win32::{
 use super::util;
 use crate::types::shared::{VolumeControllerError, VolumeResult};
 
-#[must_use = "ComScope must be kept alive to maintain COM initialization"]
-pub struct ComScope;
+static INITIALIZED: AtomicBool = AtomicBool::new(false);
 
-impl ComScope {
+#[must_use = "ComScope must be kept alive to maintain COM initialization"]
+pub struct ComManager {
+    event_context: GUID,
+    device_enumerator: IMMDeviceEnumerator,
+}
+
+impl Drop for ComManager {
+    fn drop(&mut self) {
+        if INITIALIZED.load(Ordering::SeqCst) {
+            unsafe {
+                CoUninitialize();
+            }
+        }
+
+        INITIALIZED.store(false, Ordering::SeqCst);
+
+        #[cfg(debug_assertions)]
+        dbg!("ComScope Dropped!");
+    }
+}
+
+impl ComManager {
+    pub const CLS_CONTEXT: CLSCTX = CLSCTX_ALL;
+    pub const DEVICE_STATE_CONTEXT: DEVICE_STATE = DEVICE_STATE(DEVICE_STATEMASK_ALL);
+
     pub fn try_new() -> VolumeResult<Self> {
+        if INITIALIZED.swap(true, Ordering::SeqCst) {
+            return Err(VolumeControllerError::ComError(
+                "COM is already initialized.".to_string(),
+            ));
+        }
+
         #[cfg(debug_assertions)]
         dbg!("ComScope initialized!");
 
@@ -26,35 +57,9 @@ impl ComScope {
                 .ok()
                 .map_err(|e| {
                     VolumeControllerError::ComError(format!("Failed to initialize COM: {}", e))
-                })?;
-        }
-        Ok(Self)
-    }
-}
+                })?
+        };
 
-impl Drop for ComScope {
-    fn drop(&mut self) {
-        unsafe {
-            CoUninitialize();
-        }
-
-        #[cfg(debug_assertions)]
-        dbg!("ComScope Dropped!");
-    }
-}
-
-pub struct ComManager {
-    _com_guard: ComScope,
-    event_context: GUID,
-    device_enumerator: IMMDeviceEnumerator,
-}
-
-impl ComManager {
-    pub const CLS_CONTEXT: CLSCTX = CLSCTX_ALL;
-    pub const DEVICE_STATE_CONTEXT: DEVICE_STATE = DEVICE_STATE(DEVICE_STATEMASK_ALL);
-
-    pub fn try_new() -> VolumeResult<Self> {
-        let com_guard = ComScope::try_new()?;
         let device_enumerator = unsafe {
             CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(|e| {
                 VolumeControllerError::ComError(format!("Failed to create instance COM: {}", e))
@@ -66,7 +71,6 @@ impl ComManager {
         })?;
 
         Ok(Self {
-            _com_guard: com_guard,
             event_context,
             device_enumerator,
         })
@@ -114,12 +118,15 @@ impl ComManager {
             let mut ids = Vec::with_capacity(count as usize);
 
             for i in 0..count {
-                if let Ok(device) = device_collection.Item(i) {
-                    if let Ok(id_pw_str) = device.GetId() {
-                        if let Ok(pw_string) = util::pwstr_to_string(&id_pw_str) {
-                            ids.push(pw_string);
-                        }
-                    }
+                match device_collection.Item(i) {
+                    Ok(device) => match device.GetId() {
+                        Ok(id_pw_str) => match util::pwstr_to_string(&id_pw_str) {
+                            Ok(pw_string) => ids.push(pw_string),
+                            Err(e) => eprintln!("Failed to convert PWSTR to string: {}", e),
+                        },
+                        Err(e) => eprintln!("Failed to get device ID: {}", e),
+                    },
+                    Err(e) => eprintln!("Failed to get device at index {}: {}", i, e),
                 }
             }
 

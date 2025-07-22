@@ -87,10 +87,12 @@ pub trait MasterVolumeControl {
 }
 
 pub trait ApplicationVolumeControl {
+    fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>>;
+    fn find_application_with_id(&self, id: AppIdentifier) -> VolumeResult<AudioApplication>;
+    fn get_app_volume(&self, app: AppIdentifier) -> VolumeResult<AudioVolume>;
     fn set_app_volume(&self, app: AppIdentifier, percent: VolumePercent) -> VolumeResult<()>;
     fn mute_app(&self, app: AppIdentifier) -> VolumeResult<()>;
     fn unmute_app(&self, app: AppIdentifier) -> VolumeResult<()>;
-    fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>>;
 }
 
 pub trait DeviceControl {

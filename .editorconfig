@@ -13,7 +13,6 @@ insert_final_newline = false
 trim_trailing_whitespace = true
 
 # Indentation
-indent_style = tab
 indent_size = 4
 
 # Max line length (optional)

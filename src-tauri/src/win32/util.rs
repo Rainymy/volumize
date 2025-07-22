@@ -1,7 +1,12 @@
-use std::path::PathBuf;
+use std::{
+    ffi::OsString,
+    iter::once,
+    os::windows::ffi::{OsStrExt, OsStringExt},
+    path::PathBuf,
+};
 
 use windows::{
-    core::PWSTR,
+    core::{PCWSTR, PWSTR},
     Win32::{
         Foundation::{CloseHandle, HANDLE, MAX_PATH},
         System::{
@@ -64,5 +69,29 @@ pub fn pwstr_to_string(pwstr: PWSTR) -> String {
     if pwstr.is_null() {
         return "Unknown".to_string();
     }
+
     unsafe { pwstr.to_string().unwrap_or("Failed to parse".into()) }
+}
+
+pub fn string_to_pcwstr(str: String) -> (Vec<u16>, PCWSTR) {
+    let wide: Vec<u16> = std::ffi::OsStr::new(&str)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let pcwstr = PCWSTR(wide.as_ptr());
+    (wide, pcwstr)
+}
+
+pub fn pwstr_to_os_string(pwstr: PWSTR) -> OsString {
+    if pwstr.is_null() {
+        return OsString::from("Unknown");
+    }
+
+    unsafe { OsString::from_wide(pwstr.as_wide()) }
+}
+
+pub fn os_string_to_pwstr(rstr: &OsString) -> (Vec<u16>, PWSTR) {
+    let mut wide: Vec<u16> = rstr.encode_wide().chain(once(0)).collect();
+    let ptr = PWSTR(wide.as_mut_ptr());
+    (wide, ptr)
 }

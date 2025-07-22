@@ -1,97 +1,36 @@
-use windows::{
-    core::{Interface, PWSTR},
-    Win32::{
-        Foundation::S_OK,
-        Media::Audio::{
-            AudioSessionStateActive, IAudioSessionControl2, IAudioSessionEnumerator,
-            ISimpleAudioVolume,
-        },
-    },
-};
+use windows::Win32::Media::Audio::IAudioSessionManager2;
 
-use super::VolumeController;
+use super::{convert, VolumeController};
 use crate::{
-    platform::util,
+    platform::{com_scope::ComManager, util},
     types::shared::{
-        AppIdentifier, ApplicationVolumeControl, AudioDevice, AudioSession, AudioVolume,
-        DeviceControl, ProcessInfo, SessionDirection, SessionType, VolumePercent, VolumeResult,
+        AppIdentifier, ApplicationVolumeControl, AudioSession, DeviceControl, VolumePercent,
+        VolumeResult,
     },
 };
-
-unsafe fn process_sessions(sessions: &IAudioSessionEnumerator) -> VolumeResult<Vec<AudioSession>> {
-    let count = sessions.GetCount()?;
-    let mut result: Vec<AudioSession> = Vec::new();
-
-    for i in 0..count {
-        let session_control: IAudioSessionControl2 = sessions.GetSession(i)?.cast()?;
-
-        let name_pwstr = session_control.GetDisplayName().unwrap_or(PWSTR::null());
-        let is_active = session_control.GetState().ok() == Some(AudioSessionStateActive);
-
-        // Get Process info
-        let process_id = session_control.GetProcessId().unwrap_or(0);
-        let (process_name, process_path) = if process_id != 0 {
-            util::get_process_info(process_id).unwrap_or((String::new(), None))
-        } else {
-            (String::new(), None)
-        };
-
-        // Get volume information
-        let (current_volume, is_muted) = match session_control.cast::<ISimpleAudioVolume>() {
-            Ok(simple_volume) => {
-                let volume = simple_volume.GetMasterVolume().unwrap_or(0.0);
-                let muted = simple_volume
-                    .GetMute()
-                    .map(|b| b.as_bool())
-                    .unwrap_or(false);
-                (volume, muted)
-            }
-            Err(_) => (1.0, false),
-        };
-
-        // Determine session type
-        let session_type = match session_control.IsSystemSoundsSession() {
-            S_OK => SessionType::System,
-            _ => SessionType::Application,
-        };
-
-        // Use process name if available, otherwise fall back to display name
-        let final_name = if !process_name.is_empty() {
-            process_name
-        } else {
-            util::pwstr_to_os_string(name_pwstr)
-                .to_string_lossy()
-                .into()
-        };
-
-        result.push(AudioSession {
-            process: ProcessInfo {
-                id: process_id,
-                name: final_name,
-                path: process_path,
-            },
-            session_type: session_type,
-            direction: SessionDirection::Render,
-            volume: AudioVolume {
-                current: current_volume,
-                muted: is_muted,
-            },
-            sound_playing: is_active,
-        });
-    }
-
-    Ok(result)
-}
 
 impl ApplicationVolumeControl for VolumeController {
     fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>> {
         // loop over all devices and get all application
-        // let devices = self.get_playback_devices()?;
+        let devices = self.get_playback_devices()?;
+        let mut applications: Vec<AudioSession> = vec![];
 
-        self.com
-            .with_default_audio_sessions_manager2(|endpoint| unsafe {
-                process_sessions(&endpoint.GetSessionEnumerator()?)
-            })
+        for device in devices {
+            let (_pcw_buffer, pcw_str) = util::string_to_pcwstr(device.id);
+            let imm_device = self.com.get_device_with_id(pcw_str)?;
+
+            let session: IAudioSessionManager2 =
+                unsafe { imm_device.Activate(ComManager::CLS_CONTEXT, None)? };
+
+            applications.push(AudioSession {
+                applications: unsafe {
+                    convert::process_sessions(&session.GetSessionEnumerator()?)?
+                },
+                device: convert::process_device(imm_device)?,
+            });
+        }
+
+        Ok(applications)
     }
 
     fn set_app_volume(&self, _app: AppIdentifier, _percent: VolumePercent) -> VolumeResult<()> {

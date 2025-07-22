@@ -29,7 +29,7 @@ pub struct ProcessInfo {
 }
 
 #[derive(Debug, Clone)]
-pub struct AudioSession {
+pub struct AudioApplication {
     pub process: ProcessInfo,
     pub session_type: SessionType,
     pub direction: SessionDirection,
@@ -42,6 +42,12 @@ pub struct AudioDevice {
     pub id: String,
     pub name: String,
     pub direction: SessionDirection,
+}
+
+#[derive(Debug, Clone)]
+pub struct AudioSession {
+    pub device: AudioDevice,
+    pub applications: Vec<AudioApplication>,
 }
 
 #[derive(Debug, Clone)]
@@ -95,7 +101,7 @@ pub trait DeviceControl {
 pub trait VolumeControllerTrait:
     MasterVolumeControl + ApplicationVolumeControl + DeviceControl
 {
-    fn load_sessions(&self) -> VolumeResult<Vec<AudioSession>>;
+    fn load_sessions(&self) -> VolumeResult<Vec<AudioApplication>>;
 }
 
 pub trait VolumeValidation {

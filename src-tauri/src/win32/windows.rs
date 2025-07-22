@@ -8,6 +8,7 @@ mod device_control;
 mod master_volume;
 mod volume_controller_trait;
 
+mod convert;
 mod util;
 
 pub struct VolumeController {

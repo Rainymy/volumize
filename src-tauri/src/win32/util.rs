@@ -16,6 +16,8 @@ use windows::{
     },
 };
 
+use crate::types::shared::{VolumeControllerError, VolumeResult};
+
 pub unsafe fn get_process_info(
     process_id: u32,
 ) -> windows::core::Result<(String, Option<PathBuf>)> {
@@ -65,12 +67,16 @@ impl Drop for HandleGuard {
     }
 }
 
-pub fn pwstr_to_string(pwstr: PWSTR) -> String {
+pub fn pwstr_to_string(pwstr: &PWSTR) -> VolumeResult<String> {
     if pwstr.is_null() {
-        return "Unknown".to_string();
+        return Err(VolumeControllerError::OsApiError("Null PWSTR".into()));
     }
 
-    unsafe { pwstr.to_string().unwrap_or("Failed to parse".into()) }
+    unsafe {
+        pwstr
+            .to_string()
+            .map_err(|e| VolumeControllerError::OsApiError(e.to_string()))
+    }
 }
 
 pub fn string_to_pcwstr(str: String) -> (Vec<u16>, PCWSTR) {
@@ -82,7 +88,7 @@ pub fn string_to_pcwstr(str: String) -> (Vec<u16>, PCWSTR) {
     (wide, pcwstr)
 }
 
-pub fn pwstr_to_os_string(pwstr: PWSTR) -> OsString {
+pub fn pwstr_to_os_string(pwstr: &PWSTR) -> OsString {
     if pwstr.is_null() {
         return OsString::from("Unknown");
     }
@@ -90,6 +96,7 @@ pub fn pwstr_to_os_string(pwstr: PWSTR) -> OsString {
     unsafe { OsString::from_wide(pwstr.as_wide()) }
 }
 
+#[allow(dead_code)]
 pub fn os_string_to_pwstr(rstr: &OsString) -> (Vec<u16>, PWSTR) {
     let mut wide: Vec<u16> = rstr.encode_wide().chain(once(0)).collect();
     let ptr = PWSTR(wide.as_mut_ptr());

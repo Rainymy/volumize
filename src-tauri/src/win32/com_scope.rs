@@ -1,4 +1,4 @@
-use windows::core::{Error, Interface, GUID, PCWSTR, PWSTR};
+use windows::core::{Interface, GUID, PCWSTR};
 use windows::Win32::{
     Media::Audio::Endpoints::IAudioEndpointVolume,
     Media::Audio::{
@@ -10,6 +10,7 @@ use windows::Win32::{
     },
 };
 
+use super::util;
 use crate::types::shared::{VolumeControllerError, VolumeResult};
 
 #[must_use = "ComScope must be kept alive to maintain COM initialization"]
@@ -66,8 +67,8 @@ impl ComManager {
 
         Ok(Self {
             _com_guard: com_guard,
-            event_context: event_context,
-            device_enumerator: device_enumerator,
+            event_context,
+            device_enumerator,
         })
     }
 
@@ -75,54 +76,51 @@ impl ComManager {
         &self.event_context
     }
 
-    pub fn with_default_generic_activate<'a, F, T, R>(&self, callback: F) -> VolumeResult<R>
+    pub fn with_default_generic_activate<T>(&self) -> VolumeResult<T>
     where
-        F: FnOnce(&T) -> VolumeResult<R>,
-        T: Interface + 'a,
+        T: Interface,
     {
         unsafe {
             let default_device = self
                 .device_enumerator
-                .GetDefaultAudioEndpoint(eRender, eConsole)?;
-            let endpoint = default_device.Activate::<T>(ComManager::CLS_CONTEXT, None)?;
-            callback(&endpoint)
+                .GetDefaultAudioEndpoint(eRender, eConsole)
+                .map_err(VolumeControllerError::WindowsApiError)?;
+
+            default_device
+                .Activate::<T>(ComManager::CLS_CONTEXT, None)
+                .map_err(VolumeControllerError::WindowsApiError)
         }
     }
 
-    pub fn with_default_audio_endpoint<F, R>(&self, callback: F) -> VolumeResult<R>
-    where
-        F: FnOnce(&IAudioEndpointVolume) -> VolumeResult<R>,
-    {
-        self.with_default_generic_activate::<F, IAudioEndpointVolume, R>(callback)
+    pub fn with_default_audio_endpoint(&self) -> VolumeResult<IAudioEndpointVolume> {
+        self.with_default_generic_activate::<IAudioEndpointVolume>()
     }
 
-    pub fn _with_default_audio_session_control2<F, R>(&self, callback: F) -> VolumeResult<R>
-    where
-        F: FnOnce(&IAudioSessionControl2) -> VolumeResult<R>,
-    {
-        self.with_default_generic_activate::<F, IAudioSessionControl2, R>(callback)
+    pub fn _with_default_audio_session_control2(&self) -> VolumeResult<IAudioSessionControl2> {
+        self.with_default_generic_activate::<IAudioSessionControl2>()
     }
 
-    pub fn with_default_audio_sessions_manager2<F, R>(&self, callback: F) -> VolumeResult<R>
-    where
-        F: FnOnce(&IAudioSessionManager2) -> VolumeResult<R>,
-    {
-        self.with_default_generic_activate::<F, IAudioSessionManager2, R>(callback)
+    pub fn _with_default_audio_sessions_manager2(&self) -> VolumeResult<IAudioSessionManager2> {
+        self.with_default_generic_activate::<IAudioSessionManager2>()
     }
 
-    pub fn get_all_device_id(&self) -> VolumeResult<Vec<PWSTR>> {
+    pub fn get_all_device_id(&self) -> VolumeResult<Vec<String>> {
         unsafe {
             let device_collection = self
                 .device_enumerator
                 .EnumAudioEndpoints(eRender, Self::DEVICE_STATE_CONTEXT)?;
 
             let count = device_collection.GetCount()?;
-            let mut ids: Vec<PWSTR> = vec![];
+            let mut ids = Vec::with_capacity(count as usize);
 
             for i in 0..count {
-                let device = device_collection.Item(i)?;
-                let id_pw_str = device.GetId()?;
-                ids.push(id_pw_str);
+                if let Ok(device) = device_collection.Item(i) {
+                    if let Ok(id_pw_str) = device.GetId() {
+                        if let Ok(pw_string) = util::pwstr_to_string(&id_pw_str) {
+                            ids.push(pw_string);
+                        }
+                    }
+                }
             }
 
             Ok(ids)
@@ -131,13 +129,17 @@ impl ComManager {
 
     pub fn get_default_device(&self) -> VolumeResult<IMMDevice> {
         unsafe {
-            Ok(self
-                .device_enumerator
-                .GetDefaultAudioEndpoint(eRender, eConsole)?)
+            self.device_enumerator
+                .GetDefaultAudioEndpoint(eRender, eConsole)
+                .map_err(VolumeControllerError::WindowsApiError)
         }
     }
 
-    pub fn get_device_with_id(&self, id: PCWSTR) -> Result<IMMDevice, Error> {
-        unsafe { Ok(self.device_enumerator.GetDevice(id)?) }
+    pub fn get_device_with_id(&self, id: PCWSTR) -> VolumeResult<IMMDevice> {
+        unsafe {
+            self.device_enumerator
+                .GetDevice(id)
+                .map_err(VolumeControllerError::WindowsApiError)
+        }
     }
 }

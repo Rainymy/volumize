@@ -103,7 +103,6 @@ pub trait DeviceControl {
 pub trait VolumeControllerTrait:
     MasterVolumeControl + ApplicationVolumeControl + DeviceControl
 {
-    fn load_sessions(&self) -> VolumeResult<Vec<AudioApplication>>;
 }
 
 pub trait VolumeValidation {

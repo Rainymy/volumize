@@ -1,12 +1,10 @@
-use crate::types::shared::VolumeControllerTrait;
-use crate::types::shared::VolumeResult;
+use crate::types::shared::{VolumeControllerTrait, VolumeResult};
 
 mod com_scope;
 
 mod application_volume;
 mod device_control;
 mod master_volume;
-mod volume_controller_trait;
 
 mod convert;
 mod util;
@@ -26,3 +24,5 @@ impl VolumeController {
         })
     }
 }
+
+impl VolumeControllerTrait for VolumeController {}

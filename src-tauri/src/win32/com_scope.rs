@@ -2,7 +2,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use windows::core::{Interface, GUID};
 use windows::Win32::{
-    Media::Audio::Endpoints::IAudioEndpointVolume,
     Media::Audio::{
         eConsole, eRender, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator, DEVICE_STATE,
         DEVICE_STATEMASK_ALL,
@@ -80,24 +79,36 @@ impl ComManager {
         &self.event_context
     }
 
+    pub fn get_default_device(&self) -> VolumeResult<IMMDevice> {
+        unsafe {
+            self.device_enumerator
+                .GetDefaultAudioEndpoint(eRender, eConsole)
+                .map_err(VolumeControllerError::WindowsApiError)
+        }
+    }
+
     pub fn with_default_generic_activate<T>(&self) -> VolumeResult<T>
     where
         T: Interface,
     {
         unsafe {
-            let default_device = self
-                .device_enumerator
-                .GetDefaultAudioEndpoint(eRender, eConsole)
-                .map_err(VolumeControllerError::WindowsApiError)?;
-
-            default_device
-                .Activate::<T>(ComManager::CLS_CONTEXT, None)
+            self.get_default_device()?
+                .Activate::<T>(Self::CLS_CONTEXT, None)
                 .map_err(VolumeControllerError::WindowsApiError)
         }
     }
 
-    pub fn with_default_audio_endpoint(&self) -> VolumeResult<IAudioEndpointVolume> {
-        self.with_default_generic_activate::<IAudioEndpointVolume>()
+    pub fn with_generic_device_activate<T>(&self, id: String) -> VolumeResult<T>
+    where
+        T: Interface,
+    {
+        let device = self.get_device_with_id(id)?;
+
+        unsafe {
+            device
+                .Activate::<T>(Self::CLS_CONTEXT, None)
+                .map_err(VolumeControllerError::WindowsApiError)
+        }
     }
 
     pub fn get_all_device_id(&self) -> VolumeResult<Vec<String>> {
@@ -123,14 +134,6 @@ impl ComManager {
             }
 
             Ok(ids)
-        }
-    }
-
-    pub fn get_default_device(&self) -> VolumeResult<IMMDevice> {
-        unsafe {
-            self.device_enumerator
-                .GetDefaultAudioEndpoint(eRender, eConsole)
-                .map_err(VolumeControllerError::WindowsApiError)
         }
     }
 

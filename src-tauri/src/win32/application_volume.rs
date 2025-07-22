@@ -1,26 +1,39 @@
-use windows::Win32::Media::Audio::IAudioSessionManager2;
+use windows::Win32::Media::Audio::{Endpoints::IAudioEndpointVolume, IAudioSessionManager2};
+
+use crate::types::shared::{
+    AppIdentifier, ApplicationVolumeControl, AudioApplication, AudioDevice, AudioSession,
+    AudioVolume, DeviceControl, VolumeControllerError, VolumePercent, VolumeResult,
+    VolumeValidation,
+};
 
 use super::{convert, VolumeController};
-use crate::{
-    platform::{com_scope::ComManager, util},
-    types::shared::{
-        AppIdentifier, ApplicationVolumeControl, AudioSession, DeviceControl, VolumePercent,
-        VolumeResult,
-    },
-};
+
+impl VolumeController {
+    fn get_application_device(&self, app: AppIdentifier) -> VolumeResult<AudioDevice> {
+        let session = self
+            .get_all_applications()?
+            .into_iter()
+            .find(|val| val.applications.iter().any(|val| val.process.name == app))
+            .ok_or_else(|| {
+                VolumeControllerError::ApplicationNotFound(format!(
+                    "[ get_application_device ] Application not found - id: {}",
+                    app
+                ))
+            })?;
+
+        Ok(session.device)
+    }
+}
 
 impl ApplicationVolumeControl for VolumeController {
     fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>> {
-        // loop over all devices and get all application
         let devices = self.get_playback_devices()?;
         let mut applications: Vec<AudioSession> = vec![];
 
         for device in devices {
-            let (_pcw_buffer, pcw_str) = util::string_to_pcwstr(device.id);
-            let imm_device = self.com.get_device_with_id(pcw_str)?;
-
+            let imm_device = self.com.get_device_with_id(device.name.clone())?;
             let session: IAudioSessionManager2 =
-                unsafe { imm_device.Activate(ComManager::CLS_CONTEXT, None)? };
+                self.com.with_generic_device_activate(device.name)?;
 
             applications.push(AudioSession {
                 applications: unsafe {
@@ -33,15 +46,85 @@ impl ApplicationVolumeControl for VolumeController {
         Ok(applications)
     }
 
-    fn set_app_volume(&self, _app: AppIdentifier, _percent: VolumePercent) -> VolumeResult<()> {
+    fn find_application_with_id(&self, app: AppIdentifier) -> VolumeResult<AudioApplication> {
+        self.get_all_applications()?
+            .into_iter()
+            .flat_map(|session| session.applications.into_iter())
+            .find(|val| val.process.name == app)
+            .ok_or_else(|| {
+                VolumeControllerError::ApplicationNotFound(format!(
+                    "[ find ] Application not found - id: {}",
+                    app
+                ))
+            })
+    }
+
+    fn get_app_volume(&self, app: AppIdentifier) -> VolumeResult<AudioVolume> {
+        Ok(self.find_application_with_id(app)?.volume)
+    }
+
+    fn set_app_volume(&self, app: AppIdentifier, volume: VolumePercent) -> VolumeResult<()> {
+        AudioVolume::validate_volume(volume)?;
+
+        let session = self
+            .get_all_applications()?
+            .into_iter()
+            .find(|val| val.applications.iter().any(|val| val.process.name == app))
+            .ok_or_else(|| {
+                VolumeControllerError::ApplicationNotFound(format!(
+                    "[ set_app_volume ] Application not found - id: {}",
+                    app
+                ))
+            })?;
+
+        let endpoint: IAudioEndpointVolume =
+            self.com.with_generic_device_activate(session.device.name)?;
+
+        unsafe {
+            let count = endpoint.GetChannelCount()?;
+            let guid = self.com.get_event_context();
+
+            for index in 0..count {
+                endpoint.SetChannelVolumeLevelScalar(index, volume, guid)?;
+            }
+        };
+
         Ok(())
     }
 
-    fn mute_app(&self, _app: AppIdentifier) -> VolumeResult<()> {
+    fn mute_app(&self, app: AppIdentifier) -> VolumeResult<()> {
+        let device = self.get_application_device(app.clone())?;
+        let endpoint: IAudioEndpointVolume = self.com.with_generic_device_activate(device.name)?;
+
+        unsafe {
+            endpoint
+                .SetMute(true, self.com.get_event_context())
+                .map_err(|_| {
+                    VolumeControllerError::OsApiError(format!(
+                        "Unable to mute the application - id: {}",
+                        app
+                    ))
+                })?
+        };
+
         Ok(())
     }
 
-    fn unmute_app(&self, _app: AppIdentifier) -> VolumeResult<()> {
+    fn unmute_app(&self, app: AppIdentifier) -> VolumeResult<()> {
+        let device = self.get_application_device(app.clone())?;
+        let endpoint: IAudioEndpointVolume = self.com.with_generic_device_activate(device.name)?;
+
+        unsafe {
+            endpoint
+                .SetMute(false, self.com.get_event_context())
+                .map_err(|_| {
+                    VolumeControllerError::OsApiError(format!(
+                        "Unable to unmute the application - id: {}",
+                        app
+                    ))
+                })?
+        };
+
         Ok(())
     }
 }

@@ -1,5 +1,5 @@
 use std::{
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     iter::once,
     os::windows::ffi::{OsStrExt, OsStringExt},
     path::PathBuf,
@@ -79,8 +79,8 @@ pub fn pwstr_to_string(pwstr: &PWSTR) -> VolumeResult<String> {
     }
 }
 
-pub fn string_to_pcwstr(str: String) -> (Vec<u16>, PCWSTR) {
-    let wide: Vec<u16> = std::ffi::OsStr::new(&str)
+pub fn string_to_pcwstr(pw_string: &str) -> (Vec<u16>, PCWSTR) {
+    let wide: Vec<u16> = OsStr::new(&pw_string)
         .encode_wide()
         .chain(std::iter::once(0))
         .collect();

@@ -1,11 +1,11 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use windows::core::{Interface, GUID, PCWSTR};
+use windows::core::{Interface, GUID};
 use windows::Win32::{
     Media::Audio::Endpoints::IAudioEndpointVolume,
     Media::Audio::{
-        eConsole, eRender, IAudioSessionControl2, IAudioSessionManager2, IMMDevice,
-        IMMDeviceEnumerator, MMDeviceEnumerator, DEVICE_STATE, DEVICE_STATEMASK_ALL,
+        eConsole, eRender, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator, DEVICE_STATE,
+        DEVICE_STATEMASK_ALL,
     },
     System::Com::{
         CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX, CLSCTX_ALL, COINIT_MULTITHREADED,
@@ -100,14 +100,6 @@ impl ComManager {
         self.with_default_generic_activate::<IAudioEndpointVolume>()
     }
 
-    pub fn _with_default_audio_session_control2(&self) -> VolumeResult<IAudioSessionControl2> {
-        self.with_default_generic_activate::<IAudioSessionControl2>()
-    }
-
-    pub fn _with_default_audio_sessions_manager2(&self) -> VolumeResult<IAudioSessionManager2> {
-        self.with_default_generic_activate::<IAudioSessionManager2>()
-    }
-
     pub fn get_all_device_id(&self) -> VolumeResult<Vec<String>> {
         unsafe {
             let device_collection = self
@@ -142,10 +134,12 @@ impl ComManager {
         }
     }
 
-    pub fn get_device_with_id(&self, id: PCWSTR) -> VolumeResult<IMMDevice> {
+    pub fn get_device_with_id(&self, id: String) -> VolumeResult<IMMDevice> {
+        let (_buffer_pcw, pcw_str) = util::string_to_pcwstr(&id);
+
         unsafe {
             self.device_enumerator
-                .GetDevice(id)
+                .GetDevice(pcw_str)
                 .map_err(VolumeControllerError::WindowsApiError)
         }
     }

@@ -1,5 +1,5 @@
+use super::convert;
 use super::VolumeController;
-use super::{convert, util};
 
 use crate::types::shared::{AudioDevice, DeviceControl, VolumeResult};
 
@@ -9,10 +9,7 @@ impl DeviceControl for VolumeController {
 
         let devices = device_ids
             .into_iter()
-            .filter_map(|val| {
-                let (_pw_buffer, pwstr) = util::string_to_pcwstr(val);
-                self.com.get_device_with_id(pwstr).ok()
-            })
+            .filter_map(|val| self.com.get_device_with_id(val).ok())
             .filter_map(|val| convert::process_device(val).ok());
 
         Ok(devices.collect())

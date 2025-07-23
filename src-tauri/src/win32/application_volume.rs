@@ -28,6 +28,8 @@ impl VolumeController {
 impl ApplicationVolumeControl for VolumeController {
     fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>> {
         let devices = self.get_playback_devices()?;
+        dbg!(&devices);
+
         let mut applications: Vec<AudioSession> = vec![];
 
         for device in devices {

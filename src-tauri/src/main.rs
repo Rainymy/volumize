@@ -20,7 +20,7 @@ fn main() {
             //     dbg!(val);
             // });
 
-            // dbg!(_device.ok());
+            dbg!(_device);
         }
         Err(err) => {
             dbg!(err);

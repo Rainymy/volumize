@@ -14,26 +14,29 @@ use windows::{
     },
 };
 
-use crate::types::shared::{
-    AudioApplication, AudioDevice, AudioVolume, ProcessInfo, SessionDirection, SessionType,
-    VolumeResult,
+use crate::{
+    platform::util::process_lossy_name,
+    types::shared::{
+        AudioApplication, AudioDevice, AudioVolume, ProcessInfo, SessionDirection, SessionType,
+        VolumeResult,
+    },
 };
 
 use super::util;
 
 pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
     // Get device ID
-    let id = unsafe { util::pwstr_to_string(&device.GetId()?)? };
+    let id = unsafe { util::pwstr_to_string(&device.GetId()?) };
 
     // Get device name
     let name = unsafe {
         let props = device.OpenPropertyStore(STGM_READ)?;
         let name_prop: PROPVARIANT = props.GetValue(&PKEY_Device_FriendlyName)?;
 
-        let mut buffer = vec![0u16; MAX_PATH as usize];
+        let mut buffer = [0u16; MAX_PATH as usize];
         PropVariantToString(&name_prop, &mut buffer)?;
 
-        String::from_utf16_lossy(&buffer)
+        process_lossy_name(&buffer)
     };
 
     // Get device direction
@@ -64,31 +67,25 @@ pub unsafe fn process_sessions(
     for i in 0..count {
         let session_control: IAudioSessionControl2 = sessions.GetSession(i)?.cast()?;
 
-        let name_pwstr = session_control.GetDisplayName().unwrap_or(PWSTR::null());
-        let is_active = session_control.GetState().ok() == Some(AudioSessionStateActive);
-
-        // Get Process info
         let process_id = session_control.GetProcessId().unwrap_or(0);
         let (process_name, process_path) = if process_id != 0 {
-            util::get_process_info(process_id).unwrap_or((String::new(), None))
+            util::get_process_info(process_id)
         } else {
             (String::new(), None)
         };
 
-        // Get volume information
         let (current_volume, is_muted) = match session_control.cast::<ISimpleAudioVolume>() {
             Ok(simple_volume) => {
-                let volume = simple_volume.GetMasterVolume().unwrap_or(0.0);
                 let muted = simple_volume
                     .GetMute()
                     .map(|b| b.as_bool())
                     .unwrap_or(false);
-                (volume, muted)
+                let current = simple_volume.GetMasterVolume().unwrap_or(0.0);
+                (current, muted)
             }
-            Err(_) => (1.0, false),
+            Err(_) => (0.0, false),
         };
 
-        // Determine session type
         let session_type = match session_control.IsSystemSoundsSession() {
             S_OK => SessionType::System,
             _ => SessionType::Application,
@@ -98,10 +95,11 @@ pub unsafe fn process_sessions(
         let final_name = if !process_name.is_empty() {
             process_name
         } else {
-            util::pwstr_to_os_string(&name_pwstr)
-                .to_string_lossy()
-                .into()
+            let name_pwstr = session_control.GetDisplayName().unwrap_or(PWSTR::null());
+            util::pwstr_to_string(&name_pwstr)
         };
+
+        let is_active = session_control.GetState().ok() == Some(AudioSessionStateActive);
 
         result.push(AudioApplication {
             process: ProcessInfo {

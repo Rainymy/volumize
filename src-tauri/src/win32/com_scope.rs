@@ -1,10 +1,10 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use windows::core::{Interface, GUID};
+use windows::Win32::Media::Audio::DEVICE_STATE_ACTIVE;
 use windows::Win32::{
     Media::Audio::{
         eConsole, eRender, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator, DEVICE_STATE,
-        DEVICE_STATEMASK_ALL,
     },
     System::Com::{
         CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX, CLSCTX_ALL, COINIT_MULTITHREADED,
@@ -39,7 +39,7 @@ impl Drop for ComManager {
 
 impl ComManager {
     pub const CLS_CONTEXT: CLSCTX = CLSCTX_ALL;
-    pub const DEVICE_STATE_CONTEXT: DEVICE_STATE = DEVICE_STATE(DEVICE_STATEMASK_ALL);
+    pub const DEVICE_STATE_CONTEXT: DEVICE_STATE = DEVICE_STATE_ACTIVE;
 
     pub fn try_new() -> VolumeResult<Self> {
         if INITIALIZED.swap(true, Ordering::SeqCst) {
@@ -123,10 +123,7 @@ impl ComManager {
             for i in 0..count {
                 match device_collection.Item(i) {
                     Ok(device) => match device.GetId() {
-                        Ok(id_pw_str) => match util::pwstr_to_string(&id_pw_str) {
-                            Ok(pw_string) => ids.push(pw_string),
-                            Err(e) => eprintln!("Failed to convert PWSTR to string: {}", e),
-                        },
+                        Ok(id_pw_str) => ids.push(util::pwstr_to_string(&id_pw_str)),
                         Err(e) => eprintln!("Failed to get device ID: {}", e),
                     },
                     Err(e) => eprintln!("Failed to get device at index {}: {}", i, e),

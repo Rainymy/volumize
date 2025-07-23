@@ -1,9 +1,4 @@
-use std::{
-    ffi::{OsStr, OsString},
-    iter::once,
-    os::windows::ffi::{OsStrExt, OsStringExt},
-    path::PathBuf,
-};
+use std::{ffi::OsStr, os::windows::ffi::OsStrExt, path::PathBuf};
 
 use windows::{
     core::{PCWSTR, PWSTR},
@@ -16,35 +11,34 @@ use windows::{
     },
 };
 
-use crate::types::shared::{VolumeControllerError, VolumeResult};
+pub unsafe fn get_process_info(process_id: u32) -> (String, Option<PathBuf>) {
+    let access_bits = PROCESS_QUERY_INFORMATION | PROCESS_VM_READ;
+    let process_handle = match OpenProcess(access_bits, false, process_id) {
+        Ok(handle) => handle,
+        Err(_) => return (String::new(), None),
+    };
 
-pub unsafe fn get_process_info(
-    process_id: u32,
-) -> windows::core::Result<(String, Option<PathBuf>)> {
-    let process_handle = OpenProcess(
-        PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-        false,
-        process_id,
-    )?;
-
+    // Keep process handle alive until end of the function.
     let _guard = HandleGuard(process_handle);
 
     // Get process name (just the executable name)
+    // https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getmodulebasenamew
+    //
+    // If the function fails, the return value is zero.
     let mut process_name_buf = [0u16; MAX_PATH as usize];
     let name = if GetModuleBaseNameW(process_handle, None, &mut process_name_buf) > 0 {
-        String::from_utf16_lossy(&process_name_buf)
-            .trim_end_matches('\0')
-            .to_string()
+        process_lossy_name(&process_name_buf)
     } else {
-        String::from("Unknown")
+        String::new()
     };
 
     // Get full process path
+    // https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getmodulefilenameexw
+    //
+    // If the function fails, the return value is zero.
     let mut process_path_buf = [0u16; MAX_PATH as usize];
     let path = if GetModuleFileNameExW(Some(process_handle), None, &mut process_path_buf) > 0 {
-        let path_str = String::from_utf16_lossy(&process_path_buf)
-            .trim_end_matches('\0')
-            .to_string();
+        let path_str = process_lossy_name(&process_path_buf);
         if !path_str.is_empty() {
             Some(PathBuf::from(path_str))
         } else {
@@ -54,7 +48,7 @@ pub unsafe fn get_process_info(
         None
     };
 
-    Ok((name, path))
+    (name, path)
 }
 
 pub struct HandleGuard(HANDLE);
@@ -67,16 +61,12 @@ impl Drop for HandleGuard {
     }
 }
 
-pub fn pwstr_to_string(pwstr: &PWSTR) -> VolumeResult<String> {
+pub fn pwstr_to_string(pwstr: &PWSTR) -> String {
     if pwstr.is_null() {
-        return Err(VolumeControllerError::OsApiError("Null PWSTR".into()));
+        return "Unknown".to_string();
     }
 
-    unsafe {
-        pwstr
-            .to_string()
-            .map_err(|e| VolumeControllerError::OsApiError(e.to_string()))
-    }
+    unsafe { pwstr.to_string().unwrap_or_else(|_| "".to_string()) }
 }
 
 pub fn string_to_pcwstr(pw_string: &str) -> (Vec<u16>, PCWSTR) {
@@ -88,17 +78,8 @@ pub fn string_to_pcwstr(pw_string: &str) -> (Vec<u16>, PCWSTR) {
     (wide, pcwstr)
 }
 
-pub fn pwstr_to_os_string(pwstr: &PWSTR) -> OsString {
-    if pwstr.is_null() {
-        return OsString::from("Unknown");
-    }
-
-    unsafe { OsString::from_wide(pwstr.as_wide()) }
-}
-
-#[allow(dead_code)]
-pub fn os_string_to_pwstr(rstr: &OsString) -> (Vec<u16>, PWSTR) {
-    let mut wide: Vec<u16> = rstr.encode_wide().chain(once(0)).collect();
-    let ptr = PWSTR(wide.as_mut_ptr());
-    (wide, ptr)
+pub fn process_lossy_name(value: &[u16]) -> String {
+    String::from_utf16_lossy(&value)
+        .trim_end_matches('\0')
+        .to_string()
 }

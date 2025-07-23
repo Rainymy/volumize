@@ -58,6 +58,8 @@ pub struct AudioVolume {
 
 #[derive(Debug, Error)]
 pub enum VolumeControllerError {
+    #[error("NotImplemented")]
+    NotImplemented(),
     #[error("Device not found: {0}")]
     DeviceNotFound(String),
     #[error("Application not found: {0}")]

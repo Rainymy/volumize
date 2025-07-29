@@ -26,7 +26,7 @@ use super::util;
 
 pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
     // Get device ID
-    let id = unsafe { util::pwstr_to_string(&device.GetId()?) };
+    let id = util::pwstr_to_string(unsafe { device.GetId()? });
 
     // Get device name
     let name = unsafe {
@@ -58,63 +58,61 @@ pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
     })
 }
 
-pub unsafe fn process_sessions(
+pub fn process_sessions(
     sessions: &IAudioSessionEnumerator,
+    direction: Option<SessionDirection>,
 ) -> VolumeResult<Vec<AudioApplication>> {
-    let count = sessions.GetCount()?;
     let mut result: Vec<AudioApplication> = Vec::new();
 
-    for i in 0..count {
-        let session_control: IAudioSessionControl2 = sessions.GetSession(i)?.cast()?;
+    unsafe {
+        for i in 0..sessions.GetCount()? {
+            let session_control: IAudioSessionControl2 = sessions.GetSession(i)?.cast()?;
 
-        let process_id = session_control.GetProcessId().unwrap_or(0);
-        let (process_name, process_path) = if process_id != 0 {
-            util::get_process_info(process_id)
-        } else {
-            (String::new(), None)
-        };
+            let process_id = session_control.GetProcessId()?;
+            let (process_name, process_path) = util::get_process_info(process_id);
 
-        let (current_volume, is_muted) = match session_control.cast::<ISimpleAudioVolume>() {
-            Ok(simple_volume) => {
-                let muted = simple_volume
-                    .GetMute()
-                    .map(|b| b.as_bool())
-                    .unwrap_or(false);
-                let current = simple_volume.GetMasterVolume().unwrap_or(0.0);
-                (current, muted)
-            }
-            Err(_) => (0.0, false),
-        };
+            let (current_volume, is_muted) = match session_control.cast::<ISimpleAudioVolume>() {
+                Ok(simple_volume) => {
+                    let muted = simple_volume
+                        .GetMute()
+                        .map(|b| b.as_bool())
+                        .unwrap_or(false);
+                    let current = simple_volume.GetMasterVolume().unwrap_or(0.0);
+                    (current, muted)
+                }
+                Err(_) => (0.0, false),
+            };
 
-        let session_type = match session_control.IsSystemSoundsSession() {
-            S_OK => SessionType::System,
-            _ => SessionType::Application,
-        };
+            let session_type = match session_control.IsSystemSoundsSession() {
+                S_OK => SessionType::System,
+                _ => SessionType::Application,
+            };
 
-        // Use process name if available, otherwise fall back to display name
-        let final_name = if !process_name.is_empty() {
-            process_name
-        } else {
-            let name_pwstr = session_control.GetDisplayName().unwrap_or(PWSTR::null());
-            util::pwstr_to_string(&name_pwstr)
-        };
+            // Use process name if available, otherwise fall back to display name
+            let final_name = if !process_name.is_empty() {
+                process_name
+            } else {
+                let name_pwstr = session_control.GetDisplayName().unwrap_or(PWSTR::null());
+                util::pwstr_to_string(name_pwstr)
+            };
 
-        let is_active = session_control.GetState().ok() == Some(AudioSessionStateActive);
+            let is_active = session_control.GetState().ok() == Some(AudioSessionStateActive);
 
-        result.push(AudioApplication {
-            process: ProcessInfo {
-                id: process_id,
-                name: final_name,
-                path: process_path,
-            },
-            session_type: session_type,
-            direction: SessionDirection::Render,
-            volume: AudioVolume {
-                current: current_volume,
-                muted: is_muted,
-            },
-            sound_playing: is_active,
-        });
+            result.push(AudioApplication {
+                process: ProcessInfo {
+                    id: process_id,
+                    name: final_name,
+                    path: process_path,
+                },
+                session_type: session_type,
+                direction: direction.clone().unwrap_or(SessionDirection::Unknown),
+                volume: AudioVolume {
+                    current: current_volume,
+                    muted: is_muted,
+                },
+                sound_playing: is_active,
+            });
+        }
     }
 
     Ok(result)

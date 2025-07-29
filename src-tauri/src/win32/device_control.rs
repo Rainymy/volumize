@@ -9,7 +9,7 @@ impl DeviceControl for VolumeController {
 
         let devices = device_ids
             .into_iter()
-            .filter_map(|val| self.com.get_device_with_id(val).ok())
+            .filter_map(|val| self.com.get_device_with_id(&val).ok())
             .filter_map(|val| convert::process_device(val).ok());
 
         Ok(devices.collect())

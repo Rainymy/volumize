@@ -1,10 +1,10 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use windows::core::{Interface, GUID};
-use windows::Win32::Media::Audio::DEVICE_STATE_ACTIVE;
 use windows::Win32::{
     Media::Audio::{
         eConsole, eRender, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator, DEVICE_STATE,
+        DEVICE_STATE_ACTIVE,
     },
     System::Com::{
         CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX, CLSCTX_ALL, COINIT_MULTITHREADED,
@@ -98,7 +98,7 @@ impl ComManager {
         }
     }
 
-    pub fn with_generic_device_activate<T>(&self, id: String) -> VolumeResult<T>
+    pub fn with_generic_device_activate<T>(&self, id: &str) -> VolumeResult<T>
     where
         T: Interface,
     {
@@ -123,7 +123,7 @@ impl ComManager {
             for i in 0..count {
                 match device_collection.Item(i) {
                     Ok(device) => match device.GetId() {
-                        Ok(id_pw_str) => ids.push(util::pwstr_to_string(&id_pw_str)),
+                        Ok(id_pw_str) => ids.push(util::pwstr_to_string(id_pw_str)),
                         Err(e) => eprintln!("Failed to get device ID: {}", e),
                     },
                     Err(e) => eprintln!("Failed to get device at index {}: {}", i, e),
@@ -134,7 +134,7 @@ impl ComManager {
         }
     }
 
-    pub fn get_device_with_id(&self, id: String) -> VolumeResult<IMMDevice> {
+    pub fn get_device_with_id(&self, id: &str) -> VolumeResult<IMMDevice> {
         let (_buffer_pcw, pcw_str) = util::string_to_pcwstr(&id);
 
         unsafe {

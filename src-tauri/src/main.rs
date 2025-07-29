@@ -16,11 +16,7 @@ fn main() {
         Ok(controller) => {
             let _device = controller.get_all_applications();
 
-            // _device.unwrap().iter().for_each(|val| {
-            //     dbg!(val);
-            // });
-
-            dbg!(_device);
+            dbg!(&_device);
         }
         Err(err) => {
             dbg!(err);

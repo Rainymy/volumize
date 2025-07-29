@@ -1,9 +1,14 @@
-use windows::Win32::Media::Audio::{Endpoints::IAudioEndpointVolume, IAudioSessionManager2};
+use windows::Win32::Media::Audio::{eCapture, eRender};
+use windows::Win32::Media::Audio::{
+    Endpoints::IAudioEndpointVolume, IAudioSessionManager2, IMMEndpoint,
+};
+
+use windows::core::Interface;
 
 use crate::types::shared::{
     AppIdentifier, ApplicationVolumeControl, AudioApplication, AudioDevice, AudioSession,
-    AudioVolume, DeviceControl, VolumeControllerError, VolumePercent, VolumeResult,
-    VolumeValidation,
+    AudioVolume, DeviceControl, SessionDirection, VolumeControllerError, VolumePercent,
+    VolumeResult, VolumeValidation,
 };
 
 use super::{convert, VolumeController};
@@ -27,20 +32,32 @@ impl VolumeController {
 
 impl ApplicationVolumeControl for VolumeController {
     fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>> {
-        let devices = self.get_playback_devices()?;
-        dbg!(&devices);
+        let mut applications = vec![];
 
-        let mut applications: Vec<AudioSession> = vec![];
+        for device in self.get_playback_devices()? {
+            let device_id = device.id;
+            let imm_device = self.com.get_device_with_id(&device_id)?;
 
-        for device in devices {
-            let imm_device = self.com.get_device_with_id(device.name.clone())?;
-            let session: IAudioSessionManager2 =
-                self.com.with_generic_device_activate(device.name)?;
+            let session_enums = {
+                let session: IAudioSessionManager2 =
+                    self.com.with_generic_device_activate(&device_id)?;
+
+                unsafe { session.GetSessionEnumerator()? }
+            };
+
+            let direction = unsafe {
+                let endpoint: IMMEndpoint = imm_device.cast()?;
+
+                #[allow(non_upper_case_globals)]
+                match endpoint.GetDataFlow()? {
+                    eRender => SessionDirection::Render,
+                    eCapture => SessionDirection::Capture,
+                    _ => SessionDirection::Unknown,
+                }
+            };
 
             applications.push(AudioSession {
-                applications: unsafe {
-                    convert::process_sessions(&session.GetSessionEnumerator()?)?
-                },
+                applications: convert::process_sessions(&session_enums, Some(direction))?,
                 device: convert::process_device(imm_device)?,
             });
         }
@@ -80,13 +97,11 @@ impl ApplicationVolumeControl for VolumeController {
             })?;
 
         let endpoint: IAudioEndpointVolume =
-            self.com.with_generic_device_activate(session.device.name)?;
+            self.com.with_generic_device_activate(&session.device.id)?;
 
+        let guid = self.com.get_event_context();
         unsafe {
-            let count = endpoint.GetChannelCount()?;
-            let guid = self.com.get_event_context();
-
-            for index in 0..count {
+            for index in 0..endpoint.GetChannelCount()? {
                 endpoint.SetChannelVolumeLevelScalar(index, volume, guid)?;
             }
         };
@@ -96,7 +111,7 @@ impl ApplicationVolumeControl for VolumeController {
 
     fn mute_app(&self, app: AppIdentifier) -> VolumeResult<()> {
         let device = self.get_application_device(app.clone())?;
-        let endpoint: IAudioEndpointVolume = self.com.with_generic_device_activate(device.name)?;
+        let endpoint: IAudioEndpointVolume = self.com.with_generic_device_activate(&device.id)?;
 
         unsafe {
             endpoint
@@ -114,7 +129,7 @@ impl ApplicationVolumeControl for VolumeController {
 
     fn unmute_app(&self, app: AppIdentifier) -> VolumeResult<()> {
         let device = self.get_application_device(app.clone())?;
-        let endpoint: IAudioEndpointVolume = self.com.with_generic_device_activate(device.name)?;
+        let endpoint: IAudioEndpointVolume = self.com.with_generic_device_activate(&device.id)?;
 
         unsafe {
             endpoint

@@ -1,6 +1,9 @@
 use std::{
-    sync::mpsc::{channel, Sender},
-    thread::spawn,
+    sync::{
+        mpsc::{channel, Sender},
+        Arc, Mutex,
+    },
+    thread::{spawn, JoinHandle},
 };
 
 use crate::types::shared::{AppIdentifier, AudioDevice, AudioSession, VolumePercent, VolumeResult};
@@ -28,16 +31,22 @@ pub enum VolumeCommand {
     // DeviceControl
     GetCurrentPlaybackDevice(Sender<VolumeResult<AudioDevice>>),
     GetPlaybackDevices(Sender<VolumeResult<Vec<AudioDevice>>>),
+    // Thread - to close opened thread
+    CloseThread,
 }
 
 pub struct VolumeCommandSender {
     pub tx: Sender<VolumeCommand>,
+    pub thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
 }
 
 pub fn spawn_volume_thread() -> VolumeCommandSender {
     let (tx, rx) = channel::<VolumeCommand>();
 
-    spawn(move || {
+    #[cfg(debug_assertions)]
+    dbg!("Opening new thread!");
+
+    let thread_handle = spawn(move || {
         let controller = platform::make_controller().expect("Failed to initialize");
 
         for command in rx {
@@ -86,9 +95,19 @@ pub fn spawn_volume_thread() -> VolumeCommandSender {
                     let current_device = controller.get_current_playback_device();
                     let _ = resp_tx.send(current_device);
                 }
+                VolumeCommand::CloseThread => {
+                    println!("Volume thread received CloseThread — exiting.");
+                    break;
+                }
             }
         }
+
+        #[cfg(debug_assertions)]
+        dbg!("Closing the thread!");
     });
 
-    VolumeCommandSender { tx }
+    VolumeCommandSender {
+        tx,
+        thread_handle: Arc::new(Mutex::new(Some(thread_handle))),
+    }
 }

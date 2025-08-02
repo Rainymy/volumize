@@ -1,6 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::sync::Arc;
+use tauri::{Manager, WindowEvent::CloseRequested};
+
+use crate::volume_control::{VolumeCommand, VolumeCommandSender};
+
 mod commands;
 mod types;
 mod volume_control;
@@ -12,6 +17,7 @@ fn main() {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn start_application() {
     let volume_thread = volume_control::spawn_volume_thread();
+    let thread_handle = Arc::clone(&volume_thread.thread_handle);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -32,6 +38,23 @@ pub fn start_application() {
             commands::get_current_playback_device,
             commands::get_playback_devices,
         ])
+        .on_window_event(move |_window, event| {
+            if let CloseRequested { .. } = event {
+                println!("App closing — sending shutdown signal");
+
+                let state = _window.app_handle().state::<VolumeCommandSender>();
+
+                // Send close thread signal.
+                let _ = state.tx.send(VolumeCommand::CloseThread);
+
+                // Join the thread into main.
+                if let Ok(mut handle_opt) = thread_handle.lock() {
+                    if let Some(handle) = handle_opt.take() {
+                        let _ = handle.join();
+                    }
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

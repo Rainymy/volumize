@@ -1,25 +1,51 @@
-import os from "node:os";
+import { invoke } from "@tauri-apps/api/core";
 
-import { WindowsVolumeController } from "./controllers/windows";
+import { AppIdentifier, AudioDevice, AudioSession, VolumeController, VolumePercent } from "../utils/volumeType";
 
-export type AvailableControllers = NonNullable<
-  ReturnType<typeof getVolumeManager>
->;
+class TauriVolumeController extends VolumeController {
+    async getMasterVolume(): Promise<VolumePercent | null> {
+        return await invoke<VolumePercent | null>("get_master_volume");
+    }
 
-export function getVolumeManager() {
-  const platform = os.platform();
+    async setMasterVolume(percent: VolumePercent): Promise<void> {
+        return await invoke("set_master_volume", { percent: percent });
+    }
 
-  if (platform === "win32") {
-    return new WindowsVolumeController();
-  }
+    async muteMaster(): Promise<void> {
+        return await invoke("mute_master");
+    }
 
-  if (platform === "linux") {
-    return null;
-  }
+    async unmuteMaster(): Promise<void> {
+        return await invoke("unmute_master");
+    }
 
-  if (platform === "darwin") {
-    return null;
-  }
+    async getAllApplications(): Promise<AudioSession[]> {
+        return await invoke("get_all_applications");
+    }
 
-  return null;
+    async getAppVolume(app: AppIdentifier): Promise<VolumePercent> {
+        return await invoke<VolumePercent>("get_app_volume", { appIdentifier: app });
+    }
+
+    async setAppVolume(app: AppIdentifier, percent: VolumePercent): Promise<void> {
+        return await invoke("set_app_volume", { appIdentifier: app, volume: percent });
+    }
+
+    async muteApp(app: AppIdentifier): Promise<void> {
+        return await invoke("mute_app_volume", { appIdentifier: app });
+    }
+
+    async unmuteApp(app: AppIdentifier): Promise<void> {
+        return await invoke("unmute_app_volume", { appIdentifier: app });
+    }
+
+    async getPlaybackDevices(): Promise<AudioDevice[]> {
+        return await invoke("get_playback_devices");
+    }
+
+    async getCurrentPlaybackDevice(): Promise<AudioDevice | null> {
+        return await invoke("get_current_playback_device");
+    }
 }
+
+export const volumeController = new TauriVolumeController();

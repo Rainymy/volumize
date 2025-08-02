@@ -20,17 +20,17 @@ pub fn start_application() {
             // Master
             commands::set_master_volume,
             commands::get_master_volume,
-            //     MuteMaster,
-            //     UnmuteMaster,
+            commands::unmute_master,
+            commands::mute_master,
             // Application
-            //     GetAllApplications,
-            //     GetAppVolume,
-            //     SetAppVolume,
-            //     MuteApp,
-            //     UnmuteApp,
+            commands::get_all_applications,
+            commands::get_app_volume,
+            commands::set_app_volume,
+            commands::mute_app_volume,
+            commands::unmute_app_volume,
             // DeviceControl
-            //     GetCurrentPlaybackDevice,
-            //     GetPlaybackDevices,
+            commands::get_current_playback_device,
+            commands::get_playback_devices,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

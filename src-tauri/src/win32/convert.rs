@@ -14,12 +14,9 @@ use windows::{
     },
 };
 
-use crate::{
-    platform::util::process_lossy_name,
-    types::shared::{
-        AudioApplication, AudioDevice, AudioVolume, ProcessInfo, SessionDirection, SessionType,
-        VolumeResult,
-    },
+use crate::types::shared::{
+    AudioApplication, AudioDevice, AudioVolume, ProcessInfo, SessionDirection, SessionType,
+    VolumeResult,
 };
 
 use super::util;
@@ -36,7 +33,7 @@ pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
         let mut buffer = [0u16; MAX_PATH as usize];
         PropVariantToString(&name_prop, &mut buffer)?;
 
-        process_lossy_name(&buffer)
+        util::process_lossy_name(&buffer)
     };
 
     // Get device direction

@@ -1,5 +1,4 @@
-use super::convert;
-use super::VolumeController;
+use super::{convert, VolumeController};
 
 use crate::types::shared::{AudioDevice, DeviceControl, VolumeResult};
 

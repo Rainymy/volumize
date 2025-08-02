@@ -1,10 +1,11 @@
 use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
 
-use super::VolumeController;
 use crate::types::shared::{
     AudioVolume, MasterVolumeControl, VolumeControllerError, VolumePercent, VolumeResult,
     VolumeValidation,
 };
+
+use super::VolumeController;
 
 impl MasterVolumeControl for VolumeController {
     fn get_master_volume(&self) -> VolumeResult<Option<VolumePercent>> {

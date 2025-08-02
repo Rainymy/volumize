@@ -1,6 +1,5 @@
-use windows::Win32::Media::Audio::{eCapture, eRender};
 use windows::Win32::Media::Audio::{
-    Endpoints::IAudioEndpointVolume, IAudioSessionManager2, IMMEndpoint,
+    eCapture, eRender, Endpoints::IAudioEndpointVolume, IAudioSessionManager2, IMMEndpoint,
 };
 
 use windows::core::Interface;

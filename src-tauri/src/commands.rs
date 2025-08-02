@@ -1,7 +1,10 @@
-use tauri::State;
-use volumize_lib::{VolumeCommand, VolumeCommandSender};
-
 use std::sync::mpsc::channel;
+use tauri::State;
+
+use crate::{
+    types::shared::{AppIdentifier, AudioDevice, AudioSession, VolumePercent},
+    volume_control::{VolumeCommand, VolumeCommandSender},
+};
 
 #[tauri::command]
 pub fn set_master_volume(percent: f32, state: State<VolumeCommandSender>) {

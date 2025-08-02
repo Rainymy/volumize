@@ -2,14 +2,16 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
+mod types;
+mod volume_control;
 
 fn main() {
-    run();
+    start_application();
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    let volume_thread = volumize_lib::spawn_volume_thread();
+pub fn start_application() {
+    let volume_thread = volume_control::spawn_volume_thread();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())

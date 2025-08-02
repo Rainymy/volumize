@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -6,7 +7,7 @@ pub type VolumePercent = f32;
 pub type AppIdentifier = String;
 pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SessionType {
     Application,
     Device,
@@ -14,21 +15,21 @@ pub enum SessionType {
     Unknown,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SessionDirection {
     Render,
     Capture,
     Unknown,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProcessInfo {
     pub id: u32,
     pub name: String,
     pub path: Option<PathBuf>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioApplication {
     pub process: ProcessInfo,
     pub session_type: SessionType,
@@ -37,20 +38,20 @@ pub struct AudioApplication {
     pub sound_playing: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioDevice {
     pub id: String,
     pub name: String,
     pub direction: SessionDirection,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioSession {
     pub device: AudioDevice,
     pub applications: Vec<AudioApplication>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioVolume {
     pub current: VolumePercent,
     pub muted: bool,

@@ -20,6 +20,21 @@ pub fn start_application() {
     let thread_handle = Arc::clone(&volume_thread.thread_handle);
 
     tauri::Builder::default()
+        .setup(|app| {
+            // It uses the windows devtools parameter in tauri.conf.json
+            // to indicate if the DevTools should open for that window or not.
+            #[cfg(debug_assertions)]
+            {
+                for window_config in &app.config().app.windows {
+                    if window_config.devtools.unwrap_or(false) {
+                        if let Some(window) = app.get_webview_window(&window_config.label) {
+                            window.open_devtools();
+                        }
+                    }
+                }
+            }
+            Ok(())
+        })
         .plugin(tauri_plugin_opener::init())
         .manage(volume_thread)
         .invoke_handler(tauri::generate_handler![

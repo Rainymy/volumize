@@ -42,22 +42,3 @@ export interface AudioSession {
     device: AudioDevice;
     applications: AudioApplication[];
 }
-
-export abstract class VolumeController {
-    // Master Volume
-    abstract getMasterVolume(): Promise<VolumePercent | null>;
-    abstract setMasterVolume(percent: VolumePercent): Promise<void>;
-    abstract muteMaster(): Promise<void>;
-    abstract unmuteMaster(): Promise<void>;
-
-    // Applications
-    abstract getAllApplications(): Promise<AudioSession[]>;
-    abstract getAppVolume(app: AppIdentifier): Promise<VolumePercent>;
-    abstract setAppVolume(app: AppIdentifier, percent: VolumePercent): Promise<void>;
-    abstract muteApp(app: AppIdentifier): Promise<void>;
-    abstract unmuteApp(app: AppIdentifier): Promise<void>;
-
-    // Devices
-    abstract getPlaybackDevices(): Promise<AudioDevice[]>;
-    abstract getCurrentPlaybackDevice(): Promise<AudioDevice | null>;
-}

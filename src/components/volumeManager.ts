@@ -1,50 +1,64 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { AppIdentifier, AudioDevice, AudioSession, VolumeController, VolumePercent } from "../utils/volumeType";
+import { AppIdentifier, AudioDevice, AudioSession, VolumePercent } from "../utils/volumeType";
 
-class TauriVolumeController extends VolumeController {
-    async getMasterVolume(): Promise<VolumePercent | null> {
-        return await invoke<VolumePercent | null>("get_master_volume");
+enum RUST_INVOKE {
+    SET_MASTER_VOLUME = "set_master_volume",
+    GET_MASTER_VOLUME = "get_master_volume",
+    MUTE_MASTER = "mute_master",
+    UNMUTE_MASTER = "unmute_master",
+    GET_ALL_APPLICATIONS = "get_all_applications",
+    GET_APP_VOLUME = "get_app_volume",
+    SET_APP_VOLUME = "set_app_volume",
+    MUTE_APP_VOLUME = "mute_app_volume",
+    UNMUTE_APP_VOLUME = "unmute_app_volume",
+    GET_PLAYBACK_DEVICES = "get_playback_devices",
+    GET_CURRENT_PLAYBACK_DEVICE = "get_current_playback_device"
+}
+
+class TauriVolumeController {
+    getMasterVolume() {
+        return invoke<VolumePercent | null>(RUST_INVOKE.GET_MASTER_VOLUME);
     }
 
-    async setMasterVolume(percent: VolumePercent): Promise<void> {
-        return await invoke("set_master_volume", { percent: percent });
+    setMasterVolume(percent: VolumePercent) {
+        return invoke(RUST_INVOKE.SET_MASTER_VOLUME, { percent: percent });
     }
 
-    async muteMaster(): Promise<void> {
-        return await invoke("mute_master");
+    muteMaster() {
+        return invoke(RUST_INVOKE.MUTE_MASTER);
     }
 
-    async unmuteMaster(): Promise<void> {
-        return await invoke("unmute_master");
+    unmuteMaster() {
+        return invoke(RUST_INVOKE.UNMUTE_MASTER);
     }
 
-    async getAllApplications(): Promise<AudioSession[]> {
-        return await invoke("get_all_applications");
+    getAllApplications() {
+        return invoke<AudioSession[]>(RUST_INVOKE.GET_ALL_APPLICATIONS);
     }
 
-    async getAppVolume(app: AppIdentifier): Promise<VolumePercent> {
-        return await invoke<VolumePercent>("get_app_volume", { appIdentifier: app });
+    getAppVolume(app: AppIdentifier) {
+        return invoke<VolumePercent>(RUST_INVOKE.GET_APP_VOLUME, { appIdentifier: app });
     }
 
-    async setAppVolume(app: AppIdentifier, percent: VolumePercent): Promise<void> {
-        return await invoke("set_app_volume", { appIdentifier: app, volume: percent });
+    setAppVolume(app: AppIdentifier, percent: VolumePercent) {
+        return invoke(RUST_INVOKE.SET_APP_VOLUME, { appIdentifier: app, volume: percent });
     }
 
-    async muteApp(app: AppIdentifier): Promise<void> {
-        return await invoke("mute_app_volume", { appIdentifier: app });
+    muteApp(app: AppIdentifier) {
+        return invoke(RUST_INVOKE.MUTE_APP_VOLUME, { appIdentifier: app });
     }
 
-    async unmuteApp(app: AppIdentifier): Promise<void> {
-        return await invoke("unmute_app_volume", { appIdentifier: app });
+    unmuteApp(app: AppIdentifier) {
+        return invoke(RUST_INVOKE.UNMUTE_APP_VOLUME, { appIdentifier: app });
     }
 
-    async getPlaybackDevices(): Promise<AudioDevice[]> {
-        return await invoke("get_playback_devices");
+    getPlaybackDevices() {
+        return invoke<AudioDevice[]>(RUST_INVOKE.GET_PLAYBACK_DEVICES);
     }
 
-    async getCurrentPlaybackDevice(): Promise<AudioDevice | null> {
-        return await invoke("get_current_playback_device");
+    getCurrentPlaybackDevice() {
+        return invoke<AudioDevice | null>(RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE);
     }
 }
 

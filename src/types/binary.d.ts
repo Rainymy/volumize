@@ -1,4 +1,4 @@
-declare module '*.exe' {
-  const path: string
-  export default path
+declare module '*.less' {
+    const classes: { [key: string]: string };
+    export default classes;
 }

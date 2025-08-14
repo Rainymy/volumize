@@ -1,0 +1,46 @@
+@import "./core.less";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  .defaultFontFamily();
+  font-family: Inter;
+
+  display: flex;
+  flex-direction: column;
+
+  height: 100vh;
+  overflow: auto;
+
+  background-color: #type_palett[light_shadow];
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+
+  background-color: gray;
+
+  flex-grow: 1;
+  height: 100%;
+}
+
+/* :root {
+    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+
+    color: #0f0f0f;
+    background-color: #f6f6f6;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+} */

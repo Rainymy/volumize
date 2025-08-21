@@ -1,5 +1,6 @@
-import { defineConfig } from "vite";
+import path from "node:path";
 import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -15,6 +16,15 @@ export default defineConfig(async () => ({
                 javascriptEnabled: true,
             },
         },
+    },
+
+    resolve: {
+        alias: {
+            $component: path.resolve(__dirname, "./src/components"),
+            $core_css: path.resolve(__dirname, "./src/css"),
+            $util: path.resolve(__dirname, "./src/utils"),
+            $hook: path.resolve(__dirname, "./src/hooks"),
+        }
     },
 
 

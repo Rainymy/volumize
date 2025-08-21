@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 
-import "./css/index.less";
+import "$core_css/index.less";
 
 const root_element = document.querySelector("#root");
 

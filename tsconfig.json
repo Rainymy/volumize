@@ -21,6 +21,21 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
+        "baseUrl": ".",
+        "paths": {
+            "$component/*": [
+                "./src/components/*"
+            ],
+            "$core_css/*": [
+                "./src/css/*"
+            ],
+            "$util/*": [
+                "./src/utils/*"
+            ],
+            "$hook/*": [
+                "./src/hooks/*"
+            ]
+        }
     },
     "include": [
         "src"

@@ -1,11 +1,10 @@
-import "./css/index.less";
-import wrapper from "./css/container.module.less";
+import { Container } from "./components/container";
 
 export default function App() {
     return (
-        <main className={wrapper.container}>
+        <Container>
             <h1>Welcome to Tauri + React</h1>
             <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-        </main>
+        </Container>
     );
 }

@@ -6,10 +6,10 @@ export enum LOG_TYPE {
     EXEC_ERROR = "Exec/ExecFile failed",
     PARSE_OR_DECODING_ERROR = "Decode/parse failed",
     UNKNOWN = "Unknown error",
-    EMPTY = "<empty>"
+    EMPTY = "<empty>",
 }
 
-const LOG_FILE = "./log.txt"
+const LOG_FILE = "./log.txt";
 
 function formatData(data: unknown) {
     if (typeof data === "undefined") {

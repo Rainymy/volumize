@@ -1,4 +1,4 @@
-import { VolumePercent } from "./volumeType";
+import type { VolumePercent } from "./volumeType";
 
 export function getNumber(num: unknown) {
     const number = Number(num);
@@ -13,24 +13,24 @@ export async function sleep(timeMs: number) {
 
 export function isEnumValue<T extends string>(
     enumObject: Record<string, T>,
-    value: unknown
+    value: unknown,
 ): value is T {
     return Object.values(enumObject).includes(value as T);
 }
 
 export function getIncludes<T extends readonly unknown[]>(
     enumArray: T,
-    value: unknown
+    value: unknown,
 ): T[number] | null {
     if (!enumArray.includes(value as T[number])) {
         return null;
     }
-    return (value as T[number]);
+    return value as T[number];
 }
 
 export function getEnumIncludes<E extends Record<string, string>>(
     enumObject: E,
-    value: unknown
+    value: unknown,
 ): E[keyof E] | null {
     if (!isEnumValue(enumObject, value as E[keyof E])) {
         return null;
@@ -57,7 +57,5 @@ export const createVolumePercent = (value: number): VolumePercent => {
 export function centerText(text: string, width: number) {
     const paddingAmount = Math.max(width - text.length, 0);
     const leftPadding = Math.floor(paddingAmount / 2);
-    return text
-        .padStart(text.length + leftPadding, " ")
-        .padEnd(width, " ");
+    return text.padStart(text.length + leftPadding, " ").padEnd(width, " ");
 }

@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { AppIdentifier, AudioDevice, AudioSession, VolumePercent } from "../utils/volumeType";
+import type {
+    AppIdentifier,
+    AudioDevice,
+    AudioSession,
+    VolumePercent,
+} from "../utils/volumeType";
 
 enum RUST_INVOKE {
     SET_MASTER_VOLUME = "set_master_volume",
@@ -13,7 +18,7 @@ enum RUST_INVOKE {
     MUTE_APP_VOLUME = "mute_app_volume",
     UNMUTE_APP_VOLUME = "unmute_app_volume",
     GET_PLAYBACK_DEVICES = "get_playback_devices",
-    GET_CURRENT_PLAYBACK_DEVICE = "get_current_playback_device"
+    GET_CURRENT_PLAYBACK_DEVICE = "get_current_playback_device",
 }
 
 class TauriVolumeController {
@@ -38,11 +43,16 @@ class TauriVolumeController {
     }
 
     getAppVolume(app: AppIdentifier) {
-        return invoke<VolumePercent>(RUST_INVOKE.GET_APP_VOLUME, { appIdentifier: app });
+        return invoke<VolumePercent>(RUST_INVOKE.GET_APP_VOLUME, {
+            appIdentifier: app,
+        });
     }
 
     setAppVolume(app: AppIdentifier, percent: VolumePercent) {
-        return invoke(RUST_INVOKE.SET_APP_VOLUME, { appIdentifier: app, volume: percent });
+        return invoke(RUST_INVOKE.SET_APP_VOLUME, {
+            appIdentifier: app,
+            volume: percent,
+        });
     }
 
     muteApp(app: AppIdentifier) {
@@ -58,7 +68,9 @@ class TauriVolumeController {
     }
 
     getCurrentPlaybackDevice() {
-        return invoke<AudioDevice | null>(RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE);
+        return invoke<AudioDevice | null>(
+            RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE,
+        );
     }
 }
 

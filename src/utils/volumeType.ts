@@ -4,13 +4,13 @@ export type VolumePercent = number & { __brand: "VolumePercent" };
 export enum SessionType {
     Application = "Application",
     System = "System",
-    Unknown = "Unknown"
+    Unknown = "Unknown",
 }
 
 export enum SessionDirection {
     Render = "Render",
     Capture = "Capture",
-    Unknown = "Unknown"
+    Unknown = "Unknown",
 }
 
 export interface ProcessInfo {

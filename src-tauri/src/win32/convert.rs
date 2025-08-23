@@ -4,7 +4,7 @@ use windows::{
         Devices::FunctionDiscovery::PKEY_Device_FriendlyName,
         Foundation::{MAX_PATH, S_OK},
         Media::Audio::{
-            eCapture, eConsole, eRender, AudioSessionStateActive, IAudioSessionControl2,
+            eCapture, eRender, AudioSessionStateActive, EDataFlow, IAudioSessionControl2,
             IAudioSessionEnumerator, IMMDevice, IMMEndpoint, ISimpleAudioVolume,
         },
         System::Com::{
@@ -14,17 +14,38 @@ use windows::{
     },
 };
 
-use crate::types::shared::{
-    AudioApplication, AudioDevice, AudioVolume, ProcessInfo, SessionDirection, SessionType,
-    VolumeResult,
+use crate::{
+    types::shared::{
+        AudioApplication, AudioDevice, AudioVolume, ProcessInfo, SessionDirection, SessionType,
+        VolumeResult,
+    },
+    volume_control::platform::com_scope::ComManager,
 };
 
 use super::util;
 
-pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
-    // Get device ID
-    let id = util::pwstr_to_string(unsafe { device.GetId()? });
+pub struct IDirection {
+    edataflow: EDataFlow,
+    direction: SessionDirection,
+}
 
+pub fn get_direction(device: &impl Interface) -> VolumeResult<IDirection> {
+    let dataflow = unsafe { device.cast::<IMMEndpoint>()?.GetDataFlow()? };
+
+    #[allow(non_upper_case_globals)]
+    let direction = match dataflow {
+        eRender => SessionDirection::Render,
+        eCapture => SessionDirection::Capture,
+        _ => SessionDirection::Unknown,
+    };
+
+    Ok(IDirection {
+        direction: direction,
+        edataflow: dataflow,
+    })
+}
+
+pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
     // Get device name
     let name = unsafe {
         let props = device.OpenPropertyStore(STGM_READ)?;
@@ -36,26 +57,13 @@ pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
         util::process_lossy_name(&buffer)
     };
 
-    // Get device direction
-    let direction = unsafe {
-        let endpoint: IMMEndpoint = device.cast()?;
-
-        #[allow(non_upper_case_globals)]
-        match endpoint.GetDataFlow()? {
-            eRender => SessionDirection::Render,
-            eCapture => SessionDirection::Capture,
-            _ => SessionDirection::Unknown,
-        }
-    };
+    let direction = get_direction(&device)?;
 
     Ok(AudioDevice {
-        id: id,
+        id: util::pwstr_to_string(unsafe { device.GetId()? }),
         name: name,
-        direction: direction,
-        // TODO: multple sources of Truth.
-        // - Get eRender from "direction" variable.
-        // - get the eConsole from somewhere
-        is_default: util::is_default_device(&device, eRender, eConsole),
+        direction: direction.direction,
+        is_default: util::is_default_device(&device, direction.edataflow, ComManager::E_ROLE),
     })
 }
 

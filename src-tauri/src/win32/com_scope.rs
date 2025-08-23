@@ -1,6 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use windows::core::{Interface, GUID};
+use windows::Win32::Media::Audio::ERole;
 use windows::Win32::{
     Media::Audio::{
         eConsole, eRender, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator, DEVICE_STATE,
@@ -40,6 +41,7 @@ impl Drop for ComManager {
 impl ComManager {
     pub const CLS_CONTEXT: CLSCTX = CLSCTX_ALL;
     pub const DEVICE_STATE_CONTEXT: DEVICE_STATE = DEVICE_STATE_ACTIVE;
+    pub const E_ROLE: ERole = eConsole;
 
     pub fn try_new() -> VolumeResult<Self> {
         if INITIALIZED.swap(true, Ordering::SeqCst) {
@@ -82,7 +84,7 @@ impl ComManager {
     pub fn get_default_device(&self) -> VolumeResult<IMMDevice> {
         unsafe {
             self.device_enumerator
-                .GetDefaultAudioEndpoint(eRender, eConsole)
+                .GetDefaultAudioEndpoint(eRender, Self::E_ROLE)
                 .map_err(VolumeControllerError::WindowsApiError)
         }
     }

@@ -45,7 +45,7 @@ impl ApplicationVolumeControl for VolumeController {
             };
 
             let direction = unsafe {
-                let endpoint: IMMEndpoint = imm_device.cast()?;
+                let endpoint = imm_device.cast::<IMMEndpoint>()?;
 
                 #[allow(non_upper_case_globals)]
                 match endpoint.GetDataFlow()? {

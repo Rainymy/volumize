@@ -9,14 +9,14 @@ use crate::{
 // ============================ Master ============================
 #[tauri::command]
 pub fn set_master_volume(percent: f32, state: State<VolumeCommandSender>) {
-    let _ = state.tx.send(VolumeCommand::SetMasterVolume(percent));
+    let _ = state.send(VolumeCommand::SetMasterVolume(percent));
 }
 
 #[tauri::command]
 pub fn get_master_volume(state: State<VolumeCommandSender>) -> Option<f32> {
     let (tx, rx) = channel();
 
-    let _ = state.tx.send(VolumeCommand::GetMasterVolume(tx));
+    let _ = state.send(VolumeCommand::GetMasterVolume(tx));
 
     match rx.recv() {
         Ok(Ok(Some(percent))) => Some(percent),
@@ -27,12 +27,12 @@ pub fn get_master_volume(state: State<VolumeCommandSender>) -> Option<f32> {
 
 #[tauri::command]
 pub fn mute_master(state: State<VolumeCommandSender>) {
-    let _ = state.tx.send(VolumeCommand::MuteMaster);
+    let _ = state.send(VolumeCommand::MuteMaster);
 }
 
 #[tauri::command]
 pub fn unmute_master(state: State<VolumeCommandSender>) {
-    let _ = state.tx.send(VolumeCommand::UnmuteMaster);
+    let _ = state.send(VolumeCommand::UnmuteMaster);
 }
 
 // ============================ Application ============================
@@ -40,7 +40,7 @@ pub fn unmute_master(state: State<VolumeCommandSender>) {
 pub fn get_all_applications(state: State<VolumeCommandSender>) -> Vec<AudioSession> {
     let (tx, rx) = channel();
 
-    let _ = state.tx.send(VolumeCommand::GetAllApplications(tx));
+    let _ = state.send(VolumeCommand::GetAllApplications(tx));
 
     match rx.recv() {
         Ok(Ok(result)) => result,
@@ -56,9 +56,7 @@ pub fn get_app_volume(
 ) -> VolumePercent {
     let (tx, rx) = channel();
 
-    let _ = state
-        .tx
-        .send(VolumeCommand::GetAppVolume(app_identifier, tx));
+    let _ = state.send(VolumeCommand::GetAppVolume(app_identifier, tx));
 
     match rx.recv() {
         Ok(result) => result,
@@ -72,19 +70,17 @@ pub fn set_app_volume(
     volume: VolumePercent,
     state: State<VolumeCommandSender>,
 ) {
-    let _ = state
-        .tx
-        .send(VolumeCommand::SetAppVolume(app_identifier, volume));
+    let _ = state.send(VolumeCommand::SetAppVolume(app_identifier, volume));
 }
 
 #[tauri::command]
 pub fn mute_app_volume(app_identifier: AppIdentifier, state: State<VolumeCommandSender>) {
-    let _ = state.tx.send(VolumeCommand::MuteApp(app_identifier));
+    let _ = state.send(VolumeCommand::MuteApp(app_identifier));
 }
 
 #[tauri::command]
 pub fn unmute_app_volume(app_identifier: AppIdentifier, state: State<VolumeCommandSender>) {
-    let _ = state.tx.send(VolumeCommand::UnmuteApp(app_identifier));
+    let _ = state.send(VolumeCommand::UnmuteApp(app_identifier));
 }
 
 // ============================ DeviceControl ============================
@@ -92,7 +88,7 @@ pub fn unmute_app_volume(app_identifier: AppIdentifier, state: State<VolumeComma
 pub fn get_current_playback_device(state: State<VolumeCommandSender>) -> Option<AudioDevice> {
     let (tx, rx) = channel();
 
-    let _ = state.tx.send(VolumeCommand::GetCurrentPlaybackDevice(tx));
+    let _ = state.send(VolumeCommand::GetCurrentPlaybackDevice(tx));
 
     match rx.recv() {
         Ok(Ok(result)) => Some(result),
@@ -105,7 +101,7 @@ pub fn get_current_playback_device(state: State<VolumeCommandSender>) -> Option<
 pub fn get_playback_devices(state: State<VolumeCommandSender>) -> Vec<AudioDevice> {
     let (tx, rx) = channel();
 
-    let _ = state.tx.send(VolumeCommand::GetPlaybackDevices(tx));
+    let _ = state.send(VolumeCommand::GetPlaybackDevices(tx));
 
     match rx.recv() {
         Ok(Ok(result)) => result,

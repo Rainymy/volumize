@@ -43,6 +43,7 @@ pub struct AudioDevice {
     pub id: String,
     pub name: String,
     pub direction: SessionDirection,
+    pub is_default: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

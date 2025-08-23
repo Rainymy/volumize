@@ -4,12 +4,28 @@ use windows::{
     core::{PCWSTR, PWSTR},
     Win32::{
         Foundation::{CloseHandle, HANDLE, MAX_PATH},
+        Media::Audio::{EDataFlow, ERole, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator},
         System::{
+            Com::{CoCreateInstance, CLSCTX_ALL},
             ProcessStatus::{GetModuleBaseNameW, GetModuleFileNameExW},
             Threading::{OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ},
         },
     },
 };
+
+pub fn is_default_device(device: &IMMDevice, flow: EDataFlow, role: ERole) -> bool {
+    unsafe {
+        CoCreateInstance::<_, IMMDeviceEnumerator>(&MMDeviceEnumerator, None, CLSCTX_ALL)
+            .ok()
+            .and_then(|enumerator| enumerator.GetDefaultAudioEndpoint(flow, role).ok())
+            .and_then(|default_device| {
+                let device_id = device.GetId().ok()?;
+                let default_id = default_device.GetId().ok()?;
+                Some(device_id == default_id)
+            })
+            .unwrap_or_else(|| false)
+    }
+}
 
 pub unsafe fn get_process_info(process_id: u32) -> (String, Option<PathBuf>) {
     let access_bits = PROCESS_QUERY_INFORMATION | PROCESS_VM_READ;

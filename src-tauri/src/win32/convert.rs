@@ -4,7 +4,7 @@ use windows::{
         Devices::FunctionDiscovery::PKEY_Device_FriendlyName,
         Foundation::{MAX_PATH, S_OK},
         Media::Audio::{
-            eCapture, eRender, AudioSessionStateActive, IAudioSessionControl2,
+            eCapture, eConsole, eRender, AudioSessionStateActive, IAudioSessionControl2,
             IAudioSessionEnumerator, IMMDevice, IMMEndpoint, ISimpleAudioVolume,
         },
         System::Com::{
@@ -52,6 +52,10 @@ pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
         id: id,
         name: name,
         direction: direction,
+        // TODO: multple sources of Truth.
+        // - Get eRender from "direction" variable.
+        // - get the eConsole from somewhere
+        is_default: util::is_default_device(&device, eRender, eConsole),
     })
 }
 

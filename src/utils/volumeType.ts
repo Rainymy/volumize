@@ -36,6 +36,7 @@ export interface AudioDevice {
     id: string;
     name: string;
     direction: SessionDirection;
+    is_default: boolean
 }
 
 export interface AudioSession {

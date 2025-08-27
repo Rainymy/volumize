@@ -4,8 +4,9 @@ use windows::{
         Devices::FunctionDiscovery::PKEY_Device_FriendlyName,
         Foundation::{MAX_PATH, S_OK},
         Media::Audio::{
-            eCapture, eRender, AudioSessionStateActive, EDataFlow, IAudioSessionControl2,
-            IAudioSessionEnumerator, IMMDevice, IMMEndpoint, ISimpleAudioVolume,
+            eCapture, eRender, AudioSessionStateActive, EDataFlow, Endpoints::IAudioEndpointVolume,
+            IAudioSessionControl2, IAudioSessionEnumerator, IMMDevice, IMMEndpoint,
+            ISimpleAudioVolume,
         },
         System::Com::{
             StructuredStorage::{PropVariantToString, PROPVARIANT},
@@ -45,6 +46,42 @@ pub fn get_direction(device: &impl Interface) -> VolumeResult<IDirection> {
     })
 }
 
+fn extract_audio_volume(volume: Option<f32>, is_mute: Option<bool>) -> AudioVolume {
+    AudioVolume {
+        current: volume.unwrap_or(0.0),
+        muted: is_mute.unwrap_or(false),
+    }
+}
+
+fn get_volume_info(device: &IMMDevice) -> AudioVolume {
+    unsafe {
+        if let Ok(endpoint) = device.Activate::<IAudioEndpointVolume>(ComManager::CLS_CONTEXT, None)
+        {
+            // let scalar_volume = endpoint_volume.GetMasterVolumeLevelScalar().unwrap_or(0.0);
+            let volume_level = endpoint.GetMasterVolumeLevelScalar().ok();
+            let is_muted = endpoint.GetMute().map(|b| b.as_bool()).ok();
+
+            return extract_audio_volume(volume_level, is_muted);
+        }
+
+        extract_audio_volume(None, None)
+    }
+}
+
+fn get_volume_info_generic<T: Interface>(source: &T) -> AudioVolume {
+    unsafe {
+        if let Ok(endpoint) = source.cast::<ISimpleAudioVolume>() {
+            // let scalar_volume = endpoint_volume.GetMasterVolumeLevelScalar().unwrap_or(0.0);
+            let volume_level = endpoint.GetMasterVolume().ok();
+            let is_muted = endpoint.GetMute().map(|b| b.as_bool()).ok();
+
+            return extract_audio_volume(volume_level, is_muted);
+        }
+
+        extract_audio_volume(None, None)
+    }
+}
+
 pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
     // Get device name
     let name = unsafe {
@@ -64,6 +101,7 @@ pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
         name: name,
         direction: direction.direction,
         is_default: util::is_default_device(&device, direction.edataflow, ComManager::E_ROLE),
+        volume: get_volume_info(&device),
     })
 }
 
@@ -79,18 +117,6 @@ pub fn process_sessions(
 
             let process_id = session_control.GetProcessId()?;
             let (process_name, process_path) = util::get_process_info(process_id);
-
-            let (current_volume, is_muted) = match session_control.cast::<ISimpleAudioVolume>() {
-                Ok(simple_volume) => {
-                    let muted = simple_volume
-                        .GetMute()
-                        .map(|b| b.as_bool())
-                        .unwrap_or(false);
-                    let current = simple_volume.GetMasterVolume().unwrap_or(0.0);
-                    (current, muted)
-                }
-                Err(_) => (0.0, false),
-            };
 
             let session_type = match session_control.IsSystemSoundsSession() {
                 S_OK => SessionType::System,
@@ -115,10 +141,7 @@ pub fn process_sessions(
                 },
                 session_type: session_type,
                 direction: direction.clone().unwrap_or(SessionDirection::Unknown),
-                volume: AudioVolume {
-                    current: current_volume,
-                    muted: is_muted,
-                },
+                volume: get_volume_info_generic(&session_control),
                 sound_playing: is_active,
             });
         }

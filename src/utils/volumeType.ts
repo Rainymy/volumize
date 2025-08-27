@@ -36,7 +36,8 @@ export interface AudioDevice {
     id: string;
     name: string;
     direction: SessionDirection;
-    is_default: boolean
+    is_default: boolean;
+    volume: AudioVolume
 }
 
 export interface AudioSession {

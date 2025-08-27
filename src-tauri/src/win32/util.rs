@@ -19,8 +19,8 @@ pub fn is_default_device(device: &IMMDevice, flow: EDataFlow, role: ERole) -> bo
             .ok()
             .and_then(|enumerator| enumerator.GetDefaultAudioEndpoint(flow, role).ok())
             .and_then(|default_device| {
-                let device_id = device.GetId().ok()?;
-                let default_id = default_device.GetId().ok()?;
+                let device_id = device.GetId().ok()?.to_hstring();
+                let default_id = default_device.GetId().ok()?.to_hstring();
                 Some(device_id == default_id)
             })
             .unwrap_or_else(|| false)

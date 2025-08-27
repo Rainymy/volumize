@@ -21,7 +21,6 @@ import type {
  */
 
 export function MainContent({ session }: { session: AudioSession }) {
-    console.log(session);
     const applicationsWithId = useGenerateID(session.applications);
 
     return (
@@ -61,8 +60,10 @@ function DeviceApplications({ app }: { app: AudioApplication }) {
 
             <div className="flex items-center gap-2">
                 <Slider
+                    // type="range"
                     defaultValue={[app.volume.current.toString()]}
                     max={100}
+                    min={0}
                     step={1}
                     className="flex-1"
                     onVolumeChange={(val) => {
@@ -93,12 +94,16 @@ function DeviceMaster({ master }: { master: AudioDevice }) {
 
             <div className="flex items-center gap-2">
                 <Slider
-                    defaultValue={["50"]} // Placeholder, depends on Rust bridge
+                    value={[master.volume.current.toString()]}
                     max={100}
+                    min={0}
                     step={1}
                     className="flex-1"
-                    onVolumeChange={(val) => {
-                        console.log("Set device volume:", master.id, val);
+                    onSubmit={(val) => {
+                        console.log("Value", val.target);
+                    }}
+                    onChange={(val) => {
+                        console.log("Set device volume:", master.id, val.target.value);
                     }}
                 />
                 <button

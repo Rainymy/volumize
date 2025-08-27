@@ -1,19 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useAtom } from "jotai";
 import { AudioMixer } from "$component/audioMixer";
 import { Container } from "$component/container";
-import { volumeController } from "./bridge/volumeManager";
+import { audio_session } from "./models/volume";
 
 export default function App() {
-    const { data: sessions, error } = useQuery({
-        queryFn: () => volumeController.getAllApplications(),
-        queryKey: [],
-        initialData: [],
-    });
-
-    if (error) {
-        console.log(error);
-        return <p>Something went wrong</p>;
-    }
+    const [sessions, _refreshSessions] = useAtom(audio_session);
 
     return (
         <Container>

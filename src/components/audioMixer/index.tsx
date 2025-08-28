@@ -3,6 +3,8 @@ import { MainContent } from "$component/mainContent";
 import { Sidebar } from "$component/sidebar";
 import type { AudioSession } from "$util/volumeType";
 
+import wrapper from "./index.module.less";
+
 export function AudioMixer({ sessions }: { sessions: AudioSession[] }) {
     const defaultSession =
         sessions.find((val) => val.device.is_default) ?? sessions[0];
@@ -12,10 +14,8 @@ export function AudioMixer({ sessions }: { sessions: AudioSession[] }) {
         return null;
     }
 
-    // console.log(sessions);
-
     return (
-        <div className="grid grid-cols-4 h-screen">
+        <div className={wrapper.container}>
             {/* Sidebar devices */}
             <Sidebar
                 devices={sessions.map((val) => val.device)}

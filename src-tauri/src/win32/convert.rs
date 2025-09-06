@@ -22,8 +22,8 @@ use crate::{
 use super::util;
 
 pub struct IDirection {
-    edataflow: EDataFlow,
-    direction: SessionDirection,
+    pub edataflow: EDataFlow,
+    pub direction: SessionDirection,
 }
 
 pub fn get_direction(device: &impl Interface) -> VolumeResult<IDirection> {

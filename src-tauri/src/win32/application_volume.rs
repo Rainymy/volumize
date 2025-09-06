@@ -1,13 +1,12 @@
-use windows::Win32::Media::Audio::{
-    eCapture, eRender, Endpoints::IAudioEndpointVolume, IAudioSessionManager2, IMMEndpoint,
-};
+use windows::Win32::Media::Audio::{Endpoints::IAudioEndpointVolume, IAudioSessionManager2};
 
-use windows::core::Interface;
-
-use crate::types::shared::{
-    AppIdentifier, ApplicationVolumeControl, AudioApplication, AudioDevice, AudioSession,
-    AudioVolume, DeviceControl, SessionDirection, VolumeControllerError, VolumePercent,
-    VolumeResult, VolumeValidation,
+use crate::{
+    types::shared::{
+        AppIdentifier, ApplicationVolumeControl, AudioApplication, AudioDevice, AudioSession,
+        AudioVolume, DeviceControl, VolumeControllerError, VolumePercent, VolumeResult,
+        VolumeValidation,
+    },
+    volume_control::platform::convert::get_direction,
 };
 
 use super::{convert, VolumeController};
@@ -35,7 +34,6 @@ impl ApplicationVolumeControl for VolumeController {
 
         for device in self.get_playback_devices()? {
             let device_id = device.id;
-            let imm_device = self.com.get_device_with_id(&device_id)?;
 
             let session_enums = {
                 let session: IAudioSessionManager2 =
@@ -44,16 +42,8 @@ impl ApplicationVolumeControl for VolumeController {
                 unsafe { session.GetSessionEnumerator()? }
             };
 
-            let direction = unsafe {
-                let endpoint = imm_device.cast::<IMMEndpoint>()?;
-
-                #[allow(non_upper_case_globals)]
-                match endpoint.GetDataFlow()? {
-                    eRender => SessionDirection::Render,
-                    eCapture => SessionDirection::Capture,
-                    _ => SessionDirection::Unknown,
-                }
-            };
+            let imm_device = self.com.get_device_with_id(&device_id)?;
+            let direction = get_direction(&imm_device)?.direction;
 
             applications.push(AudioSession {
                 applications: convert::process_sessions(&session_enums, Some(direction))?,

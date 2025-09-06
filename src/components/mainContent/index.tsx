@@ -17,6 +17,8 @@ import wrapper from "./index.module.less";
  */
 
 export function MainContent({ session }: { session: AudioSession }) {
+    // session.applications.push(...session.applications);
+    // session.applications.push(...session.applications);
     const applicationsWithId = useGenerateID(session.applications);
 
     return (

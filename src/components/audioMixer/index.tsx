@@ -19,6 +19,7 @@ export function AudioMixer({ sessions }: { sessions: AudioSession[] }) {
             {/* Sidebar devices */}
             <Sidebar
                 devices={sessions.map((val) => val.device)}
+                activeID={selectedDevice.device.id}
                 onSelectDevice={(id: string) => {
                     const newSession = sessions.find((s) => s.device.id === id);
                     if (newSession) {

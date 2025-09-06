@@ -71,6 +71,7 @@ pub unsafe fn get_process_info(process_id: u32) -> (String, Option<PathBuf>) {
     (name, path)
 }
 
+#[must_use = "Handle must be kept alive to maintain access to process"]
 pub struct HandleGuard(HANDLE);
 
 impl Drop for HandleGuard {

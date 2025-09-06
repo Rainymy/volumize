@@ -2,12 +2,13 @@ use windows::{
     core::{Interface, PWSTR},
     Win32::{
         Devices::FunctionDiscovery::{PKEY_Device_DeviceDesc, PKEY_Device_FriendlyName},
-        Foundation::S_OK,
+        Foundation::{MAX_PATH, S_OK},
         Media::Audio::{
             eCapture, eRender, AudioSessionStateActive, EDataFlow, Endpoints::IAudioEndpointVolume,
             IAudioSessionControl2, IAudioSessionEnumerator, IMMDevice, IMMEndpoint,
             ISimpleAudioVolume,
         },
+        UI::Shell::SHLoadIndirectString,
     },
 };
 
@@ -105,22 +106,18 @@ pub fn process_sessions(
             let session_control: IAudioSessionControl2 = sessions.GetSession(i)?.cast()?;
 
             let process_id = session_control.GetProcessId()?;
-            let (process_name, process_path) = util::get_process_info(process_id);
-
             let session_type = match session_control.IsSystemSoundsSession() {
                 S_OK => SessionType::System,
                 _ => SessionType::Application,
             };
 
-            // Use process name if available, otherwise fall back to display name
-            let final_name = if !process_name.is_empty() {
-                process_name
-            } else {
-                let name_pwstr = session_control.GetDisplayName().unwrap_or(PWSTR::null());
-                util::pwstr_to_string(name_pwstr)
-            };
+            let (_process_name, process_path) = util::get_process_info(process_id);
+            let final_name = get_session_display_name(&session_control);
 
-            let is_active = session_control.GetState().ok() == Some(AudioSessionStateActive);
+            let is_active = session_control
+                .GetState()
+                .map(|state| state == AudioSessionStateActive)
+                .unwrap_or(false);
 
             result.push(AudioApplication {
                 process: ProcessInfo {
@@ -137,4 +134,32 @@ pub fn process_sessions(
     }
 
     Ok(result)
+}
+
+fn get_session_display_name(session_control: &IAudioSessionControl2) -> String {
+    unsafe {
+        let name_pwstr = session_control.GetDisplayName().unwrap_or(PWSTR::null());
+        let raw_name = util::pwstr_to_string(name_pwstr);
+
+        // Handle indirect strings (like @%SystemRoot%\System32\AudioSrv.DLL,-202)
+        if raw_name.starts_with("@") {
+            // Fall back to raw string if expansion fails
+            expand_indirect_string(&raw_name)
+                .inspect_err(|e| eprintln!("Failed to expand indirect string, {:?}", e))
+                .unwrap_or_else(|_| raw_name)
+        } else {
+            raw_name
+        }
+    }
+}
+
+fn expand_indirect_string(indirect_string: &str) -> VolumeResult<String> {
+    unsafe {
+        let mut buffer = [0u16; MAX_PATH as usize];
+        let (_buffer_str, read_str) = util::string_to_pcwstr(indirect_string);
+
+        SHLoadIndirectString(read_str, &mut buffer, None)?;
+
+        Ok(util::process_lossy_name(&buffer))
+    }
 }

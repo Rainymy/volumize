@@ -1,5 +1,5 @@
 import { Card } from "$component/card";
-import type { AudioApplication } from "$util/volumeType";
+import type { AudioApplication } from "$type/volume";
 
 export function DeviceApplications({ app }: { app: AudioApplication }) {
     return (

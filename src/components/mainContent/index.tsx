@@ -1,7 +1,7 @@
 import { DeviceApplications } from "$component/applicationDevice";
 import { DeviceMaster } from "$component/deviceMaster";
 import { useGenerateID } from "$hook/useGenerateID";
-import type { AudioSession } from "$util/volumeType";
+import type { AudioSession } from "$type/volume";
 
 import wrapper from "./index.module.less";
 

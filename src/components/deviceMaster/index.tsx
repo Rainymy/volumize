@@ -1,5 +1,5 @@
 import { Card } from "$component/card";
-import type { AudioDevice } from "$util/volumeType";
+import type { AudioDevice } from "$type/volume";
 
 export function DeviceMaster({ master }: { master: AudioDevice }) {
     console.log("current: ", master);

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { MainContent } from "$component/mainContent";
 import { Sidebar } from "$component/sidebar";
-import type { AudioSession } from "$util/volumeType";
-
+import type { AudioSession } from "$type/volume";
 import wrapper from "./index.module.less";
 
 export function AudioMixer({ sessions }: { sessions: AudioSession[] }) {

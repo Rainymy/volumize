@@ -1,6 +1,7 @@
 import { type ComponentPropsWithoutRef, useId, useState } from "react";
 import { getNumber } from "$util/generic";
 import { classnames } from "$util/react";
+
 import wrapper from "./index.module.less";
 
 export function VSlider(props: ComponentPropsWithoutRef<"input">) {

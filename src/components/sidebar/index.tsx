@@ -1,5 +1,5 @@
 import { AppButton } from "$component/button";
-import type { AudioDevice } from "$util/volumeType";
+import type { AudioDevice } from "$type/volume";
 
 import wrapper from "./index.module.less";
 

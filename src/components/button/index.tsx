@@ -2,11 +2,11 @@ import type { ButtonHTMLAttributes } from "react";
 import { classnames } from "$util/react";
 import style from "./index.module.less";
 
-type AppButton = ButtonHTMLAttributes<HTMLButtonElement> & {
+type AppButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
     is_active?: boolean;
 };
 
-export function AppButton(props: AppButton) {
+export function AppButton(props: AppButtonProps) {
     const { is_active, className, children, ...rest } = props;
 
     const combineclass = classnames([

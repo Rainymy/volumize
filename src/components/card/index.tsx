@@ -1,4 +1,5 @@
 import { VSlider } from "$component/slider";
+import { ToggleableMuteIcon } from "$component/toggleMuteIcon";
 import wrapper from "./index.module.less";
 
 export function Card({
@@ -28,15 +29,7 @@ export function Card({
                 }}
             />
 
-            <button
-                type="button"
-                onClick={() => {
-                    onButtonClick();
-                    console.log("Toggle mute:", title);
-                }}
-            >
-                {isMuted ? "Muted" : "Not Muted"}
-            </button>
+            <ToggleableMuteIcon is_mute={isMuted} />
         </div>
     );
 }

@@ -104,28 +104,19 @@ pub fn process_sessions(
     unsafe {
         for i in 0..sessions.GetCount()? {
             let session_control: IAudioSessionControl2 = sessions.GetSession(i)?.cast()?;
-
             let process_id = session_control.GetProcessId()?;
-            let session_type = match session_control.IsSystemSoundsSession() {
-                S_OK => SessionType::System,
-                _ => SessionType::Application,
-            };
-
-            let (_process_name, process_path) = util::get_process_info(process_id);
-            let final_name = get_session_display_name(&session_control);
 
             let is_active = session_control
                 .GetState()
-                .map(|state| state == AudioSessionStateActive)
-                .unwrap_or(false);
+                .is_ok_and(|state| state == AudioSessionStateActive);
 
             result.push(AudioApplication {
                 process: ProcessInfo {
                     id: process_id,
-                    name: final_name,
-                    path: process_path,
+                    name: get_session_display_name(&session_control),
+                    path: util::get_process_info(process_id).1,
                 },
-                session_type: session_type,
+                session_type: determine_session_type(&session_control),
                 direction: direction.clone().unwrap_or(SessionDirection::Unknown),
                 volume: get_volume_info_generic(&session_control),
                 sound_playing: is_active,
@@ -134,6 +125,15 @@ pub fn process_sessions(
     }
 
     Ok(result)
+}
+
+fn determine_session_type(session_control: &IAudioSessionControl2) -> SessionType {
+    unsafe {
+        match session_control.IsSystemSoundsSession() {
+            S_OK => SessionType::System,
+            _ => SessionType::Application,
+        }
+    }
 }
 
 fn get_session_display_name(session_control: &IAudioSessionControl2) -> String {

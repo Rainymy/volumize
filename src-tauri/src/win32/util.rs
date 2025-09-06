@@ -1,12 +1,16 @@
 use std::{ffi::OsStr, os::windows::ffi::OsStrExt, path::PathBuf};
 
 use windows::{
-    core::{PCWSTR, PWSTR},
+    core::{Result, PCWSTR, PWSTR},
     Win32::{
-        Foundation::{CloseHandle, HANDLE, MAX_PATH},
+        Foundation::{CloseHandle, HANDLE, MAX_PATH, PROPERTYKEY},
         Media::Audio::{EDataFlow, ERole, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator},
         System::{
-            Com::{CoCreateInstance, CLSCTX_ALL},
+            Com::{
+                CoCreateInstance,
+                StructuredStorage::{PropVariantToString, PROPVARIANT},
+                CLSCTX_ALL, STGM_READ,
+            },
             ProcessStatus::{GetModuleBaseNameW, GetModuleFileNameExW},
             Threading::{OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ},
         },
@@ -75,6 +79,20 @@ impl Drop for HandleGuard {
             let _ = CloseHandle(self.0);
         }
     }
+}
+
+pub fn get_pkey_value(device: &IMMDevice, pkey_value: &PROPERTYKEY) -> Result<String> {
+    let value = unsafe {
+        let props = device.OpenPropertyStore(STGM_READ)?;
+        let name_prop: PROPVARIANT = props.GetValue(pkey_value)?;
+
+        let mut buffer = vec![];
+        PropVariantToString(&name_prop, &mut buffer)?;
+
+        process_lossy_name(&buffer)
+    };
+
+    Ok(value)
 }
 
 pub fn pwstr_to_string(pwstr: PWSTR) -> String {

@@ -3,7 +3,7 @@ use std::{ffi::OsStr, os::windows::ffi::OsStrExt, path::PathBuf};
 use windows::{
     core::{Result, PCWSTR, PWSTR},
     Win32::{
-        Foundation::{CloseHandle, HANDLE, MAX_PATH, PROPERTYKEY},
+        Foundation::{CloseHandle, ERROR_INSUFFICIENT_BUFFER, HANDLE, MAX_PATH, PROPERTYKEY},
         Media::Audio::{EDataFlow, ERole, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator},
         System::{
             Com::{
@@ -82,17 +82,30 @@ impl Drop for HandleGuard {
 }
 
 pub fn get_pkey_value(device: &IMMDevice, pkey_value: &PROPERTYKEY) -> Result<String> {
-    let value = unsafe {
+    let read_buffer = unsafe {
         let props = device.OpenPropertyStore(STGM_READ)?;
         let name_prop: PROPVARIANT = props.GetValue(pkey_value)?;
 
-        let mut buffer = vec![];
-        PropVariantToString(&name_prop, &mut buffer)?;
+        // growable buffer if needed.
+        let mut buffer_size = MAX_PATH;
+        let max_buffer_limit = MAX_PATH * 126; // 260 * 128 ~ 32kb
+        loop {
+            let mut buffer = vec![0u16; buffer_size as usize];
 
-        process_lossy_name(&buffer)
-    };
+            match PropVariantToString(&name_prop, &mut buffer) {
+                Ok(_) => break Ok(buffer),
+                Err(e) if e.code() == ERROR_INSUFFICIENT_BUFFER.into() => {
+                    buffer_size *= 2;
+                    if buffer_size > max_buffer_limit {
+                        break Err(e);
+                    }
+                }
+                Err(e) => break Err(e),
+            }
+        }
+    }?;
 
-    Ok(value)
+    Ok(process_lossy_name(&read_buffer))
 }
 
 pub fn pwstr_to_string(pwstr: PWSTR) -> String {

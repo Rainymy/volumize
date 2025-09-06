@@ -1,16 +1,12 @@
 use windows::{
     core::{Interface, PWSTR},
     Win32::{
-        Devices::FunctionDiscovery::PKEY_Device_FriendlyName,
-        Foundation::{MAX_PATH, S_OK},
+        Devices::FunctionDiscovery::{PKEY_Device_DeviceDesc, PKEY_Device_FriendlyName},
+        Foundation::S_OK,
         Media::Audio::{
             eCapture, eRender, AudioSessionStateActive, EDataFlow, Endpoints::IAudioEndpointVolume,
             IAudioSessionControl2, IAudioSessionEnumerator, IMMDevice, IMMEndpoint,
             ISimpleAudioVolume,
-        },
-        System::Com::{
-            StructuredStorage::{PropVariantToString, PROPVARIANT},
-            STGM_READ,
         },
     },
 };
@@ -83,22 +79,15 @@ fn get_volume_info_generic<T: Interface>(source: &T) -> AudioVolume {
 }
 
 pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
-    // Get device name
-    let name = unsafe {
-        let props = device.OpenPropertyStore(STGM_READ)?;
-        let name_prop: PROPVARIANT = props.GetValue(&PKEY_Device_FriendlyName)?;
-
-        let mut buffer = [0u16; MAX_PATH as usize];
-        PropVariantToString(&name_prop, &mut buffer)?;
-
-        util::process_lossy_name(&buffer)
-    };
+    let name = util::get_pkey_value(&device, &PKEY_Device_FriendlyName)?;
+    let friendly_name = util::get_pkey_value(&device, &PKEY_Device_DeviceDesc)?;
 
     let direction = get_direction(&device)?;
 
     Ok(AudioDevice {
         id: util::pwstr_to_string(unsafe { device.GetId()? }),
         name: name,
+        friendly_name: friendly_name,
         direction: direction.direction,
         is_default: util::is_default_device(&device, direction.edataflow, ComManager::E_ROLE),
         volume: get_volume_info(&device),

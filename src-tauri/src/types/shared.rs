@@ -42,6 +42,7 @@ pub struct AudioApplication {
 pub struct AudioDevice {
     pub id: String,
     pub name: String,
+    pub friendly_name: String,
     pub direction: SessionDirection,
     pub is_default: bool,
     pub volume: AudioVolume,

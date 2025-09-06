@@ -2,7 +2,8 @@ import { Card } from "$component/card";
 import type { AudioDevice } from "$util/volumeType";
 
 export function DeviceMaster({ master }: { master: AudioDevice }) {
-    console.log(master)
+    console.log("current: ", master);
+
     return (
         <Card
             isMuted={master.volume.muted}

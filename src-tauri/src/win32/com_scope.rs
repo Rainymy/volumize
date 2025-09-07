@@ -1,14 +1,16 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use windows::core::{Interface, GUID};
-use windows::Win32::Media::Audio::ERole;
-use windows::Win32::{
-    Media::Audio::{
-        eConsole, eRender, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator, DEVICE_STATE,
-        DEVICE_STATE_ACTIVE,
-    },
-    System::Com::{
-        CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX, CLSCTX_ALL, COINIT_MULTITHREADED,
+use windows::{
+    core::{Interface, GUID},
+    Win32::{
+        Media::Audio::{
+            eConsole, eRender, ERole, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator,
+            DEVICE_STATE, DEVICE_STATE_ACTIVE,
+        },
+        System::Com::{
+            CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX, CLSCTX_ALL,
+            COINIT_MULTITHREADED,
+        },
     },
 };
 

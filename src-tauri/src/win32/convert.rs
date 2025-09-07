@@ -110,11 +110,20 @@ pub fn process_sessions(
                 .GetState()
                 .is_ok_and(|state| state == AudioSessionStateActive);
 
+            let (process_name, process_path) = util::get_process_info(process_id);
+            let display_name = get_session_display_name(&session_control);
+
+            let final_name = if display_name.is_empty() {
+                process_name
+            } else {
+                display_name
+            };
+
             result.push(AudioApplication {
                 process: ProcessInfo {
                     id: process_id,
-                    name: get_session_display_name(&session_control),
-                    path: util::get_process_info(process_id).1,
+                    name: final_name,
+                    path: process_path,
                 },
                 session_type: determine_session_type(&session_control),
                 direction: direction.clone().unwrap_or(SessionDirection::Unknown),

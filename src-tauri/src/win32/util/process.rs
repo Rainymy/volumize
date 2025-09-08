@@ -59,11 +59,13 @@ impl Drop for HandleGuard {
     }
 }
 
-pub unsafe fn get_process_info(process_id: u32) -> (String, Option<PathBuf>) {
+pub fn get_process_info(process_id: u32) -> (String, Option<PathBuf>) {
     let access_bits = PROCESS_QUERY_INFORMATION | PROCESS_VM_READ;
-    let process_handle = match OpenProcess(access_bits, false, process_id) {
-        Ok(handle) => handle,
-        Err(_) => return (String::new(), None),
+    let process_handle = unsafe {
+        match OpenProcess(access_bits, false, process_id) {
+            Ok(handle) => handle,
+            Err(_) => return (String::new(), None),
+        }
     };
 
     // Keep process handle alive until end of the function.

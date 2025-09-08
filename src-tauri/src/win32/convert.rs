@@ -110,20 +110,11 @@ pub fn process_sessions(
                 .GetState()
                 .is_ok_and(|state| state == AudioSessionStateActive);
 
-            let (process_name, process_path) = util::get_process_info(process_id);
-            let display_name = get_session_display_name(&session_control);
-
-            let final_name = if display_name.is_empty() {
-                process_name
-            } else {
-                display_name
-            };
-
             result.push(AudioApplication {
                 process: ProcessInfo {
                     id: process_id,
-                    name: final_name,
-                    path: process_path,
+                    name: get_display_name(&session_control, process_id),
+                    path: util::get_process_info(process_id).1,
                 },
                 session_type: determine_session_type(&session_control),
                 direction: direction.clone().unwrap_or(SessionDirection::Unknown),
@@ -143,6 +134,23 @@ fn determine_session_type(session_control: &IAudioSessionControl2) -> SessionTyp
             _ => SessionType::Application,
         }
     }
+}
+
+fn get_display_name(session_control: &IAudioSessionControl2, pid: u32) -> String {
+    let display_name = get_session_display_name(&session_control);
+
+    if !display_name.is_empty() {
+        return display_name;
+    }
+
+    let (process_name, process_path) = util::get_process_info(pid);
+    if let Some(path) = process_path {
+        // Read Executeable FileDescription.
+        let window_title = util::get_main_window_title(&path);
+        return window_title.unwrap_or(process_name);
+    }
+
+    process_name
 }
 
 fn get_session_display_name(session_control: &IAudioSessionControl2) -> String {

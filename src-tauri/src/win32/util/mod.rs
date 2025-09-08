@@ -6,10 +6,12 @@ use windows::Win32::{
 mod pkey_value;
 mod process;
 mod pstring;
+mod read_title;
 
 pub use pkey_value::*;
 pub use process::*;
 pub use pstring::*;
+pub use read_title::*;
 
 pub fn is_default_device(device: &IMMDevice, flow: EDataFlow, role: ERole) -> bool {
     unsafe {

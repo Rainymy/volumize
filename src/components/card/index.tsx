@@ -2,19 +2,21 @@ import { VSlider } from "$component/slider";
 import { ToggleableMuteIcon } from "$component/toggleMuteIcon";
 import wrapper from "./index.module.less";
 
+type CardType = {
+    title: string;
+    volume: number;
+    isMuted: boolean;
+    onButtonClick?: () => void;
+    onSlider: (value: string) => void;
+};
+
 export function Card({
     title,
     volume,
     isMuted,
     onButtonClick,
     onSlider,
-}: {
-    title: string;
-    volume: number;
-    isMuted: boolean;
-    onButtonClick: () => void;
-    onSlider: (value: string) => void;
-}) {
+}: CardType) {
     return (
         <div className={wrapper.container}>
             <CardTitle title={title}></CardTitle>
@@ -29,7 +31,7 @@ export function Card({
                 }}
             />
 
-            <ToggleableMuteIcon is_mute={isMuted} />
+            <ToggleableMuteIcon is_mute={isMuted} onClick={onButtonClick} />
         </div>
     );
 }

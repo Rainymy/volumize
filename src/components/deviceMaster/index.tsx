@@ -9,7 +9,7 @@ export function DeviceMaster({ master }: { master: AudioDevice }) {
             isMuted={master.volume.muted}
             title={master.friendly_name}
             volume={master.volume.current}
-            onButtonClick={() => { }}
+            // onButtonClick={() => { }}
             onSlider={(_value) => { }}
         ></Card>
     );

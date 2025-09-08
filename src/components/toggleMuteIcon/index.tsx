@@ -3,15 +3,19 @@ import { AppButton } from "$component/button";
 
 import style from "./index.module.less";
 
-export function ToggleableMuteIcon({ is_mute }: { is_mute: boolean }) {
-    // onClick={() => {
-    //     onButtonClick();
-    //     console.log("Toggle mute:", title);
-    // }}
+type ToggleIconType = {
+    is_mute: boolean;
+    onClick?: React.MouseEventHandler<HTMLButtonElement>;
+};
 
+export function ToggleableMuteIcon({ is_mute, onClick }: ToggleIconType) {
     return (
         <div>
-            <AppButton type="button">
+            <AppButton
+                type="button"
+                className={style.toggle_button}
+                onClick={onClick}
+            >
                 {is_mute ? <FaVolumeMute /> : <FaVolumeUp />}
             </AppButton>
         </div>

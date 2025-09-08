@@ -5,7 +5,7 @@ import type {
     AudioDevice,
     AudioSession,
     VolumePercent,
-} from "../utils/volumeType";
+} from "$type/volume";
 
 enum RUST_INVOKE {
     SET_MASTER_VOLUME = "set_master_volume",

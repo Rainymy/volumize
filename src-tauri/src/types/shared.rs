@@ -115,15 +115,15 @@ pub trait VolumeValidation {
     const MIN_VOLUME: VolumePercent = 0.0;
     const MAX_VOLUME: VolumePercent = 1.0;
     const DEFAULT_VOLUME: VolumePercent = 1.0;
-    fn validate_volume(volume: VolumePercent) -> VolumeResult<()>;
+    fn validate_volume(volume: VolumePercent) -> VolumeResult<AudioVolume>;
 }
 
 impl VolumeValidation for AudioVolume {
-    fn validate_volume(volume: VolumePercent) -> VolumeResult<()> {
+    fn validate_volume(volume: VolumePercent) -> VolumeResult<Self> {
         if !(Self::MIN_VOLUME..=Self::MAX_VOLUME).contains(&volume) {
             return Err(VolumeControllerError::InvalidVolumePercentage(volume));
         }
-        Ok(())
+        Ok(Self::new(volume))
     }
 }
 

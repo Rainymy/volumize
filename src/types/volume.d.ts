@@ -1,4 +1,4 @@
-export type AppIdentifier = string;
+export type AppIdentifier = number;
 export type VolumePercent = number & { __brand: "VolumePercent" };
 
 export enum SessionType {
@@ -14,7 +14,7 @@ export enum SessionDirection {
 }
 
 export interface ProcessInfo {
-    id: number;
+    id: AppIdentifier;
     name: string;
     path: string | null;
 }

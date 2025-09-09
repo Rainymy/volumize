@@ -22,6 +22,7 @@ export default defineConfig(async () => ({
         alias: {
             $component: path.resolve(__dirname, "./src/components"),
             $bridge: path.resolve(__dirname, "./src/bridge"),
+            $model: path.resolve(__dirname, "./src/models"),
             $core_css: path.resolve(__dirname, "./src/css"),
             $util: path.resolve(__dirname, "./src/utils"),
             $hook: path.resolve(__dirname, "./src/hooks"),

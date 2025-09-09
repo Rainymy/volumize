@@ -1,36 +1,57 @@
 {
-	"compilerOptions": {
-		"target": "ES2024",
-		"useDefineForClassFields": true,
-		"lib": ["ES2020", "DOM", "DOM.Iterable"],
-		"module": "ESNext",
-		"skipLibCheck": true,
-		/* Bundler mode */
-		"moduleResolution": "bundler",
-		"allowImportingTsExtensions": true,
-		"resolveJsonModule": true,
-		"isolatedModules": true,
-		"noEmit": true,
-		"jsx": "react-jsx",
-		/* Linting */
-		"strict": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"noFallthroughCasesInSwitch": true,
-		"baseUrl": ".",
-		"paths": {
-			"$component/*": ["./src/components/*"],
-			"$bridge/*": ["./src/bridge/*"],
-			"$core_css/*": ["./src/css/*"],
-			"$util/*": ["./src/utils/*"],
-			"$hook/*": ["./src/hooks/*"],
-			"$type/*": ["./src/types/*"]
-		}
-	},
-	"include": ["src"],
-	"references": [
-		{
-			"path": "./tsconfig.node.json"
-		}
-	]
+    "compilerOptions": {
+        "target": "ES2024",
+        "useDefineForClassFields": true,
+        "lib": [
+            "ES2020",
+            "DOM",
+            "DOM.Iterable"
+        ],
+        "module": "ESNext",
+        "skipLibCheck": true,
+        /* Bundler mode */
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "jsx": "react-jsx",
+        /* Linting */
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "baseUrl": ".",
+        "paths": {
+            "$component/*": [
+                "./src/components/*"
+            ],
+            "$bridge/*": [
+                "./src/bridge/*"
+            ],
+            "$model/*": [
+                "./src/models/*"
+            ],
+            "$core_css/*": [
+                "./src/css/*"
+            ],
+            "$util/*": [
+                "./src/utils/*"
+            ],
+            "$hook/*": [
+                "./src/hooks/*"
+            ],
+            "$type/*": [
+                "./src/types/*"
+            ]
+        }
+    },
+    "include": [
+        "src"
+    ],
+    "references": [
+        {
+            "path": "./tsconfig.node.json"
+        }
+    ]
 }

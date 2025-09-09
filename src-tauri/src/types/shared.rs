@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 pub type VolumePercent = f32;
-pub type AppIdentifier = String;
+pub type AppIdentifier = u32;
 pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,7 +24,7 @@ pub enum SessionDirection {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProcessInfo {
-    pub id: u32,
+    pub id: AppIdentifier,
     pub name: String,
     pub path: Option<PathBuf>,
 }

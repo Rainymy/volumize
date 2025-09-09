@@ -16,7 +16,22 @@ impl VolumeController {
         let session = self
             .get_all_applications()?
             .into_iter()
-            .find(|val| val.applications.iter().any(|val| val.process.name == app))
+            .find(|val| val.applications.iter().any(|val| val.process.id == app))
+            .ok_or_else(|| {
+                VolumeControllerError::ApplicationNotFound(format!(
+                    "[ get_application_device ] Application not found - id: {}",
+                    app
+                ))
+            })?;
+
+        Ok(session.device)
+    }
+
+    fn get_application_device2(&self, app: AppIdentifier) -> VolumeResult<AudioDevice> {
+        let session = self
+            .get_all_applications()?
+            .into_iter()
+            .find(|val| val.applications.iter().any(|val| val.process.id == app))
             .ok_or_else(|| {
                 VolumeControllerError::ApplicationNotFound(format!(
                     "[ get_application_device ] Application not found - id: {}",
@@ -58,7 +73,7 @@ impl ApplicationVolumeControl for VolumeController {
         self.get_all_applications()?
             .into_iter()
             .flat_map(|session| session.applications.into_iter())
-            .find(|val| val.process.name == app)
+            .find(|val| val.process.id == app)
             .ok_or_else(|| {
                 VolumeControllerError::ApplicationNotFound(format!(
                     "[ find ] Application not found - id: {}",
@@ -77,7 +92,7 @@ impl ApplicationVolumeControl for VolumeController {
         let session = self
             .get_all_applications()?
             .into_iter()
-            .find(|val| val.applications.iter().any(|val| val.process.name == app))
+            .find(|val| val.applications.iter().any(|val| val.process.id == app))
             .ok_or_else(|| {
                 VolumeControllerError::ApplicationNotFound(format!(
                     "[ set_app_volume ] Application not found - id: {}",
@@ -105,15 +120,13 @@ impl ApplicationVolumeControl for VolumeController {
         unsafe {
             endpoint
                 .SetMute(true, self.com.get_event_context())
-                .map_err(|_| {
+                .map_err(|err| {
                     VolumeControllerError::OsApiError(format!(
-                        "Unable to mute the application - id: {}",
-                        app
+                        "Unable to mute the application - id: {} \n {:?}",
+                        app, err
                     ))
-                })?
-        };
-
-        Ok(())
+                })
+        }
     }
 
     fn unmute_app(&self, app: AppIdentifier) -> VolumeResult<()> {
@@ -123,14 +136,12 @@ impl ApplicationVolumeControl for VolumeController {
         unsafe {
             endpoint
                 .SetMute(false, self.com.get_event_context())
-                .map_err(|_| {
+                .map_err(|err| {
                     VolumeControllerError::OsApiError(format!(
-                        "Unable to unmute the application - id: {}",
-                        app
+                        "Unable to unmute the application - id: {} \n {:?}",
+                        app, err
                     ))
-                })?
-        };
-
-        Ok(())
+                })
+        }
     }
 }

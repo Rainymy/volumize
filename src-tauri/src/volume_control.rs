@@ -118,10 +118,10 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
             }
         }
         VolumeCommand::UnmuteApp(app_id) => {
-            let _ = controller.mute_app(app_id);
+            let _ = controller.unmute_app(app_id);
         }
         VolumeCommand::MuteApp(app_id) => {
-            let _ = controller.unmute_app(app_id);
+            let _ = controller.mute_app(app_id);
         }
         // Deevice Controll
         VolumeCommand::GetPlaybackDevices(resp_tx) => {

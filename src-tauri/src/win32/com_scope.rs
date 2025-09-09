@@ -4,8 +4,9 @@ use windows::{
     core::{Interface, GUID},
     Win32::{
         Media::Audio::{
-            eConsole, eRender, ERole, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator,
-            DEVICE_STATE, DEVICE_STATE_ACTIVE,
+            eConsole, eRender, ERole, IAudioSessionControl2, IAudioSessionManager2, IMMDevice,
+            IMMDeviceEnumerator, ISimpleAudioVolume, MMDeviceEnumerator, DEVICE_STATE,
+            DEVICE_STATE_ACTIVE,
         },
         System::Com::{
             CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX, CLSCTX_ALL,
@@ -89,6 +90,35 @@ impl ComManager {
                 .GetDefaultAudioEndpoint(eRender, Self::E_ROLE)
                 .map_err(VolumeControllerError::WindowsApiError)
         }
+    }
+
+    pub fn with_application_sesstion_control(
+        &self,
+        target_pid: u32,
+        device_id: &str,
+    ) -> VolumeResult<ISimpleAudioVolume> {
+        let endpoint: IAudioSessionManager2 = self.with_generic_device_activate(&device_id)?;
+
+        unsafe {
+            let session_enum = endpoint.GetSessionEnumerator()?;
+            let count = session_enum.GetCount()?;
+
+            for i in 0..count {
+                let session_control = session_enum.GetSession(i)?;
+                let pid = session_control
+                    .cast::<IAudioSessionControl2>()?
+                    .GetProcessId()?;
+
+                if pid == target_pid {
+                    return Ok(session_control.cast::<ISimpleAudioVolume>()?);
+                }
+            }
+        }
+
+        Err(VolumeControllerError::ApplicationNotFound(format!(
+            "Could not find any application with: {} - device: {}",
+            target_pid, device_id
+        )))
     }
 
     pub fn with_default_generic_activate<T>(&self) -> VolumeResult<T>

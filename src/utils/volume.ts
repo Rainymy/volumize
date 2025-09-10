@@ -1,7 +1,15 @@
 import type { VolumePercent } from "$type/volume";
 
+/**
+ * @param value - Is between 0-100% volume.
+ * @returns
+ */
 export function isVolumePercent(value: number): value is VolumePercent {
-    return value >= 0 && value <= 100;
+    if (typeof value !== "number") {
+        return false;
+    }
+
+    return 0 <= value && value <= 1;
 }
 
 /**

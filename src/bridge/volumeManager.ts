@@ -1,13 +1,19 @@
-import { invoke } from "@tauri-apps/api/core";
+import type { AppIdentifier } from "$type/volume";
+import {
+    debouncedAppVolume,
+    debouncedGetAllApplications,
+    debouncedGetAppVolume,
+    debouncedGetCurrentPlaybackDevice,
+    debouncedGetPlaybackDevices,
+    debouncedMasterVolume,
+    debouncedMuteApp,
+    debouncedMuteMaster,
+    debouncedsetMasterVolume,
+    debouncedUnmuteApp,
+    debouncedUnmuteMaster,
+} from "./debounced";
 
-import type {
-    AppIdentifier,
-    AudioDevice,
-    AudioSession,
-    VolumePercent,
-} from "$type/volume";
-
-enum RUST_INVOKE {
+export enum RUST_INVOKE {
     SET_MASTER_VOLUME = "set_master_volume",
     GET_MASTER_VOLUME = "get_master_volume",
     MUTE_MASTER = "mute_master",
@@ -22,56 +28,30 @@ enum RUST_INVOKE {
 }
 
 class TauriVolumeController {
-    getMasterVolume() {
-        return invoke<VolumePercent | null>(RUST_INVOKE.GET_MASTER_VOLUME);
+    getMasterVolume = debouncedMasterVolume;
+    setMasterVolume = debouncedsetMasterVolume;
+
+    toggleMuteMaster(value: boolean) {
+        if (value) { return this.unmuteMaster(); }
+        return this.muteMaster();
     }
 
-    setMasterVolume(percent: VolumePercent) {
-        return invoke(RUST_INVOKE.SET_MASTER_VOLUME, { percent: percent });
+    private muteMaster = debouncedMuteMaster;
+    private unmuteMaster = debouncedUnmuteMaster;
+
+    getAllApplications = debouncedGetAllApplications;
+    getAppVolume = debouncedGetAppVolume;
+    setAppVolume = debouncedAppVolume;
+
+    toggleMuteApp(app: AppIdentifier, value: boolean) {
+        if (value) { return this.unmuteApp(app); }
+        return this.muteApp(app);
     }
 
-    muteMaster() {
-        return invoke(RUST_INVOKE.MUTE_MASTER);
-    }
-
-    unmuteMaster() {
-        return invoke(RUST_INVOKE.UNMUTE_MASTER);
-    }
-
-    getAllApplications() {
-        return invoke<AudioSession[]>(RUST_INVOKE.GET_ALL_APPLICATIONS);
-    }
-
-    getAppVolume(app: AppIdentifier) {
-        return invoke<VolumePercent>(RUST_INVOKE.GET_APP_VOLUME, {
-            appIdentifier: app,
-        });
-    }
-
-    setAppVolume(app: AppIdentifier, percent: VolumePercent) {
-        return invoke(RUST_INVOKE.SET_APP_VOLUME, {
-            appIdentifier: app,
-            volume: percent,
-        });
-    }
-
-    muteApp(app: AppIdentifier) {
-        return invoke(RUST_INVOKE.MUTE_APP_VOLUME, { appIdentifier: app });
-    }
-
-    unmuteApp(app: AppIdentifier) {
-        return invoke(RUST_INVOKE.UNMUTE_APP_VOLUME, { appIdentifier: app });
-    }
-
-    getPlaybackDevices() {
-        return invoke<AudioDevice[]>(RUST_INVOKE.GET_PLAYBACK_DEVICES);
-    }
-
-    getCurrentPlaybackDevice() {
-        return invoke<AudioDevice | null>(
-            RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE,
-        );
-    }
+    private muteApp = debouncedMuteApp;
+    private unmuteApp = debouncedUnmuteApp;
+    getPlaybackDevices = debouncedGetPlaybackDevices;
+    getCurrentPlaybackDevice = debouncedGetCurrentPlaybackDevice;
 }
 
 export const volumeController = new TauriVolumeController();

@@ -1,25 +1,31 @@
+import { useAtom, useAtomValue } from "jotai";
 import { AppButton } from "$component/button";
-import type { AudioDevice } from "$type/volume";
+import { audio_session, selected_device_id } from "$model/volume";
 
 import wrapper from "./index.module.less";
 
-export function Sidebar({
-    devices,
-    activeID,
-    onSelectDevice,
-}: {
-    devices: AudioDevice[];
-    activeID: string;
-    onSelectDevice: (id: string) => void;
-}) {
+export function Sidebar() {
+    const [selected_device, set_device_id] = useAtom(selected_device_id);
+    const audio_devices = useAtomValue(audio_session);
+
+    if (!selected_device && audio_devices.length) {
+        // set either default device or the first device as "selected".
+        const find_default =
+            audio_devices.find((val) => val.device.is_default) ??
+            audio_devices[0];
+        set_device_id(find_default.device.id);
+    }
+
+    const devices = audio_devices.map((val) => val.device);
+
     return (
         <aside className={wrapper.container}>
-            <h2 className="font-bold mb-2">Devices</h2>
+            <h2>Devices</h2>
             {devices.map((device) => (
                 <AppButton
-                    is_active={device.id === activeID}
+                    is_active={device.id === selected_device}
                     key={device.id}
-                    onClick={() => onSelectDevice(device.id)}
+                    onClick={() => set_device_id(device.id)}
                 >
                     {device.name}
                 </AppButton>

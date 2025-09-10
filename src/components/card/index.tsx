@@ -1,13 +1,15 @@
 import { VSlider } from "$component/slider";
 import { ToggleableMuteIcon } from "$component/toggleMuteIcon";
+import type { MaybeAsync } from "$type/generic";
+import { getNumber } from "$util/generic";
 import wrapper from "./index.module.less";
 
 type CardType = {
     title: string;
     volume: number;
     isMuted: boolean;
-    onButtonClick?: () => void;
-    onSlider: (value: string) => void;
+    onButtonClick?: MaybeAsync<() => void>;
+    onSlider?: MaybeAsync<(value: number) => void>;
 };
 
 export function Card({
@@ -26,8 +28,13 @@ export function Card({
                 max={100}
                 min={0}
                 step={0.1}
-                onChange={(val) => {
-                    onSlider(val.currentTarget.value);
+                onChange={async (val) => {
+                    const slide_value = getNumber(val.currentTarget.value);
+
+                    if (typeof slide_value === "number") {
+                        await onSlider?.(slide_value / 100);
+                    }
+
                 }}
             />
 

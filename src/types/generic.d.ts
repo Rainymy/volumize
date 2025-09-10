@@ -1,3 +1,5 @@
+export type MaybeAsync<T extends (...args: never[]) => unknown> = T | ((...args: Parameters<T>) => Promise<ReturnType<T>>);
+
 export type EnumKeyFromValue<
     E extends Record<string, string | number>,
     V extends E[keyof E],

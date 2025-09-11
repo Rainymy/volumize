@@ -1,7 +1,11 @@
+import { useSetAtom } from "jotai";
+import { volumeController } from "$bridge/volumeManager";
 import { Card } from "$component/card";
+import { audio_session } from "$model/volume";
 import type { AudioDevice } from "$type/volume";
 
 export function DeviceMaster({ master }: { master: AudioDevice }) {
+    const refreshable = useSetAtom(audio_session);
     console.log("current: ", master);
 
     return (
@@ -9,8 +13,14 @@ export function DeviceMaster({ master }: { master: AudioDevice }) {
             isMuted={master.volume.muted}
             title={master.friendly_name}
             volume={master.volume.current}
-            // onButtonClick={() => { }}
-            onSlider={(_value) => { }}
+            onButtonClick={async () => {
+                await volumeController.toggleMuteMaster(master.volume.muted);
+                refreshable();
+            }}
+            onSlider={async (value) => {
+                volumeController.setMasterVolume(value);
+                console.log("Master: ", value);
+            }}
         ></Card>
     );
 }

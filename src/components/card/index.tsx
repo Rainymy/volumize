@@ -1,7 +1,6 @@
 import { VSlider } from "$component/slider";
 import { ToggleableMuteIcon } from "$component/toggleMuteIcon";
 import type { MaybeAsync } from "$type/generic";
-import { getNumber } from "$util/generic";
 import wrapper from "./index.module.less";
 
 type CardType = {
@@ -24,18 +23,11 @@ export function Card({
             <CardTitle title={title}></CardTitle>
 
             <VSlider
-                defaultValue={volume * 100}
+                value={volume * 100}
                 max={100}
                 min={0}
                 step={0.1}
-                onChange={async (val) => {
-                    const slide_value = getNumber(val.currentTarget.value);
-
-                    if (typeof slide_value === "number") {
-                        await onSlider?.(slide_value / 100);
-                    }
-
-                }}
+                onChange={(val) => onSlider?.(val.currentTarget.valueAsNumber / 100)}
             />
 
             <ToggleableMuteIcon is_mute={isMuted} onClick={onButtonClick} />

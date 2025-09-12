@@ -17,8 +17,7 @@ export function DeviceMaster({ master }: { master: AudioDevice }) {
                 refreshable();
             }}
             onSlider={async (value) => {
-                volumeController.setMasterVolume(master.id, value);
-                console.log("Master: ", master);
+                await volumeController.setMasterVolume(master.id, value);
             }}
         ></Card>
     );

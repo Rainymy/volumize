@@ -98,6 +98,7 @@ pub fn process_device(device: IMMDevice) -> VolumeResult<AudioDevice> {
 pub fn process_sessions(
     sessions: &IAudioSessionEnumerator,
     direction: Option<SessionDirection>,
+    is_default_deivce: bool,
 ) -> VolumeResult<Vec<AudioApplication>> {
     let mut result: Vec<AudioApplication> = Vec::new();
 
@@ -105,6 +106,11 @@ pub fn process_sessions(
         for i in 0..sessions.GetCount()? {
             let session_control: IAudioSessionControl2 = sessions.GetSession(i)?.cast()?;
             let process_id = session_control.GetProcessId()?;
+
+            let is_system_sound = session_control.IsSystemSoundsSession().is_ok();
+            if is_system_sound && !is_default_deivce {
+                continue;
+            }
 
             let is_active = session_control
                 .GetState()

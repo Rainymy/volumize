@@ -6,10 +6,10 @@ use crate::{
         AudioVolume, DeviceControl, VolumeControllerError, VolumePercent, VolumeResult,
         VolumeValidation,
     },
-    volume_control::platform::convert::get_direction,
+    volume_control::platform::{com_scope::ComManager, convert::get_direction},
 };
 
-use super::{convert, VolumeController};
+use super::{convert, util, VolumeController};
 
 impl VolumeController {
     fn get_application_device(&self, app: AppIdentifier) -> VolumeResult<AudioDevice> {
@@ -51,10 +51,19 @@ impl ApplicationVolumeControl for VolumeController {
             };
 
             let imm_device = self.com.get_device_with_id(&device_id)?;
-            let direction = get_direction(&imm_device)?.direction;
+            let direction = get_direction(&imm_device)?;
+
+            let current_device = self.com.get_device_with_id(&device_id)?;
+
+            let is_default_device =
+                util::is_default_device(&current_device, direction.edataflow, ComManager::E_ROLE);
 
             applications.push(AudioSession {
-                applications: convert::process_sessions(&session_enums, Some(direction))?,
+                applications: convert::process_sessions(
+                    &session_enums,
+                    Some(direction.direction),
+                    is_default_device,
+                )?,
                 device: convert::process_device(imm_device)?,
             });
         }
@@ -81,7 +90,6 @@ impl ApplicationVolumeControl for VolumeController {
 
     fn set_app_volume(&self, app: AppIdentifier, volume: VolumePercent) -> VolumeResult<()> {
         let volume = AudioVolume::validate_volume(volume)?;
-
         let endpoint = self.get_application_session_control(app)?;
 
         unsafe {

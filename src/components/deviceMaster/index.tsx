@@ -6,7 +6,6 @@ import type { AudioDevice } from "$type/volume";
 
 export function DeviceMaster({ master }: { master: AudioDevice }) {
     const refreshable = useSetAtom(audio_session);
-    console.log("current: ", master);
 
     return (
         <Card

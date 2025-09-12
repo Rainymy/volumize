@@ -1,7 +1,5 @@
 ## Priority
 
-- [ ] Bug: Playback devices are not getting corresponding volumes.
-    - Other devices using default device volume as their.
 - [ ] Build WebSocket client-server communication
     - [ ] handle WebSocket disconnections/reconnections
     - [ ] design WebSocket message protocol
@@ -25,3 +23,5 @@
 - [x] Basic desktop UI (displays volume levels)
 - [x] Fix desktop UI styling and layout
     - [x] fix the layout and improve styling
+- [x] Bug: UI volume slider not updating between device selection.
+    - Not optimal solution but works for now.

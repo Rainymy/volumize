@@ -26,7 +26,7 @@ export default defineConfig(async () => ({
             $core_css: path.resolve(__dirname, "./src/css"),
             $util: path.resolve(__dirname, "./src/utils"),
             $hook: path.resolve(__dirname, "./src/hooks"),
-            type: path.resolve(__dirname, "./src/types"),
+            $type: path.resolve(__dirname, "./src/types"),
         }
     },
 

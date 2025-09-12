@@ -45,9 +45,7 @@ export function getNumber(num: unknown): number | undefined {
 }
 
 export async function sleep(timeMs: number) {
-    return new Promise((resolve, _reject) => {
-        setTimeout(resolve, timeMs, true);
-    });
+    return new Promise(resolve => setTimeout(resolve, timeMs, true));
 }
 
 export function centerText(text: string, width: number) {

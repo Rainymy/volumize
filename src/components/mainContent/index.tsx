@@ -3,6 +3,7 @@ import { DeviceApplications } from "$component/applicationDevice";
 import { DeviceMaster } from "$component/deviceMaster";
 import { useGenerateID } from "$hook/useGenerateID";
 import { audio_session, selected_device_id } from "$model/volume";
+import { comparePriority } from "$util/volume";
 import wrapper from "./index.module.less";
 
 /*                          The vision
@@ -21,7 +22,11 @@ export function MainContent() {
     const [selectedDevice, _setSelectedDevice] = useAtom(selected_device_id);
 
     const defaultSession = session.find((val) => val.device.id === selectedDevice);
-    const applicationsWithId = useGenerateID(defaultSession?.applications ?? []);
+    const applications = (defaultSession?.applications ?? []).sort((a, b) =>
+        comparePriority(a.session_type, b.session_type),
+    );
+
+    const applicationsWithId = useGenerateID(applications);
 
     if (!defaultSession) {
         return null;

@@ -1,4 +1,17 @@
-import type { VolumePercent } from "$type/volume";
+import { SessionType, type VolumePercent } from "$type/volume";
+
+const PRIORITY_ORDER = [
+    SessionType.Device,
+    SessionType.System,
+    SessionType.Application,
+    SessionType.Unknown,
+];
+
+export function comparePriority(a: SessionType, b: SessionType): number {
+    const indexA = PRIORITY_ORDER.indexOf(a);
+    const indexB = PRIORITY_ORDER.indexOf(b);
+    return indexA - indexB;
+}
 
 /**
  * @param value - Is between 0-100% volume.

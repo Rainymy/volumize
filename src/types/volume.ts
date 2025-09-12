@@ -3,6 +3,7 @@ export type VolumePercent = number & { __brand: "VolumePercent" };
 
 export enum SessionType {
     Application = "Application",
+    Device = "Device",
     System = "System",
     Unknown = "Unknown",
 }

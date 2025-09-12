@@ -13,13 +13,11 @@ export function DeviceMaster({ master }: { master: AudioDevice }) {
             title={master.friendly_name}
             volume={master.volume.current}
             onButtonClick={async () => {
-                await volumeController.toggleMuteMaster(master.volume.muted);
+                await volumeController.toggleMuteMaster(master.id, master.volume.muted);
                 refreshable();
             }}
             onSlider={async (value) => {
-                // FIX: set volume/mute via device ID.
-                volumeController.setMasterVolume(value);
-                // All available device treated as the default master.
+                volumeController.setMasterVolume(master.id, value);
                 console.log("Master: ", master);
             }}
         ></Card>

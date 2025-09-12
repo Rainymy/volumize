@@ -2,21 +2,28 @@ use std::sync::mpsc::channel;
 use tauri::State;
 
 use crate::{
-    types::shared::{AppIdentifier, AudioDevice, AudioSession, VolumePercent},
+    types::shared::{AppIdentifier, AudioDevice, AudioSession, DeviceIdentifier, VolumePercent},
     volume_control::{VolumeCommand, VolumeCommandSender},
 };
 
 // ============================ Master ============================
 #[tauri::command]
-pub fn set_master_volume(percent: f32, state: State<VolumeCommandSender>) {
-    let _ = state.send(VolumeCommand::SetMasterVolume(percent));
+pub fn set_device_volume(
+    device_id: DeviceIdentifier,
+    percent: VolumePercent,
+    state: State<VolumeCommandSender>,
+) {
+    let _ = state.send(VolumeCommand::SetDeviceVolume(device_id, percent));
 }
 
 #[tauri::command]
-pub fn get_master_volume(state: State<VolumeCommandSender>) -> Option<f32> {
+pub fn get_device_volume(
+    device_id: DeviceIdentifier,
+    state: State<VolumeCommandSender>,
+) -> Option<f32> {
     let (tx, rx) = channel();
 
-    let _ = state.send(VolumeCommand::GetMasterVolume(tx));
+    let _ = state.send(VolumeCommand::GetDeviceVolume(device_id, tx));
 
     match rx.recv() {
         Ok(Ok(Some(percent))) => Some(percent),
@@ -26,13 +33,13 @@ pub fn get_master_volume(state: State<VolumeCommandSender>) -> Option<f32> {
 }
 
 #[tauri::command]
-pub fn mute_master(state: State<VolumeCommandSender>) {
-    let _ = state.send(VolumeCommand::MuteMaster);
+pub fn mute_device(device_id: DeviceIdentifier, state: State<VolumeCommandSender>) {
+    let _ = state.send(VolumeCommand::MuteDevice(device_id));
 }
 
 #[tauri::command]
-pub fn unmute_master(state: State<VolumeCommandSender>) {
-    let _ = state.send(VolumeCommand::UnmuteMaster);
+pub fn unmute_device(device_id: DeviceIdentifier, state: State<VolumeCommandSender>) {
+    let _ = state.send(VolumeCommand::UnmuteDevice(device_id));
 }
 
 // ============================ Application ============================

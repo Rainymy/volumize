@@ -1,4 +1,4 @@
-import type { AppIdentifier } from "$type/volume";
+import type { AppIdentifier, DeviceIdentifier } from "$type/volume";
 import {
     debouncedAppVolume,
     debouncedGetAllApplications,
@@ -14,10 +14,10 @@ import {
 } from "./debounced";
 
 export enum RUST_INVOKE {
-    SET_MASTER_VOLUME = "set_master_volume",
-    GET_MASTER_VOLUME = "get_master_volume",
-    MUTE_MASTER = "mute_master",
-    UNMUTE_MASTER = "unmute_master",
+    SET_DEVICE_VOLUME = "set_device_volume",
+    GET_DEVICE_VOLUME = "get_device_volume",
+    MUTE_DEVICE = "mute_device",
+    UNMUTE_DEVICE = "unmute_device",
 
     GET_ALL_APPLICATIONS = "get_all_applications",
     GET_APP_VOLUME = "get_app_volume",
@@ -33,9 +33,9 @@ class TauriVolumeController {
     getMasterVolume = debouncedMasterVolume;
     setMasterVolume = debouncedsetMasterVolume;
 
-    toggleMuteMaster(value: boolean) {
-        if (value) { return this.unmuteMaster(); }
-        return this.muteMaster();
+    toggleMuteMaster(device_id: DeviceIdentifier, value: boolean) {
+        if (value) { return this.unmuteMaster(device_id); }
+        return this.muteMaster(device_id);
     }
 
     private muteMaster = debouncedMuteMaster;

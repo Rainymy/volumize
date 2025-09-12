@@ -1,4 +1,5 @@
 export type AppIdentifier = number;
+export type DeviceIdentifier = string;
 export type VolumePercent = number & { __brand: "VolumePercent" };
 
 export enum SessionType {
@@ -34,7 +35,7 @@ export interface AudioApplication {
 }
 
 export interface AudioDevice {
-    id: string;
+    id: DeviceIdentifier;
     name: string;
     friendly_name: string;
     direction: SessionDirection;

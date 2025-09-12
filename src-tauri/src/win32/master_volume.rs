@@ -1,22 +1,36 @@
 use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
 
 use crate::types::shared::{
-    AudioVolume, MasterVolumeControl, VolumeControllerError, VolumePercent, VolumeResult,
-    VolumeValidation,
+    AudioVolume, DeviceIdentifier, DeviceVolumeControl, VolumeControllerError, VolumePercent,
+    VolumeResult, VolumeValidation,
 };
 
 use super::VolumeController;
 
-impl MasterVolumeControl for VolumeController {
-    fn get_master_volume(&self) -> VolumeResult<Option<VolumePercent>> {
-        let endpoint: IAudioEndpointVolume = self.com.with_default_generic_activate()?;
-        unsafe { Ok(Some(endpoint.GetMasterVolumeLevelScalar()?)) }
+impl DeviceVolumeControl for VolumeController {
+    fn get_device_volume(
+        &self,
+        device_id: DeviceIdentifier,
+    ) -> VolumeResult<Option<VolumePercent>> {
+        let endpoint: IAudioEndpointVolume = self.com.with_device_id_activate(&device_id)?;
+
+        unsafe {
+            let get_volume = endpoint
+                .GetMasterVolumeLevelScalar()
+                .map_err(|err| VolumeControllerError::WindowsApiError(err))?;
+
+            Ok(Some(get_volume))
+        }
     }
 
-    fn set_master_volume(&self, percent: VolumePercent) -> VolumeResult<()> {
+    fn set_device_volume(
+        &self,
+        device_id: DeviceIdentifier,
+        percent: VolumePercent,
+    ) -> VolumeResult<()> {
         AudioVolume::validate_volume(percent)?;
 
-        let endpoint: IAudioEndpointVolume = self.com.with_default_generic_activate()?;
+        let endpoint: IAudioEndpointVolume = self.com.with_device_id_activate(&device_id)?;
         unsafe {
             endpoint
                 .SetMasterVolumeLevelScalar(percent, self.com.get_event_context())
@@ -24,20 +38,21 @@ impl MasterVolumeControl for VolumeController {
         }
     }
 
-    fn mute_master(&self) -> VolumeResult<()> {
-        let endpoint: IAudioEndpointVolume = self.com.with_default_generic_activate()?;
+    fn mute_device(&self, device_id: DeviceIdentifier) -> VolumeResult<()> {
+        let endpoint: IAudioEndpointVolume = self.com.with_device_id_activate(&device_id)?;
         unsafe {
-            endpoint.SetMute(true, self.com.get_event_context())?;
+            endpoint
+                .SetMute(true, self.com.get_event_context())
+                .map_err(|err| VolumeControllerError::WindowsApiError(err))
         }
-        Ok(())
     }
 
-    fn unmute_master(&self) -> VolumeResult<()> {
-        let endpoint: IAudioEndpointVolume = self.com.with_default_generic_activate()?;
+    fn unmute_device(&self, device_id: DeviceIdentifier) -> VolumeResult<()> {
+        let endpoint: IAudioEndpointVolume = self.com.with_device_id_activate(&device_id)?;
         unsafe {
-            endpoint.SetMute(false, self.com.get_event_context())?;
+            endpoint
+                .SetMute(false, self.com.get_event_context())
+                .map_err(|err| VolumeControllerError::WindowsApiError(err))
         }
-
-        Ok(())
     }
 }

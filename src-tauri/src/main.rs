@@ -36,10 +36,10 @@ fn create_tauri_app(volume_thread: VolumeCommandSender) -> TauriResult<tauri::Ap
         .manage(volume_thread)
         .invoke_handler(tauri::generate_handler![
             // Master volume controls
-            commands::set_master_volume,
-            commands::get_master_volume,
-            commands::unmute_master,
-            commands::mute_master,
+            commands::set_device_volume,
+            commands::get_device_volume,
+            commands::unmute_device,
+            commands::mute_device,
             // Application volume controls
             commands::get_all_applications,
             commands::get_app_volume,

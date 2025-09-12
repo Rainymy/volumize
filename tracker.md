@@ -1,7 +1,7 @@
 ## Priority
 
-- [ ] Fix desktop UI styling and layout
-    - [ ] fix the layout and improve styling
+- [ ] Bug: Playback devices are not getting corresponding volumes.
+    - Other devices using default device volume as their.
 - [ ] Build WebSocket client-server communication
     - [ ] handle WebSocket disconnections/reconnections
     - [ ] design WebSocket message protocol
@@ -23,3 +23,5 @@
 - [x] Rust code to control per-application volume
 - [x] Exposed Rust functions to frontend (JS)
 - [x] Basic desktop UI (displays volume levels)
+- [x] Fix desktop UI styling and layout
+    - [x] fix the layout and improve styling

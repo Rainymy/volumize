@@ -5,6 +5,7 @@ use thiserror::Error;
 
 pub type VolumePercent = f32;
 pub type AppIdentifier = u32;
+pub type DeviceIdentifier = String;
 pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,7 +41,7 @@ pub struct AudioApplication {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioDevice {
-    pub id: String,
+    pub id: DeviceIdentifier,
     pub name: String,
     pub friendly_name: String,
     pub direction: SessionDirection,
@@ -85,11 +86,16 @@ pub enum VolumeControllerError {
     Unknown(String),
 }
 
-pub trait MasterVolumeControl {
-    fn get_master_volume(&self) -> VolumeResult<Option<VolumePercent>>;
-    fn set_master_volume(&self, percent: VolumePercent) -> VolumeResult<()>;
-    fn mute_master(&self) -> VolumeResult<()>;
-    fn unmute_master(&self) -> VolumeResult<()>;
+pub trait DeviceVolumeControl {
+    fn get_device_volume(&self, device_id: DeviceIdentifier)
+        -> VolumeResult<Option<VolumePercent>>;
+    fn set_device_volume(
+        &self,
+        device_id: DeviceIdentifier,
+        percent: VolumePercent,
+    ) -> VolumeResult<()>;
+    fn mute_device(&self, device_id: DeviceIdentifier) -> VolumeResult<()>;
+    fn unmute_device(&self, device_id: DeviceIdentifier) -> VolumeResult<()>;
 }
 
 pub trait ApplicationVolumeControl {
@@ -107,7 +113,7 @@ pub trait DeviceControl {
 }
 
 pub trait VolumeControllerTrait:
-    MasterVolumeControl + ApplicationVolumeControl + DeviceControl
+    DeviceVolumeControl + ApplicationVolumeControl + DeviceControl
 {
 }
 

@@ -7,7 +7,8 @@ use std::{
 };
 
 use crate::types::shared::{
-    AppIdentifier, AudioDevice, AudioSession, VolumeControllerTrait, VolumePercent, VolumeResult,
+    AppIdentifier, AudioDevice, AudioSession, DeviceIdentifier, VolumeControllerTrait,
+    VolumePercent, VolumeResult,
 };
 
 #[cfg(target_os = "windows")]
@@ -19,11 +20,14 @@ mod platform;
 mod platform;
 
 pub enum VolumeCommand {
-    // Master
-    SetMasterVolume(VolumePercent),
-    GetMasterVolume(Sender<VolumeResult<Option<VolumePercent>>>),
-    MuteMaster,
-    UnmuteMaster,
+    // Device
+    SetDeviceVolume(DeviceIdentifier, VolumePercent),
+    GetDeviceVolume(
+        DeviceIdentifier,
+        Sender<VolumeResult<Option<VolumePercent>>>,
+    ),
+    MuteDevice(DeviceIdentifier),
+    UnmuteDevice(DeviceIdentifier),
     // Application
     GetAllApplications(Sender<VolumeResult<Vec<AudioSession>>>),
     GetAppVolume(AppIdentifier, Sender<VolumePercent>),
@@ -89,18 +93,18 @@ pub fn spawn_volume_thread() -> VolumeCommandSender {
 fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeControllerTrait>) {
     match command {
         // Master Controll
-        VolumeCommand::SetMasterVolume(p) => {
-            let _ = controller.set_master_volume(p);
+        VolumeCommand::SetDeviceVolume(device_id, p) => {
+            let _ = controller.set_device_volume(device_id, p);
         }
-        VolumeCommand::GetMasterVolume(resp_tx) => {
-            let volume = controller.get_master_volume();
+        VolumeCommand::GetDeviceVolume(device_id, resp_tx) => {
+            let volume = controller.get_device_volume(device_id);
             let _ = resp_tx.send(volume);
         }
-        VolumeCommand::MuteMaster => {
-            let _ = controller.mute_master();
+        VolumeCommand::MuteDevice(device_id) => {
+            let _ = controller.mute_device(device_id);
         }
-        VolumeCommand::UnmuteMaster => {
-            let _ = controller.unmute_master();
+        VolumeCommand::UnmuteDevice(device_id) => {
+            let _ = controller.unmute_device(device_id);
         }
         // Application Controll
         VolumeCommand::GetAllApplications(resp_tx) => {

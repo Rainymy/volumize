@@ -121,16 +121,16 @@ impl ComManager {
         )))
     }
 
-    pub fn with_default_generic_activate<T>(&self) -> VolumeResult<T>
-    where
-        T: Interface,
-    {
-        unsafe {
-            self.get_default_device()?
-                .Activate::<T>(Self::CLS_CONTEXT, None)
-                .map_err(VolumeControllerError::WindowsApiError)
-        }
-    }
+    // pub fn with_default_generic_activate<T>(&self) -> VolumeResult<T>
+    // where
+    //     T: Interface,
+    // {
+    //     unsafe {
+    //         self.get_default_device()?
+    //             .Activate::<T>(Self::CLS_CONTEXT, None)
+    //             .map_err(VolumeControllerError::WindowsApiError)
+    //     }
+    // }
 
     pub fn with_generic_device_activate<T>(&self, id: &str) -> VolumeResult<T>
     where
@@ -140,6 +140,17 @@ impl ComManager {
 
         unsafe {
             device
+                .Activate::<T>(Self::CLS_CONTEXT, None)
+                .map_err(VolumeControllerError::WindowsApiError)
+        }
+    }
+
+    pub fn with_device_id_activate<T>(&self, device_id: &str) -> VolumeResult<T>
+    where
+        T: Interface,
+    {
+        unsafe {
+            self.get_device_with_id(device_id)?
                 .Activate::<T>(Self::CLS_CONTEXT, None)
                 .map_err(VolumeControllerError::WindowsApiError)
         }

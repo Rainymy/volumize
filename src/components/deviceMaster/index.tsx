@@ -17,8 +17,10 @@ export function DeviceMaster({ master }: { master: AudioDevice }) {
                 refreshable();
             }}
             onSlider={async (value) => {
+                // FIX: set volume/mute via device ID.
                 volumeController.setMasterVolume(value);
-                console.log("Master: ", value);
+                // All available device treated as the default master.
+                console.log("Master: ", master);
             }}
         ></Card>
     );

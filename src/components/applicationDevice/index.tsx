@@ -18,7 +18,7 @@ export function DeviceApplications({ app }: { app: AudioApplication }) {
             }}
             onSlider={async (value) => {
                 volumeController.setAppVolume(app.process.id, value);
-                console.log("application: ", app.process.name, value);
+                console.log("application: ", app);
             }}
         ></Card>
     );

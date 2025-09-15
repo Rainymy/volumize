@@ -17,7 +17,6 @@ fn main() {
     }
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn start_application() -> TauriResult<()> {
     let volume_thread = volume_control::spawn_volume_thread();
 

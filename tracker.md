@@ -5,6 +5,8 @@
     - [ ] design WebSocket message protocol
     - [ ] implement server discovery/scanning
         - I do not know how to. Will look into it.
+- [ ] How to make mobile build?
+    - No idea
 
 ## Todo
 

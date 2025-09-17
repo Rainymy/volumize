@@ -1,20 +1,16 @@
 ## Priority
 
 - [ ] Build WebSocket client-server communication
-    - [ ] handle WebSocket disconnections/reconnections
-    - [ ] design WebSocket message protocol
-    - [ ] implement server discovery/scanning
-        - I do not know how to. Will look into it.
+    - [x] handle WebSocket disconnections/reconnections
+    - [ ] send/receive WebSocket message protocol
 
 ## Todo
 
-- [ ] Create mobile UI
-    - [ ] volume control screen
-    - [ ] settings screen
-    - [ ] connection status indicator
 - [ ] Add system tray
     - [ ] system tray icon and menu
     - [ ] minimize to tray functionality
+- [ ] Implement server discovery/scanning
+    - I do not know how to. Will look into it.
 
 ## Done
 

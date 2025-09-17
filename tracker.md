@@ -5,8 +5,6 @@
     - [ ] design WebSocket message protocol
     - [ ] implement server discovery/scanning
         - I do not know how to. Will look into it.
-- [ ] How to make mobile build?
-    - No idea
 
 ## Todo
 
@@ -27,3 +25,4 @@
     - [x] fix the layout and improve styling
 - [x] Bug: UI volume slider not updating between device selection.
     - Not optimal solution but works for now.
+- [x] Mobile build compiles

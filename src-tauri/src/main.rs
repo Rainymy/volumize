@@ -4,9 +4,13 @@
 use std::sync::Arc;
 use tauri::{AppHandle, Manager, Result as TauriResult, RunEvent};
 
-use crate::volume_control::VolumeCommandSender;
+use crate::{
+    server::{start_websocket_server, WebSocketServerState},
+    volume_control::VolumeCommandSender,
+};
 
 mod commands;
+mod server;
 mod types;
 mod volume_control;
 
@@ -18,9 +22,7 @@ fn main() {
 }
 
 pub fn start_application() -> TauriResult<()> {
-    let volume_thread = volume_control::spawn_volume_thread();
-
-    let app = create_tauri_app(volume_thread)?;
+    let app = create_tauri_app()?;
 
     setup_signal_handlers(&app).expect("Failed to set Ctrl-C handler");
     run_application(app);
@@ -28,11 +30,23 @@ pub fn start_application() -> TauriResult<()> {
     Ok(())
 }
 
-fn create_tauri_app(volume_thread: VolumeCommandSender) -> TauriResult<tauri::App> {
+fn create_tauri_app() -> TauriResult<tauri::App> {
     tauri::Builder::default()
-        .setup(setup_dev_tools)
         .plugin(tauri_plugin_opener::init())
-        .manage(volume_thread)
+        .manage(volume_control::spawn_volume_thread())
+        .manage(WebSocketServerState::default())
+        .setup(setup_dev_tools)
+        .setup(|app| {
+            let app_handle = app.app_handle().clone();
+
+            tauri::async_runtime::spawn(async move {
+                match start_websocket_server(9001, app_handle).await {
+                    Ok(addr) => println!("WebSocket server listening on {}", addr),
+                    Err(e) => eprintln!("WebSocket server failed to start: {}", e),
+                }
+            });
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             // Master volume controls
             commands::set_device_volume,
@@ -52,12 +66,12 @@ fn create_tauri_app(volume_thread: VolumeCommandSender) -> TauriResult<tauri::Ap
         .build(tauri::generate_context!())
 }
 
-fn setup_dev_tools(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+fn setup_dev_tools(_app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(debug_assertions)]
     {
-        for window_config in &app.config().app.windows {
+        for window_config in &_app.config().app.windows {
             if window_config.devtools.unwrap_or(false) {
-                if let Some(window) = app.get_webview_window(&window_config.label) {
+                if let Some(window) = _app.get_webview_window(&window_config.label) {
                     window.open_devtools();
                 }
             }
@@ -73,7 +87,7 @@ fn setup_signal_handlers(app: &tauri::App) -> Result<(), ctrlc::Error> {
     ctrlc::set_handler(move || {
         println!("CTRL-C received, initiating clean shutdown...");
         shutdown_background_thread(&app_handle);
-        std::process::exit(0); // important to close, appilcation will stay open
+        app_handle.exit(0);
     })
 }
 
@@ -86,8 +100,6 @@ fn run_application(app: tauri::App) {
 }
 
 fn shutdown_background_thread(app_handle: &AppHandle) {
-    println!("Shutting down background thread...");
-
     let state = app_handle.state::<VolumeCommandSender>();
     let handle_clone = Arc::clone(&state.thread_handle);
 

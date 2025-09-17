@@ -26,7 +26,7 @@ class ConnectSocket {
             }
         }
 
-        return null
+        return null;
     }
 
     async retryDelay() {
@@ -35,7 +35,7 @@ class ConnectSocket {
 
     __connect__(): Promise<WebSocket> {
         return new Promise((resolve, reject) => {
-            const socket = new WebSocket("ws://localhost:3000");
+            const socket = new WebSocket("ws://localhost:9001");
 
             socket.onerror = (_event) => {
                 reject();
@@ -48,4 +48,8 @@ class ConnectSocket {
     }
 }
 
-new ConnectSocket().retryUntilConnection();
+const connection = await new ConnectSocket().retryUntilConnection();
+
+if (connection) {
+    connection.send("hello");
+}

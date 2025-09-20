@@ -3,8 +3,10 @@ use std::{
         mpsc::{channel, RecvError, Sender},
         Arc, Mutex,
     },
-    thread::{spawn, JoinHandle},
+    thread::JoinHandle,
 };
+
+use tokio::sync::mpsc::UnboundedSender;
 
 use crate::types::shared::{
     AppIdentifier, AudioDevice, AudioSession, DeviceIdentifier, VolumeControllerTrait,
@@ -24,19 +26,19 @@ pub enum VolumeCommand {
     SetDeviceVolume(DeviceIdentifier, VolumePercent),
     GetDeviceVolume(
         DeviceIdentifier,
-        Sender<VolumeResult<Option<VolumePercent>>>,
+        UnboundedSender<VolumeResult<Option<VolumePercent>>>,
     ),
     MuteDevice(DeviceIdentifier),
     UnmuteDevice(DeviceIdentifier),
     // Application
-    GetAllApplications(Sender<VolumeResult<Vec<AudioSession>>>),
-    GetAppVolume(AppIdentifier, Sender<VolumePercent>),
+    GetAllApplications(UnboundedSender<VolumeResult<Vec<AudioSession>>>),
+    GetAppVolume(AppIdentifier, UnboundedSender<VolumePercent>),
     SetAppVolume(AppIdentifier, VolumePercent),
     MuteApp(AppIdentifier),
     UnmuteApp(AppIdentifier),
     // DeviceControl
-    GetCurrentPlaybackDevice(Sender<VolumeResult<AudioDevice>>),
-    GetPlaybackDevices(Sender<VolumeResult<Vec<AudioDevice>>>),
+    GetCurrentPlaybackDevice(UnboundedSender<VolumeResult<AudioDevice>>),
+    GetPlaybackDevices(UnboundedSender<VolumeResult<Vec<AudioDevice>>>),
 }
 
 pub struct VolumeCommandSender {
@@ -68,7 +70,7 @@ impl VolumeCommandSender {
 pub fn spawn_volume_thread() -> VolumeCommandSender {
     let (tx, rx) = channel::<VolumeCommand>();
 
-    let thread_handle = spawn(move || {
+    let thread_handle = std::thread::spawn(move || {
         let controller = platform::make_controller().expect("Failed to initialize");
 
         loop {

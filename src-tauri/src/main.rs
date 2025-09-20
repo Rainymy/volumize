@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::sync::Arc;
 use tauri::{AppHandle, Manager, Result as TauriResult, RunEvent};
 
 use crate::{
@@ -102,7 +101,7 @@ fn run_application(app: tauri::App) {
 
 fn shutdown_background_thread(app_handle: &AppHandle) {
     let state = app_handle.state::<VolumeCommandSender>();
-    let handle_clone = Arc::clone(&state.thread_handle);
+    let handle_clone = state.thread_handle.clone();
 
     state.close_channel(); // close the channel before joining.
 

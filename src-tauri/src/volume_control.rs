@@ -6,7 +6,8 @@ use std::{
     thread::JoinHandle,
 };
 
-use tokio::sync::mpsc::UnboundedSender;
+use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 
 use crate::types::shared::{
     AppIdentifier, AudioDevice, AudioSession, DeviceIdentifier, VolumeControllerTrait,
@@ -21,24 +22,42 @@ mod platform;
 #[path = "linux/linux.rs"]
 mod platform;
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum VolumeCommand {
     // Device
     SetDeviceVolume(DeviceIdentifier, VolumePercent),
     GetDeviceVolume(
         DeviceIdentifier,
+        #[serde(skip, default = "default_sender")]
         UnboundedSender<VolumeResult<Option<VolumePercent>>>,
     ),
     MuteDevice(DeviceIdentifier),
     UnmuteDevice(DeviceIdentifier),
     // Application
-    GetAllApplications(UnboundedSender<VolumeResult<Vec<AudioSession>>>),
-    GetAppVolume(AppIdentifier, UnboundedSender<VolumePercent>),
+    GetAllApplications(
+        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<Vec<AudioSession>>>,
+    ),
+    GetAppVolume(
+        AppIdentifier,
+        #[serde(skip, default = "default_sender2")] UnboundedSender<VolumePercent>,
+    ),
     SetAppVolume(AppIdentifier, VolumePercent),
     MuteApp(AppIdentifier),
     UnmuteApp(AppIdentifier),
     // DeviceControl
-    GetCurrentPlaybackDevice(UnboundedSender<VolumeResult<AudioDevice>>),
-    GetPlaybackDevices(UnboundedSender<VolumeResult<Vec<AudioDevice>>>),
+    GetCurrentPlaybackDevice(
+        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<AudioDevice>>,
+    ),
+    GetPlaybackDevices(
+        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<Vec<AudioDevice>>>,
+    ),
+}
+fn default_sender<T>() -> UnboundedSender<VolumeResult<T>> {
+    unbounded_channel().0
+}
+fn default_sender2<T>() -> UnboundedSender<T> {
+    unbounded_channel().0
 }
 
 pub struct VolumeCommandSender {

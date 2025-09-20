@@ -22,7 +22,7 @@ pub struct ClientInfo {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServerMessage {
     pub client_id: String,
-    pub message: String,
+    pub data: String,
 }
 
 type ClientSender = mpsc::UnboundedSender<Message>;

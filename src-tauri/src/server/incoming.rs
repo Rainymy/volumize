@@ -1,7 +1,6 @@
 use futures_util::{stream::SplitStream, StreamExt};
 use tauri::AppHandle;
 use tokio::net::TcpStream;
-use tokio::sync::mpsc;
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
 use crate::volume_control::VolumeCommand;
@@ -17,10 +16,19 @@ pub async fn handle_incoming_messages(
     while let Some(msg) = read.next().await {
         match msg {
             Ok(Message::Text(text)) => {
+                let data = text.to_string();
+
                 let _server_text_message = ServerMessage {
                     client_id: client_id.clone(),
-                    message: text.to_ascii_lowercase().as_str().into(),
+                    data: data,
                 };
+
+                match parse_action(&_server_text_message.data) {
+                    Ok(_command) => {
+                        // dbg!(command);
+                    }
+                    Err(err) => eprintln!("{:}\n - original: {}", err, _server_text_message.data),
+                }
 
                 if let Some(this_client) = clients.lock().await.get(&client_id) {
                     let _send = this_client.1.send("hello client, i'm server".into());
@@ -41,6 +49,6 @@ pub async fn handle_incoming_messages(
     }
 }
 
-fn parse_action(action: &str, channel: mpsc::UnboundedSender<Message>) {
-    // VolumeCommand::GetAllApplications(channel)
+fn parse_action(action: &str) -> Result<VolumeCommand, serde_json::Error> {
+    serde_json::from_str::<VolumeCommand>(action)
 }

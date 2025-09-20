@@ -1,15 +1,12 @@
 use std::net::SocketAddr;
 
-use futures_util::{
-    stream::{SplitSink, SplitStream},
-    SinkExt, StreamExt,
-};
+use futures_util::{stream::SplitSink, SinkExt, StreamExt};
 use tauri::AppHandle;
 use tokio::{net::TcpStream, sync::mpsc};
 use tokio_tungstenite::{accept_async, tungstenite::Message, WebSocketStream};
 use uuid::Uuid;
 
-use super::{ClientInfo, ClientMap, ServerMessage};
+use super::{incoming::handle_incoming_messages, ClientInfo, ClientMap};
 
 pub async fn handle_client(
     stream: TcpStream,
@@ -74,47 +71,6 @@ pub async fn handle_outgoing_messages(
         if let Err(e) = write.send(message).await {
             eprintln!("Error sending message to client {}: {}", client_id, e);
             break;
-        }
-    }
-}
-
-pub async fn handle_incoming_messages(
-    mut read: SplitStream<WebSocketStream<TcpStream>>,
-    client_id: String,
-    clients: ClientMap,
-    _app_handle: AppHandle,
-) {
-    while let Some(msg) = read.next().await {
-        match msg {
-            Ok(Message::Text(text)) => {
-                let _server_text_message = ServerMessage {
-                    client_id: client_id.clone(),
-                    message: text.as_str().into(),
-                };
-
-                if let Some(this_client) = clients.lock().await.get(&client_id) {
-                    let _send = this_client.1.send("hello client, i'm server".into());
-                }
-            }
-            Ok(Message::Binary(data)) => {
-                let text = String::from_utf8_lossy(&data).to_string();
-                let server_binary_message = ServerMessage {
-                    client_id: client_id.clone(),
-                    message: text,
-                };
-                dbg!(server_binary_message);
-            }
-            Ok(Message::Close(_frame)) => {
-                println!("Client {} closed connection", client_id);
-                break;
-            }
-            Ok(data) => {
-                dbg!(data);
-            }
-            Err(e) => {
-                eprintln!("WebSocket error for client {}: {}", client_id, e);
-                break;
-            }
         }
     }
 }

@@ -71,7 +71,7 @@ pub async fn handle_outgoing_messages(
     client_id: String,
 ) {
     while let Some(message) = rx.recv().await {
-        if let Err(e) = write.start_send_unpin(message) {
+        if let Err(e) = write.send(message).await {
             eprintln!("Error sending message to client {}: {}", client_id, e);
             break;
         }
@@ -81,17 +81,20 @@ pub async fn handle_outgoing_messages(
 pub async fn handle_incoming_messages(
     mut read: SplitStream<WebSocketStream<TcpStream>>,
     client_id: String,
-    _clients: ClientMap,
+    clients: ClientMap,
     _app_handle: AppHandle,
 ) {
     while let Some(msg) = read.next().await {
         match msg {
             Ok(Message::Text(text)) => {
-                let server_text_message = ServerMessage {
+                let _server_text_message = ServerMessage {
                     client_id: client_id.clone(),
                     message: text.as_str().into(),
                 };
-                dbg!(server_text_message);
+
+                if let Some(this_client) = clients.lock().await.get(&client_id) {
+                    let _send = this_client.1.send("hello client, i'm server".into());
+                }
             }
             Ok(Message::Binary(data)) => {
                 let text = String::from_utf8_lossy(&data).to_string();

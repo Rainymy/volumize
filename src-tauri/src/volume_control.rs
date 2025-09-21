@@ -1,8 +1,5 @@
 use std::{
-    sync::{
-        mpsc::{channel, RecvError, Sender},
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
     thread::JoinHandle,
 };
 
@@ -61,52 +58,55 @@ fn default_sender2<T>() -> UnboundedSender<T> {
 }
 
 pub struct VolumeCommandSender {
-    pub tx: Arc<Mutex<Sender<VolumeCommand>>>,
+    pub tx: UnboundedSender<VolumeCommand>,
     pub thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
 }
 
 impl VolumeCommandSender {
     pub fn send(&self, cmd: VolumeCommand) -> Result<(), String> {
-        if let Ok(tx_guard) = self.tx.lock() {
-            tx_guard
-                .send(cmd)
-                .map_err(|e| format!("Send failed: {}", e))
-        } else {
-            Err("Failed to lock sender".to_string())
-        }
+        self.tx.send(cmd).map_err(|e| format!("Send failed: {}", e))
     }
 
     pub fn close_channel(&self) {
-        if let Ok(mut tx_guard) = self.tx.lock() {
-            // Replace the sender with a new one and drop the original
-            let (new_tx, _) = channel::<VolumeCommand>();
-            let old_tx = std::mem::replace(&mut *tx_guard, new_tx);
-            drop(old_tx); // Explicitly drop the sender
-        }
+        let (new_tx, _) = unbounded_channel::<VolumeCommand>();
+        let old_tx = std::mem::replace(&mut self.tx.clone(), new_tx);
+        drop(old_tx);
     }
 }
 
 pub fn spawn_volume_thread() -> VolumeCommandSender {
-    let (tx, rx) = channel::<VolumeCommand>();
+    let (tx, mut rx) = unbounded_channel::<VolumeCommand>();
 
     let thread_handle = std::thread::spawn(move || {
-        let controller = platform::make_controller().expect("Failed to initialize");
-
-        loop {
-            match rx.recv() {
-                Ok(command) => {
-                    let _ = execute_command(command, &controller);
-                }
-                Err(RecvError) => {
-                    println!("Command channel disconnected/closed, shutting down thread");
-                    break;
-                }
+        let controller = match platform::make_controller() {
+            Ok(c) => c,
+            Err(err) => {
+                eprintln!("Failed to initialize, {}", err);
+                return;
             }
-        }
+        };
+
+        let rt = match tokio::runtime::Builder::new_current_thread()
+            .thread_name("tokie_spawn_volume_thread")
+            .enable_all()
+            .build()
+        {
+            Ok(rt) => rt,
+            Err(e) => {
+                eprintln!("Failed to create tokio runtime: {:?}", e);
+                return;
+            }
+        };
+
+        rt.block_on(async move {
+            while let Some(command) = rx.recv().await {
+                execute_command(command, &controller);
+            }
+        });
     });
 
     VolumeCommandSender {
-        tx: Arc::new(Mutex::new(tx)),
+        tx: tx,
         thread_handle: Arc::new(Mutex::new(Some(thread_handle))),
     }
 }

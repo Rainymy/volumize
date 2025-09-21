@@ -18,12 +18,17 @@ const connection = await new ConnectSocket().retryUntilConnection();
 
 if (connection) {
     const command = {
-        [RUST_INVOKE.GET_DEVICE_VOLUME]: ["5", 2]
-    }
+        [RUST_INVOKE.GET_APP_VOLUME]: [13112]
+    };
     connection.send(JSON.stringify(command));
+    // connection.send(`"${RUST_INVOKE.GET_ALL_APPLICATIONS}"`);
 
     connection.addEventListener("message", (event) => {
-        console.log(event.data)
+        try {
+            console.log("json: ", JSON.parse(event.data));
+        } catch {
+            console.log("string: ", event.data)
+        }
     });
 
 }

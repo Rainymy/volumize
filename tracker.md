@@ -1,8 +1,10 @@
 ## Priority
 
-- [ ] Build WebSocket client-server communication
-    - [x] handle WebSocket disconnections/reconnections
-    - [ ] send/receive WebSocket message protocol
+- [ ] Integrate WebSocket into frontend UI.
+    - [ ] Implement translation layer for frontend.
+        - Can't make it work with serde. Bad rust enum construct.
+    - [ ] Integrate WebSocket into current implementation.
+        - Try not to change how it is used in the UI.
 
 ## Todo
 
@@ -11,6 +13,9 @@
     - [ ] minimize to tray functionality
 - [ ] Implement server discovery/scanning
     - I do not know how to. Will look into it.
+- [ ] Tauri uses tokio under the hood.
+    - Check if need to use tokio package directly or
+      indirectly via tauri runtime tokio.
 
 ## Done
 
@@ -22,3 +27,6 @@
 - [x] Bug: UI volume slider not updating between device selection.
     - Not optimal solution but works for now.
 - [x] Mobile build compiles
+- [x] Build WebSocket client-server communication
+    - [x] handle WebSocket disconnections/reconnections
+    - [x] send/receive WebSocket message protocol

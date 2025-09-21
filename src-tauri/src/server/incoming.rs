@@ -1,9 +1,12 @@
 use futures_util::{stream::SplitStream, StreamExt};
-use tauri::AppHandle;
-use tokio::net::TcpStream;
+use tauri::{AppHandle, Manager};
+use tokio::{net::TcpStream, sync::mpsc::unbounded_channel};
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
-use crate::volume_control::VolumeCommand;
+use crate::{
+    types::shared::VolumeResult,
+    volume_control::{VolumeCommand, VolumeCommandSender},
+};
 
 use super::{ClientMap, ServerMessage};
 
@@ -18,20 +21,126 @@ pub async fn handle_incoming_messages(
             Ok(Message::Text(text)) => {
                 let data = text.to_string();
 
-                let _server_text_message = ServerMessage {
+                let server_text_message = ServerMessage {
                     client_id: client_id.clone(),
                     data: data,
                 };
 
-                match parse_action(&_server_text_message.data) {
-                    Ok(_command) => {
-                        // dbg!(command);
-                    }
-                    Err(err) => eprintln!("{:}\n - original: {}", err, _server_text_message.data),
-                }
+                match parse_action(&server_text_message.data) {
+                    Ok(command) => {
+                        let v_state = _app_handle.state::<VolumeCommandSender>();
+                        if let Some(c_client) = clients.lock().await.get(&client_id) {
+                            match command {
+                                VolumeCommand::GetAllApplications(mut unbounded_sender) => {
+                                    let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
+                                    unbounded_sender.clone_from(&tx);
+                                    let temp = VolumeCommand::GetAllApplications(unbounded_sender);
 
-                if let Some(this_client) = clients.lock().await.get(&client_id) {
-                    let _send = this_client.1.send("hello client, i'm server".into());
+                                    if let Err(v_send_error) = v_state.tx.send(temp) {
+                                        dbg!(v_send_error);
+                                    };
+
+                                    if let Some(r_value) = rx.recv().await {
+                                        if let Ok(value) = r_value {
+                                            match serde_json::to_string(&value) {
+                                                Ok(value) => {
+                                                    let _ = c_client
+                                                        .1
+                                                        .send(Message::Text(value.into()));
+                                                }
+                                                Err(err) => {
+                                                    dbg!(err);
+                                                }
+                                            }
+                                        }
+                                    };
+                                }
+                                VolumeCommand::GetDeviceVolume(a, mut unbounded_sender) => {
+                                    let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
+                                    unbounded_sender.clone_from(&tx);
+
+                                    let temp = VolumeCommand::GetDeviceVolume(a, unbounded_sender);
+                                    if let Err(v_send_error) = v_state.tx.send(temp) {
+                                        dbg!(v_send_error);
+                                    };
+
+                                    if let Some(r_value) = rx.recv().await {
+                                        dbg!(&r_value);
+                                        if let Ok(value) = r_value {
+                                            let _ = c_client
+                                                .1
+                                                .send(value.unwrap_or_default().to_string().into());
+                                        }
+                                    };
+                                }
+                                VolumeCommand::GetAppVolume(a, mut unbounded_sender) => {
+                                    let (tx, mut rx) = unbounded_channel::<_>();
+                                    unbounded_sender.clone_from(&tx);
+                                    let temp = VolumeCommand::GetAppVolume(a, unbounded_sender);
+                                    if let Err(v_send_error) = v_state.tx.send(temp) {
+                                        dbg!(v_send_error);
+                                    };
+
+                                    if let Some(value) = rx.recv().await {
+                                        let _ = c_client.1.send(value.to_string().into());
+                                    };
+                                }
+                                VolumeCommand::GetCurrentPlaybackDevice(mut unbounded_sender) => {
+                                    let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
+                                    unbounded_sender.clone_from(&tx);
+                                    let temp =
+                                        VolumeCommand::GetCurrentPlaybackDevice(unbounded_sender);
+                                    if let Err(v_send_error) = v_state.tx.send(temp) {
+                                        dbg!(v_send_error);
+                                    };
+
+                                    if let Some(r_value) = rx.recv().await {
+                                        if let Ok(value) = r_value {
+                                            match serde_json::to_string(&value) {
+                                                Ok(value) => {
+                                                    let _ = c_client
+                                                        .1
+                                                        .send(Message::Text(value.into()));
+                                                }
+                                                Err(err) => {
+                                                    dbg!(err);
+                                                }
+                                            }
+                                        }
+                                    };
+                                }
+                                VolumeCommand::GetPlaybackDevices(mut unbounded_sender) => {
+                                    let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
+                                    unbounded_sender.clone_from(&tx);
+                                    let temp = VolumeCommand::GetPlaybackDevices(unbounded_sender);
+                                    if let Err(v_send_error) = v_state.tx.send(temp) {
+                                        dbg!(v_send_error);
+                                    };
+
+                                    if let Some(r_value) = rx.recv().await {
+                                        if let Ok(value) = r_value {
+                                            match serde_json::to_string(&value) {
+                                                Ok(value) => {
+                                                    let _ = c_client
+                                                        .1
+                                                        .send(Message::Text(value.into()));
+                                                }
+                                                Err(err) => {
+                                                    dbg!(err);
+                                                }
+                                            }
+                                        }
+                                    };
+                                }
+                                rest => {
+                                    if let Err(v_send_error) = v_state.tx.send(rest) {
+                                        dbg!(v_send_error);
+                                    };
+                                }
+                            };
+                        }
+                    }
+                    Err(err) => eprintln!("{:}\n - original: {}", err, server_text_message.data),
                 }
             }
             Ok(Message::Close(_frame)) => {

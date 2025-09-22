@@ -1,17 +1,6 @@
-import type { AppIdentifier, DeviceIdentifier } from "$type/volume";
-import {
-    debouncedAppVolume,
-    debouncedGetAllApplications,
-    debouncedGetAppVolume,
-    debouncedGetCurrentPlaybackDevice,
-    debouncedGetPlaybackDevices,
-    debouncedMasterVolume,
-    debouncedMuteApp,
-    debouncedMuteMaster,
-    debouncedsetMasterVolume,
-    debouncedUnmuteApp,
-    debouncedUnmuteMaster,
-} from "./debounced";
+import { is_desktop } from "./generic";
+import { TauriVolumeController } from "./tauri_volume";
+import { WebsocketTauriVolumeController } from "./websocket_volume";
 
 export enum RUST_INVOKE {
     SET_DEVICE_VOLUME = "set_device_volume",
@@ -29,31 +18,14 @@ export enum RUST_INVOKE {
     GET_CURRENT_PLAYBACK_DEVICE = "get_current_playback_device",
 }
 
-class TauriVolumeController {
-    getMasterVolume = debouncedMasterVolume;
-    setMasterVolume = debouncedsetMasterVolume;
-
-    toggleMuteMaster(device_id: DeviceIdentifier, value: boolean) {
-        if (value) { return this.unmuteMaster(device_id); }
-        return this.muteMaster(device_id);
-    }
-
-    private muteMaster = debouncedMuteMaster;
-    private unmuteMaster = debouncedUnmuteMaster;
-
-    getAllApplications = debouncedGetAllApplications;
-    getAppVolume = debouncedGetAppVolume;
-    setAppVolume = debouncedAppVolume;
-
-    toggleMuteApp(app: AppIdentifier, value: boolean) {
-        if (value) { return this.unmuteApp(app); }
-        return this.muteApp(app);
-    }
-
-    private muteApp = debouncedMuteApp;
-    private unmuteApp = debouncedUnmuteApp;
-    getPlaybackDevices = debouncedGetPlaybackDevices;
-    getCurrentPlaybackDevice = debouncedGetCurrentPlaybackDevice;
+// In milliseconds
+export enum BOUNCE_DELAY {
+    NORMAL = 100,
+    SLOW = 200,
+    FAST = 70,
+    SUPER_FAST = 50,
 }
 
-export const volumeController = new TauriVolumeController();
+export const volumeController = !is_desktop()
+    ? new TauriVolumeController()
+    : await new WebsocketTauriVolumeController().setup();

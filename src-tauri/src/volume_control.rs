@@ -37,7 +37,7 @@ pub enum VolumeCommand {
     ),
     GetAppVolume(
         AppIdentifier,
-        #[serde(skip, default = "default_sender2")] UnboundedSender<VolumePercent>,
+        #[serde(skip, default = "default_sender")] UnboundedSender<VolumePercent>,
     ),
     SetAppVolume(AppIdentifier, VolumePercent),
     MuteApp(AppIdentifier),
@@ -50,10 +50,7 @@ pub enum VolumeCommand {
         #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<Vec<AudioDevice>>>,
     ),
 }
-fn default_sender<T>() -> UnboundedSender<VolumeResult<T>> {
-    unbounded_channel().0
-}
-fn default_sender2<T>() -> UnboundedSender<T> {
+fn default_sender<T>() -> UnboundedSender<T> {
     unbounded_channel().0
 }
 

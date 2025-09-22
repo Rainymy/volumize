@@ -13,25 +13,27 @@ export function debounceSync<T extends (...args: never[]) => unknown>(
     };
 }
 
-export function debounce<T extends (...args: never[]) => unknown>(
-    func: T,
+export function debounce<TArgs extends readonly unknown[], TReturn>(
+    func: (...args: TArgs) => TReturn | Promise<TReturn>,
     delay: number,
-): (...args: Parameters<T>) => Promise<ReturnType<T>> {
+): (...args: TArgs) => Promise<Awaited<TReturn>> {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let pendingResolvers: Array<(value: ReturnType<T>) => void> = [];
+    let pendingResolvers: Array<(value: Awaited<TReturn>) => void> = [];
 
-    return (...args: Parameters<T>): Promise<ReturnType<T>> => {
+    return (...args: TArgs): Promise<Awaited<TReturn>> => {
         if (timeoutId !== null) {
             clearTimeout(timeoutId);
         }
 
-        return new Promise<ReturnType<T>>((resolve) => {
+        return new Promise<Awaited<TReturn>>((resolve) => {
             pendingResolvers.push(resolve);
 
             timeoutId = setTimeout(async () => {
-                const result = await func(...args) as ReturnType<T>;
+                const result = await func(...args);
 
-                for (const resolver of pendingResolvers) { resolver(result); }
+                for (const resolver of pendingResolvers) {
+                    resolver(result);
+                }
                 pendingResolvers = [];
                 timeoutId = null;
             }, delay);
@@ -45,7 +47,7 @@ export function getNumber(num: unknown): number | undefined {
 }
 
 export async function sleep(timeMs: number) {
-    return new Promise(resolve => setTimeout(resolve, timeMs, true));
+    return new Promise((resolve) => setTimeout(resolve, timeMs, true));
 }
 
 export function centerText(text: string, width: number) {

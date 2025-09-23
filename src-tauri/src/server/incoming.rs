@@ -36,8 +36,8 @@ pub async fn handle_incoming_messages(
                                     unbounded_sender.clone_from(&tx);
                                     let temp = VolumeCommand::GetAllApplications(unbounded_sender);
 
-                                    if let Err(v_send_error) = v_state.tx.send(temp) {
-                                        dbg!(v_send_error);
+                                    if let Ok(v_send_error) = v_state.tx.lock() {
+                                        let _ = v_send_error.send(temp);
                                     };
 
                                     if let Some(r_value) = rx.recv().await {
@@ -60,8 +60,8 @@ pub async fn handle_incoming_messages(
                                     unbounded_sender.clone_from(&tx);
 
                                     let temp = VolumeCommand::GetDeviceVolume(a, unbounded_sender);
-                                    if let Err(v_send_error) = v_state.tx.send(temp) {
-                                        dbg!(v_send_error);
+                                    if let Ok(v_send_error) = v_state.tx.lock() {
+                                        let _ = v_send_error.send(temp);
                                     };
 
                                     if let Some(r_value) = rx.recv().await {
@@ -77,8 +77,8 @@ pub async fn handle_incoming_messages(
                                     let (tx, mut rx) = unbounded_channel::<_>();
                                     unbounded_sender.clone_from(&tx);
                                     let temp = VolumeCommand::GetAppVolume(a, unbounded_sender);
-                                    if let Err(v_send_error) = v_state.tx.send(temp) {
-                                        dbg!(v_send_error);
+                                    if let Ok(v_send_error) = v_state.tx.lock() {
+                                        let _ = v_send_error.send(temp);
                                     };
 
                                     if let Some(value) = rx.recv().await {
@@ -90,8 +90,8 @@ pub async fn handle_incoming_messages(
                                     unbounded_sender.clone_from(&tx);
                                     let temp =
                                         VolumeCommand::GetCurrentPlaybackDevice(unbounded_sender);
-                                    if let Err(v_send_error) = v_state.tx.send(temp) {
-                                        dbg!(v_send_error);
+                                    if let Ok(v_send_error) = v_state.tx.lock() {
+                                        let _ = v_send_error.send(temp);
                                     };
 
                                     if let Some(r_value) = rx.recv().await {
@@ -112,9 +112,10 @@ pub async fn handle_incoming_messages(
                                 VolumeCommand::GetPlaybackDevices(mut unbounded_sender) => {
                                     let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
                                     unbounded_sender.clone_from(&tx);
+
                                     let temp = VolumeCommand::GetPlaybackDevices(unbounded_sender);
-                                    if let Err(v_send_error) = v_state.tx.send(temp) {
-                                        dbg!(v_send_error);
+                                    if let Ok(v_send_error) = v_state.tx.lock() {
+                                        let _ = v_send_error.send(temp);
                                     };
 
                                     if let Some(r_value) = rx.recv().await {
@@ -133,8 +134,8 @@ pub async fn handle_incoming_messages(
                                     };
                                 }
                                 rest => {
-                                    if let Err(v_send_error) = v_state.tx.send(rest) {
-                                        dbg!(v_send_error);
+                                    if let Ok(v_send_error) = v_state.tx.lock() {
+                                        let _ = v_send_error.send(rest);
                                     };
                                 }
                             };

@@ -13,12 +13,11 @@ import { ConnectSocket } from "./websocket";
 export type T_RUST_INVOKE = `${RUST_INVOKE}`;
 
 export class WebsocketTauriVolumeController extends ITauriVolumeController {
-    private eventListenerHandler: EventTarget = new EventTarget();
+    private eventListenerHandler = new EventTarget();
     private event_name = "main_channel";
-    private connection: ConnectSocket = new ConnectSocket();
 
     async setup() {
-        await this.connection.retryUntilConnection();
+        const connection = await new ConnectSocket().retryUntilConnection();
 
         this.eventListenerHandler.addEventListener(
             this.event_name,
@@ -28,18 +27,18 @@ export class WebsocketTauriVolumeController extends ITauriVolumeController {
                     data: string;
                 };
 
-                this.connection.socket?.addEventListener(
+                connection.addEventListener(
                     "message",
                     (event) => {
-                        console.log("socket: ", event);
                         const custom_event = new CustomEvent(detail.channel, {
                             detail: event.data,
                         });
                         this.eventListenerHandler.dispatchEvent(custom_event);
                     },
+                    { once: true },
                 );
 
-                this.connection.socket?.send(detail.data);
+                connection.send(detail.data);
             },
         );
         return this;
@@ -50,8 +49,13 @@ export class WebsocketTauriVolumeController extends ITauriVolumeController {
             this.eventListenerHandler.addEventListener(
                 action,
                 (event: Event & CustomEventInit) => {
-                    console.log("[send event]: ", event.detail);
-                    resolve(event.detail as T);
+                    // console.log("[send event]: ", event.detail);
+                    try {
+                        resolve(JSON.parse(event.detail) as T)
+                    } catch {
+                        resolve(event.detail as T);
+
+                    }
                 },
                 { once: true },
             );
@@ -82,11 +86,7 @@ export class WebsocketTauriVolumeController extends ITauriVolumeController {
             params.push(data?.percent);
         }
 
-        if (!params.length) {
-            return action;
-        }
-
-        return JSON.stringify({ [action]: params });
+        return JSON.stringify(params.length ? { [action]: params } : action);
     }
 
     getMasterVolume = debounce(async () => {

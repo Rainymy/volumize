@@ -2,8 +2,8 @@
 
 - [ ] Integrate WebSocket into frontend UI.
     - [ ] Implement translation layer for frontend.
-        - Can't make it work with serde. Bad rust enum construct.
-    - [ ] Integrate WebSocket into current implementation.
+        - Can't make it work with serde.
+    - [x] Integrate WebSocket into current implementation.
         - Try not to change how it is used in the UI.
 
 ## Todo

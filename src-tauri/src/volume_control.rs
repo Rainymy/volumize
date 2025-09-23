@@ -55,19 +55,28 @@ fn default_sender<T>() -> UnboundedSender<T> {
 }
 
 pub struct VolumeCommandSender {
-    pub tx: UnboundedSender<VolumeCommand>,
+    pub tx: Arc<Mutex<UnboundedSender<VolumeCommand>>>,
     pub thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
 }
 
 impl VolumeCommandSender {
     pub fn send(&self, cmd: VolumeCommand) -> Result<(), String> {
-        self.tx.send(cmd).map_err(|e| format!("Send failed: {}", e))
+        if let Ok(tx_guard) = self.tx.lock() {
+            tx_guard
+                .send(cmd)
+                .map_err(|e| format!("Send failed: {}", e))
+        } else {
+            Err("Failed to lock sender".to_string())
+        }
     }
 
     pub fn close_channel(&self) {
-        let (new_tx, _) = unbounded_channel::<VolumeCommand>();
-        let old_tx = std::mem::replace(&mut self.tx.clone(), new_tx);
-        drop(old_tx);
+        if let Ok(mut tx_guard) = self.tx.lock() {
+            // Replace the sender with a new one and drop the original
+            let (new_tx, _) = unbounded_channel::<VolumeCommand>();
+            let old_tx = std::mem::replace(&mut *tx_guard, new_tx);
+            drop(old_tx); // Explicitly drop the sender
+        }
     }
 }
 
@@ -103,7 +112,7 @@ pub fn spawn_volume_thread() -> VolumeCommandSender {
     });
 
     VolumeCommandSender {
-        tx: tx,
+        tx: Arc::new(Mutex::new(tx)),
         thread_handle: Arc::new(Mutex::new(Some(thread_handle))),
     }
 }

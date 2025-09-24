@@ -8,10 +8,12 @@ import type {
 } from "$type/volume";
 import { debounce } from "$util/generic";
 import { isVolumePercent } from "$util/volume";
-import { ITauriVolumeController } from "./type";
+import { ATauriVolumeController, type ITauriVolumeController } from "./type";
 import { BOUNCE_DELAY, RUST_INVOKE } from "./volumeManager";
 
-export class TauriVolumeController extends ITauriVolumeController {
+export class TauriVolumeController
+    extends ATauriVolumeController
+    implements ITauriVolumeController {
     getMasterVolume = debounce((device_id: DeviceIdentifier) => {
         return invoke(RUST_INVOKE.GET_DEVICE_VOLUME, { deviceId: device_id });
     }, BOUNCE_DELAY.NORMAL);

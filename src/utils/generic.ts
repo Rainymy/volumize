@@ -55,3 +55,12 @@ export function centerText(text: string, width: number) {
     const leftPadding = Math.floor(paddingAmount / 2);
     return text.padStart(text.length + leftPadding, " ").padEnd(width, " ");
 }
+
+export function try_json<T>(data: string): T {
+    try {
+        return JSON.parse(data);
+    }
+    catch {
+        return data as T;
+    }
+}

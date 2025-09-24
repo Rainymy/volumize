@@ -1,10 +1,11 @@
 import { useAtom } from "jotai";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { volumeController } from "$bridge/volumeManager";
 import { WebsocketTauriVolumeController } from "$bridge/websocket_volume";
 import { MainContent } from "$component/mainContent";
 import { Sidebar } from "$component/sidebar";
 import { connection_ready, server_port, server_url } from "$model/volume";
+import { getNumber } from "$util/generic";
 import wrapper from "./index.module.less";
 
 export function AudioMixer() {
@@ -18,7 +19,7 @@ export function AudioMixer() {
                 await volumeController.setup(connect_url, connect_port);
                 set_is_ready(true);
             }
-        })()
+        })();
 
         return () => {
             if (volumeController instanceof WebsocketTauriVolumeController) {
@@ -30,11 +31,51 @@ export function AudioMixer() {
 
     return (
         <div className={wrapper.container}>
-            {
-                !is_ready && <div>In put URL PlEASE</div>
-            }
+            {!is_ready && <ServerURLComponent />}
             <Sidebar />
             <MainContent />
+        </div>
+    );
+}
+
+function ServerURLComponent() {
+    const [connect_url, set_connect_url] = useAtom(server_url);
+    const [connect_port, set_connect_port] = useAtom(server_port);
+    const [errorText, setErrorText] = useState("");
+
+    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+
+        const url = formData.get("url")?.toString();
+        const port = formData.get("port")?.toString();
+
+        console.log("info: ", url, port);
+        if (!url) {
+            return setErrorText("Invalid. URL address!");
+        }
+
+        const port_number = getNumber(port);
+        if (!port || port_number === undefined) {
+            return setErrorText("Invalid. PORT address!");
+        }
+        const is_port_valid_range = 0 < port_number && port_number < 2 ** 16;
+        if (!is_port_valid_range) {
+            return setErrorText("Invalid. PORT address range!");
+        }
+
+        set_connect_url(url);
+        set_connect_port(port_number);
+    }
+
+    return (
+        <div>
+            <form onSubmit={handleSubmit}>
+                <div>{errorText}</div>
+                <input type="text" name="url" defaultValue={connect_url} />
+                <input type="number" name="port" defaultValue={connect_port} />
+                <button type="submit">Connect</button>
+            </form>
         </div>
     );
 }

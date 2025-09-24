@@ -28,4 +28,4 @@ export enum BOUNCE_DELAY {
 
 export const volumeController = !is_desktop()
     ? new TauriVolumeController()
-    : await new WebsocketTauriVolumeController().setup();
+    : new WebsocketTauriVolumeController();

@@ -26,6 +26,6 @@ export enum BOUNCE_DELAY {
     SUPER_FAST = 50,
 }
 
-export const volumeController = !is_desktop()
+export const volumeController = is_desktop()
     ? new TauriVolumeController()
     : new WebsocketTauriVolumeController();

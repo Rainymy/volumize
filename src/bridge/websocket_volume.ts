@@ -18,13 +18,11 @@ export class WebsocketTauriVolumeController
     implements ITauriVolumeController {
     private eventListenerHandler = new EventTarget();
     private event_name = "main_channel";
-    private connection: WebSocket | null = null;
+    private connection: ConnectSocket = new ConnectSocket();
 
     async setup(url: string, port: number) {
-        this.connection = await new ConnectSocket(
-            url,
-            port,
-        ).retryUntilConnection();
+        this.connection.setup(url, port);
+        await this.connection.retryUntilConnection();
 
         this.eventListenerHandler.addEventListener(
             this.event_name,
@@ -34,7 +32,7 @@ export class WebsocketTauriVolumeController
                     data: string;
                 };
 
-                this.connection?.addEventListener(
+                this.connection.socket?.addEventListener(
                     "message",
                     (event) => {
                         const custom_event = new CustomEvent(detail.channel, {
@@ -45,7 +43,7 @@ export class WebsocketTauriVolumeController
                     { once: true },
                 );
 
-                this.connection?.send(detail.data);
+                this.connection.socket?.send(detail.data);
             },
         );
         return this;
@@ -53,7 +51,6 @@ export class WebsocketTauriVolumeController
 
     close() {
         this.connection?.close();
-        this.connection = null;
     }
 
     private sendEvent<T>(action: T_RUST_INVOKE, data?: string) {

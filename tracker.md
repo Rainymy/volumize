@@ -1,10 +1,7 @@
 ## Priority
 
-- [ ] Integrate WebSocket into frontend UI.
-    - [ ] Implement translation layer for frontend.
-        - Can't make it work with serde.
-    - [x] Integrate WebSocket into current implementation.
-        - Try not to change how it is used in the UI.
+- [ ] Bug in UI sometimes the connection is stale.
+    - Sometimes the device applications not changing.
 
 ## Todo
 
@@ -30,3 +27,8 @@
 - [x] Build WebSocket client-server communication
     - [x] handle WebSocket disconnections/reconnections
     - [x] send/receive WebSocket message protocol
+- [x] Integrate WebSocket into frontend UI.
+    - [x] Implement translation layer for frontend.
+        - Can't make it work with serde.
+    - [x] Integrate WebSocket into current implementation.
+        - Try not to change how it is used in the UI.

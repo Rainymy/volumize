@@ -27,6 +27,9 @@
     },
     "bundle": {
         "active": true,
+        "android": {
+            "minSdkVersion": 28
+        },
         "targets": [
             "msi",
             "deb"

@@ -17,7 +17,7 @@ export function AudioMixer() {
         let cancelled = false;
         (async () => {
             if (volumeController instanceof WebsocketTauriVolumeController) {
-                await volumeController.setup(connect_url, connect_port).catch(error => console.log(error));
+                await volumeController.setup(connect_url, connect_port);
                 if (!cancelled) {
                     set_is_ready(true);
                 }

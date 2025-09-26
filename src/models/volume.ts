@@ -2,10 +2,33 @@ import { atom } from "jotai";
 import { atomWithRefresh } from "jotai/utils";
 import { is_desktop } from "$bridge/generic";
 import { volumeController } from "$bridge/volumeManager";
+import { getNumber } from "$util/generic";
 
 export const connection_ready = atom(is_desktop());
-export const server_url = atom("localhost"); // 192.168.1.115
-export const server_port = atom(9001);
+
+const __SERVER_URL__ = "server_port" as const;
+const __server_url__ = atom(localStorage.getItem(__SERVER_URL__) ?? "localhost"); // 192.168.1.115
+export const server_url = atom(
+    (get) => get(__server_url__),
+    (_, set, newValue: string) => {
+        set(__server_url__, newValue);
+        localStorage.setItem(__SERVER_URL__, newValue);
+    },
+);
+
+const __SERVER_PORT__ = "server_port" as const;
+const __server_port__ = atom(
+    getNumber(localStorage.getItem(__SERVER_PORT__)) ?? 9001,
+);
+export const server_port = atom(
+    (get) => {
+        get(__server_port__);
+    },
+    (_, set, newValue: number) => {
+        set(__server_port__, newValue);
+        localStorage.setItem(__SERVER_PORT__, newValue.toString());
+    },
+);
 
 export const selected_device_id = atom<string>();
 

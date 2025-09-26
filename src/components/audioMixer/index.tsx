@@ -73,8 +73,8 @@ function ServerURLComponent() {
 
         console.log("Setting new ULR and PORT address....");
         console.log("info: ", url, port);
-        set_connect_url(() => url);
-        set_connect_port(() => port_number);
+        set_connect_url(url);
+        set_connect_port(port_number);
     }
 
     return (

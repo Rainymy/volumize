@@ -53,6 +53,14 @@ export class WebsocketTauriVolumeController
         this.connection?.close();
     }
 
+    is_connected() {
+        const socket = this.connection.socket;
+        if (socket === null) {
+            return false;
+        }
+        return socket.readyState === socket.OPEN;
+    }
+
     private sendEvent<T>(action: T_RUST_INVOKE, data?: string) {
         return new Promise<T>((resolve) => {
             this.eventListenerHandler.addEventListener(

@@ -42,6 +42,10 @@ export function debounce<TArgs extends readonly unknown[], TReturn>(
 }
 
 export function getNumber(num: unknown): number | undefined {
+    if (num === null) {
+        return undefined;
+    }
+
     const number = Number(num);
     return Number.isFinite(number) ? number : undefined;
 }

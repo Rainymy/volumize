@@ -7,6 +7,7 @@ import { Sidebar } from "$component/sidebar";
 import { connection_ready, server_port, server_url } from "$model/volume";
 import { getNumber } from "$util/generic";
 import wrapper from "./index.module.less";
+import { AppButton } from "$component/button";
 
 export function AudioMixer() {
     const connect_url = useAtomValue(server_url);
@@ -78,12 +79,12 @@ function ServerURLComponent() {
     }
 
     return (
-        <div>
+        <div style={{ margin: "auto" }}>
             <form onSubmit={handleSubmit}>
                 <div>{errorText}</div>
                 <input type="text" name="url" defaultValue={connect_url} />
                 <input type="number" name="port" defaultValue={connect_port} />
-                <button type="submit">Connect</button>
+                <AppButton type="submit">Connect</AppButton>
             </form>
         </div>
     );

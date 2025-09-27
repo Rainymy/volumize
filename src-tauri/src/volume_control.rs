@@ -57,35 +57,7 @@ fn default_sender<T>() -> UnboundedSender<T> {
 
 impl VolumeCommand {
     pub fn get_name(&self) -> String {
-        let enums = match self {
-            VolumeCommand::GetAllApplications(_) => {
-                VolumeCommand::GetAllApplications(default_sender())
-            }
-            VolumeCommand::GetAppVolume(_, _) => {
-                VolumeCommand::GetAppVolume(Default::default(), default_sender())
-            }
-            VolumeCommand::GetCurrentPlaybackDevice(_) => {
-                VolumeCommand::GetCurrentPlaybackDevice(default_sender())
-            }
-            VolumeCommand::GetDeviceVolume(_, _) => {
-                VolumeCommand::GetDeviceVolume(Default::default(), default_sender())
-            }
-            VolumeCommand::GetPlaybackDevices(_) => {
-                VolumeCommand::GetPlaybackDevices(default_sender())
-            }
-            VolumeCommand::MuteApp(_) => VolumeCommand::MuteApp(Default::default()),
-            VolumeCommand::MuteDevice(_) => VolumeCommand::MuteDevice(Default::default()),
-            VolumeCommand::SetAppVolume(_, _) => {
-                VolumeCommand::SetAppVolume(Default::default(), Default::default())
-            }
-            VolumeCommand::SetDeviceVolume(_, _) => {
-                VolumeCommand::SetDeviceVolume(Default::default(), Default::default())
-            }
-            VolumeCommand::UnmuteApp(_) => VolumeCommand::UnmuteApp(Default::default()),
-            VolumeCommand::UnmuteDevice(_) => VolumeCommand::UnmuteDevice(Default::default()),
-        };
-
-        if let Ok(name) = serde_json::to_string(&enums) {
+        if let Ok(name) = serde_json::to_string(&self) {
             return name;
         }
         return "unknown_name".into();

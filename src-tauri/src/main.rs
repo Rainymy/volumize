@@ -31,6 +31,7 @@ pub fn start_application() -> TauriResult<()> {
 
 fn create_tauri_app() -> TauriResult<tauri::App> {
     tauri::Builder::default()
+        .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
         .manage(volume_control::spawn_volume_thread())

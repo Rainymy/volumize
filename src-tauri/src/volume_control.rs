@@ -54,6 +54,43 @@ fn default_sender<T>() -> UnboundedSender<T> {
     unbounded_channel().0
 }
 
+impl VolumeCommand {
+    pub fn get_name(&self) -> String {
+        let enums = match self {
+            VolumeCommand::GetAllApplications(_) => {
+                VolumeCommand::GetAllApplications(default_sender())
+            }
+            VolumeCommand::GetAppVolume(_, _) => {
+                VolumeCommand::GetAppVolume(Default::default(), default_sender())
+            }
+            VolumeCommand::GetCurrentPlaybackDevice(_) => {
+                VolumeCommand::GetCurrentPlaybackDevice(default_sender())
+            }
+            VolumeCommand::GetDeviceVolume(_, _) => {
+                VolumeCommand::GetDeviceVolume(Default::default(), default_sender())
+            }
+            VolumeCommand::GetPlaybackDevices(_) => {
+                VolumeCommand::GetPlaybackDevices(default_sender())
+            }
+            VolumeCommand::MuteApp(_) => VolumeCommand::MuteApp(Default::default()),
+            VolumeCommand::MuteDevice(_) => VolumeCommand::MuteDevice(Default::default()),
+            VolumeCommand::SetAppVolume(_, _) => {
+                VolumeCommand::SetAppVolume(Default::default(), Default::default())
+            }
+            VolumeCommand::SetDeviceVolume(_, _) => {
+                VolumeCommand::SetDeviceVolume(Default::default(), Default::default())
+            }
+            VolumeCommand::UnmuteApp(_) => VolumeCommand::UnmuteApp(Default::default()),
+            VolumeCommand::UnmuteDevice(_) => VolumeCommand::UnmuteDevice(Default::default()),
+        };
+
+        if let Ok(name) = serde_json::to_string(&enums) {
+            return name;
+        }
+        return "unknown_name".into();
+    }
+}
+
 pub struct VolumeCommandSender {
     pub tx: Arc<Mutex<UnboundedSender<VolumeCommand>>>,
     pub thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,

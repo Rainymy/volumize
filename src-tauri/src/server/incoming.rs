@@ -1,7 +1,12 @@
+use std::error::Error;
+
 use futures_util::{stream::SplitStream, StreamExt};
 use serde_json::json;
 use tauri::{AppHandle, Manager};
-use tokio::{net::TcpStream, sync::mpsc::unbounded_channel};
+use tokio::{
+    net::TcpStream,
+    sync::mpsc::{error::SendError, unbounded_channel, UnboundedSender},
+};
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
 use crate::{
@@ -15,7 +20,7 @@ pub async fn handle_incoming_messages(
     mut read: SplitStream<WebSocketStream<TcpStream>>,
     client_id: String,
     clients: ClientMap,
-    _app_handle: AppHandle,
+    app_handle: AppHandle,
 ) {
     while let Some(msg) = read.next().await {
         match msg {
@@ -29,115 +34,10 @@ pub async fn handle_incoming_messages(
 
                 match parse_action(&server_text_message.data) {
                     Ok(command) => {
-                        let v_state = _app_handle.state::<VolumeCommandSender>();
-                        if let Some(c_client) = clients.lock().await.get(&client_id) {
-                            match command {
-                                VolumeCommand::GetAllApplications(mut sender) => {
-                                    let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
-                                    sender.clone_from(&tx);
-                                    let temp = VolumeCommand::GetAllApplications(sender);
-                                    if let Ok(v_send_error) = v_state.tx.lock() {
-                                        let _ = v_send_error.send(temp);
-                                    };
-
-                                    let temp2 = VolumeCommand::GetAllApplications(tx.clone());
-                                    if let Some(r_value) = rx.recv().await {
-                                        let value = json!({
-                                            "type": temp2.get_name(),
-                                            "data": r_value.unwrap_or_default()
-                                        })
-                                        .to_string();
-                                        let _ = c_client.1.send(Message::Text(value.into()));
-                                    };
-                                }
-                                VolumeCommand::GetDeviceVolume(a, mut sender) => {
-                                    let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
-                                    sender.clone_from(&tx);
-
-                                    let temp = VolumeCommand::GetDeviceVolume(a.clone(), sender);
-
-                                    if let Ok(v_send_error) = v_state.tx.lock() {
-                                        let _ = v_send_error.send(temp);
-                                    };
-
-                                    let temp2 = VolumeCommand::GetDeviceVolume(a, tx.clone());
-                                    if let Some(r_value) = rx.recv().await {
-                                        if let Ok(value) = r_value {
-                                            let value = json!({
-                                                "type": temp2.get_name(),
-                                                "data": value
-                                            })
-                                            .to_string();
-
-                                            let _ = c_client.1.send(value.into());
-                                        }
-                                    };
-                                }
-                                VolumeCommand::GetAppVolume(a, mut unbounded_sender) => {
-                                    let (tx, mut rx) = unbounded_channel::<_>();
-                                    unbounded_sender.clone_from(&tx);
-                                    let temp = VolumeCommand::GetAppVolume(a, unbounded_sender);
-                                    if let Ok(v_send_error) = v_state.tx.lock() {
-                                        let _ = v_send_error.send(temp);
-                                    };
-
-                                    let temp2 = VolumeCommand::GetAppVolume(a, tx.clone());
-                                    let value = rx.recv().await;
-                                    let s_value = json!({
-                                        "type": temp2.get_name(),
-                                        "data": value.unwrap_or_default()
-                                    })
-                                    .to_string();
-
-                                    let _ = c_client.1.send(s_value.into());
-                                }
-                                VolumeCommand::GetCurrentPlaybackDevice(mut sender) => {
-                                    let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
-                                    sender.clone_from(&tx);
-                                    let temp = VolumeCommand::GetCurrentPlaybackDevice(sender);
-                                    if let Ok(v_send_error) = v_state.tx.lock() {
-                                        let _ = v_send_error.send(temp);
-                                    };
-
-                                    let temp2 = VolumeCommand::GetCurrentPlaybackDevice(tx.clone());
-                                    if let Some(r_value) = rx.recv().await {
-                                        if let Ok(value) = r_value {
-                                            let s_value = json!({
-                                                "type": temp2.get_name(),
-                                                "data": value
-                                            })
-                                            .to_string();
-
-                                            let _ = c_client.1.send(s_value.into());
-                                        }
-                                    };
-                                }
-                                VolumeCommand::GetPlaybackDevices(mut unbounded_sender) => {
-                                    let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
-                                    unbounded_sender.clone_from(&tx);
-
-                                    let temp = VolumeCommand::GetPlaybackDevices(unbounded_sender);
-                                    if let Ok(v_send_error) = v_state.tx.lock() {
-                                        let _ = v_send_error.send(temp);
-                                    };
-
-                                    let temp2 = VolumeCommand::GetPlaybackDevices(tx.clone());
-                                    if let Some(r_value) = rx.recv().await {
-                                        let s_value = json!({
-                                            "type": temp2.get_name(),
-                                            "data": r_value.unwrap_or_default()
-                                        })
-                                        .to_string();
-
-                                        let _ = c_client.1.send(s_value.into());
-                                    };
-                                }
-                                rest => {
-                                    if let Ok(v_send_error) = v_state.tx.lock() {
-                                        let _ = v_send_error.send(rest);
-                                    };
-                                }
-                            };
+                        if let Err(error) =
+                            handle_volume_command(command, &client_id, &clients, &app_handle).await
+                        {
+                            eprintln!("Failed to handle volume command: \n{:}", error)
                         }
                     }
                     Err(err) => eprintln!("{:}\n - original: {}", err, server_text_message.data),
@@ -156,6 +56,123 @@ pub async fn handle_incoming_messages(
             }
         }
     }
+}
+
+async fn handle_volume_command(
+    command: VolumeCommand,
+    client_id: &str,
+    clients: &ClientMap,
+    app_handle: &AppHandle,
+) -> Result<(), Box<dyn Error>> {
+    let client_lock = clients.lock().await;
+    let client = match client_lock.get(client_id) {
+        Some(client) => client,
+        None => return Err("No Channel Found".into()),
+    };
+
+    let state = app_handle.state::<VolumeCommandSender>();
+
+    let result = match command {
+        VolumeCommand::GetDeviceVolume(x, mut sender) => {
+            handle_command_with_result_response(
+                VolumeCommand::GetDeviceVolume(x, sender.clone()),
+                &mut sender,
+                &client.1,
+                &state,
+            )
+            .await
+        }
+        VolumeCommand::GetAppVolume(x, mut sender) => {
+            handle_command_with_result_response(
+                VolumeCommand::GetAppVolume(x, sender.clone()),
+                &mut sender,
+                &client.1,
+                &state,
+            )
+            .await
+        }
+        VolumeCommand::GetAllApplications(mut sender) => {
+            handle_command_with_result_response(
+                VolumeCommand::GetAllApplications(sender.clone()),
+                &mut sender,
+                &client.1,
+                &state,
+            )
+            .await
+        }
+        VolumeCommand::GetCurrentPlaybackDevice(mut sender) => {
+            handle_command_with_result_response(
+                VolumeCommand::GetCurrentPlaybackDevice(sender.clone()),
+                &mut sender,
+                &client.1,
+                &state,
+            )
+            .await
+        }
+        VolumeCommand::GetPlaybackDevices(mut sender) => {
+            handle_command_with_result_response(
+                VolumeCommand::GetPlaybackDevices(sender.clone()),
+                &mut sender,
+                &client.1,
+                &state,
+            )
+            .await
+        }
+        rest => send_command_to_volume_service(rest, &state),
+    };
+    result.map_err(|error| error.to_string().into())
+}
+
+fn send_command_to_volume_service(
+    command: VolumeCommand,
+    v_state: &VolumeCommandSender,
+) -> Result<(), SendError<Message>> {
+    let v_send = match v_state.tx.lock() {
+        Ok(get_send) => get_send,
+        Err(error) => return Err(SendError(error.to_string().into())),
+    };
+
+    v_send
+        .send(command)
+        .map_err(|error| SendError(error.to_string().into()))
+}
+
+async fn handle_command_with_result_response<T>(
+    command: VolumeCommand,
+    sender: &mut UnboundedSender<VolumeResult<T>>,
+    client_sender: &UnboundedSender<Message>,
+    v_state: &VolumeCommandSender,
+) -> Result<(), SendError<Message>>
+where
+    T: serde::Serialize,
+{
+    let (tx, mut rx) = unbounded_channel::<VolumeResult<T>>();
+    sender.clone_from(&tx);
+    let clone_command = command.clone();
+
+    match send_command_to_volume_service(command, v_state) {
+        Ok(msg) => msg,
+        Err(error) => return Err(error),
+    };
+
+    match rx.recv().await {
+        Some(result) => match result {
+            Ok(data) => {
+                let response = create_json_response(&clone_command, &data);
+                client_sender.send(response.into())
+            }
+            Err(error) => Err(SendError(error.to_string().into())),
+        },
+        None => Ok(()),
+    }
+}
+
+fn create_json_response<T: serde::Serialize>(command: &VolumeCommand, data: &T) -> String {
+    json!({
+        "type": command.get_name(),
+        "data": data
+    })
+    .to_string()
 }
 
 fn parse_action(action: &str) -> Result<VolumeCommand, serde_json::Error> {

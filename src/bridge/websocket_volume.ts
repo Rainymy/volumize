@@ -22,30 +22,19 @@ export class WebsocketTauriVolumeController
 
     async setup(url: string, port: number) {
         this.connection.setup(url, port);
-        await this.connection.retryUntilConnection();
+        await this.connection.connect();
 
-        this.eventListenerHandler.addEventListener(
-            this.event_name,
-            (event: Event & CustomEventInit) => {
-                const detail = event.detail as {
-                    channel: string;
-                    data: string;
-                };
+        this.connection.addListener((event) => {
+            const data = this.connection.parse_data(event);
+            if (data === null) {
+                return;
+            }
 
-                this.connection.socket?.addEventListener(
-                    "message",
-                    (event) => {
-                        const custom_event = new CustomEvent(detail.channel, {
-                            detail: event.data,
-                        });
-                        this.eventListenerHandler.dispatchEvent(custom_event);
-                    },
-                    { once: true },
-                );
-
-                this.connection.socket?.send(detail.data);
-            },
-        );
+            const custom_event = new CustomEvent(data.type, {
+                detail: data.data,
+            });
+            this.eventListenerHandler.dispatchEvent(custom_event);
+        });
         return this;
     }
 
@@ -53,15 +42,7 @@ export class WebsocketTauriVolumeController
         this.connection?.close();
     }
 
-    is_connected() {
-        const socket = this.connection.socket;
-        if (socket === null) {
-            return false;
-        }
-        return socket.readyState === socket.OPEN;
-    }
-
-    private sendEvent<T>(action: T_RUST_INVOKE, data?: string) {
+    private sendEvent<T>(action: T_RUST_INVOKE, data: string) {
         return new Promise<T>((resolve) => {
             this.eventListenerHandler.addEventListener(
                 action,
@@ -76,6 +57,8 @@ export class WebsocketTauriVolumeController
                 detail: { channel: action, data: data },
             });
             this.eventListenerHandler.dispatchEvent(custom_event);
+
+            this.connection.send(data);
         });
     }
 
@@ -201,8 +184,10 @@ export class WebsocketTauriVolumeController
 
     getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debounce(
         async () => {
+            const data = this.parse_params(RUST_INVOKE.GET_PLAYBACK_DEVICES);
             return await this.sendEvent<AudioDevice[]>(
                 RUST_INVOKE.GET_PLAYBACK_DEVICES,
+                data,
             );
         },
         BOUNCE_DELAY.FAST,
@@ -210,8 +195,12 @@ export class WebsocketTauriVolumeController
 
     getCurrentPlaybackDevice: ITauriVolumeController["getCurrentPlaybackDevice"] =
         debounce(async () => {
+            const data = this.parse_params(
+                RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE,
+            );
             return await this.sendEvent<AudioDevice | null>(
                 RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE,
+                data,
             );
         }, BOUNCE_DELAY.FAST);
 }

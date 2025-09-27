@@ -1,7 +1,7 @@
 import type { AppIdentifier, AudioDevice, AudioSession, DeviceIdentifier, VolumePercent } from "$type/volume";
 
 export interface ITauriVolumeController {
-    getMasterVolume(device_id: DeviceIdentifier): Promise<unknown>;
+    getMasterVolume(device_id: DeviceIdentifier): Promise<VolumePercent>;
     setMasterVolume(device_id: DeviceIdentifier, percent: number): Promise<unknown>;
 
     muteMaster(device_id: DeviceIdentifier): Promise<unknown>;

@@ -125,6 +125,7 @@ export class WebsocketTauriVolumeController
                 );
             } catch (error) {
                 console.log(`[${this.getMasterVolume.name}]: `, error);
+                return 0.0 as VolumePercent;
             }
         },
         BOUNCE_DELAY.FAST,

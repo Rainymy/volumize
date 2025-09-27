@@ -6,8 +6,9 @@ import { getNumber } from "$util/generic";
 
 export const connection_ready = atom(is_desktop());
 
+// localStorage.clear();
 const __SERVER_URL__ = "server_url" as const;
-const __server_url__ = atom(localStorage.getItem(__SERVER_URL__) ?? "localhost"); // 192.168.1.115
+const __server_url__ = atom(localStorage.getItem(__SERVER_URL__) ?? "192.168.1.115"); // 192.168.1.115
 export const server_url = atom(
     (get) => get(__server_url__),
     (_, set, newValue: string) => {

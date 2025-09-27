@@ -5,7 +5,7 @@ import type {
     DeviceIdentifier,
     VolumePercent,
 } from "$type/volume";
-import { debounce, try_json } from "$util/generic";
+import { debounce } from "$util/generic";
 import { isVolumePercent } from "$util/volume";
 import { ATauriVolumeController, type ITauriVolumeController } from "./type";
 import { BOUNCE_DELAY, RUST_INVOKE } from "./volumeManager";
@@ -17,12 +17,13 @@ export class WebsocketTauriVolumeController
     extends ATauriVolumeController
     implements ITauriVolumeController {
     private eventListenerHandler = new EventTarget();
-    private event_name = "main_channel";
+    // private event_name = "main_channel";
     private connection: ConnectSocket = new ConnectSocket();
 
     async setup(url: string, port: number) {
         this.connection.setup(url, port);
         await this.connection.connect();
+        console.log("We have a connection!");
 
         this.connection.addListener((event) => {
             const data = this.connection.parse_data(event);
@@ -30,7 +31,7 @@ export class WebsocketTauriVolumeController
                 return;
             }
 
-            const custom_event = new CustomEvent(data.type, {
+            const custom_event = new CustomEvent(data.channel, {
                 detail: data.data,
             });
             this.eventListenerHandler.dispatchEvent(custom_event);
@@ -42,32 +43,26 @@ export class WebsocketTauriVolumeController
         this.connection?.close();
     }
 
-    private sendEvent<T>(
+    private async sendEvent<T>(
         action: T_RUST_INVOKE,
         data: string,
         timeoutMs: number = 5_000,
-    ) {
-        return new Promise<T>((resolve, reject) => {
-            let eventListener:
-                | ((event: Event & CustomEventInit) => void)
-                | null = null;
-            let timeoutId: NodeJS.Timeout | null = null;
+    ): Promise<T> {
+        let eventListener: ((event: Event & CustomEventInit) => void) | null =
+            null;
 
-            const cleanup = () => {
-                if (eventListener) {
-                    this.eventListenerHandler.removeEventListener(
-                        action,
-                        eventListener,
-                    );
-                    eventListener = null;
-                }
-                if (timeoutId) {
-                    clearTimeout(timeoutId);
-                    timeoutId = null;
-                }
-            };
+        const cleanup = () => {
+            if (eventListener) {
+                this.eventListenerHandler.removeEventListener(
+                    action,
+                    eventListener,
+                );
+                eventListener = null;
+            }
+        };
 
-            timeoutId = setTimeout(() => {
+        const timer = new Promise<never>((_, reject) => {
+            setTimeout(() => {
                 cleanup();
                 reject(
                     new Error(
@@ -75,24 +70,21 @@ export class WebsocketTauriVolumeController
                     ),
                 );
             }, timeoutMs);
+        });
 
+        const waitFor = new Promise<T>((resolve) => {
             eventListener = (event: Event & CustomEventInit) => {
                 cleanup();
-                // console.log("[send event]: ", event.detail);
-                resolve(try_json<T>(event.detail));
+                console.log("[send event]: ", event.detail);
+                resolve(event.detail as T);
             };
 
-            this.eventListenerHandler.addEventListener(action, eventListener, {
-                once: true,
-            });
-
-            const custom_event = new CustomEvent(this.event_name, {
-                detail: { channel: action, data: data },
-            });
-            this.eventListenerHandler.dispatchEvent(custom_event);
-
-            this.connection.send(data);
+            this.eventListenerHandler.addEventListener(action, eventListener);
         });
+
+        await this.connection.send(data);
+
+        return await Promise.race([waitFor, timer]);
     }
 
     private parse_params(
@@ -119,7 +111,7 @@ export class WebsocketTauriVolumeController
                 device_id,
             });
             try {
-                return await this.sendEvent(
+                return await this.sendEvent<VolumePercent>(
                     RUST_INVOKE.GET_DEVICE_VOLUME,
                     data,
                 );

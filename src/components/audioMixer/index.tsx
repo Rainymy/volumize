@@ -2,12 +2,12 @@ import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
 import { volumeController } from "$bridge/volumeManager";
 import { WebsocketTauriVolumeController } from "$bridge/websocket_volume";
+import { AppButton } from "$component/button";
 import { MainContent } from "$component/mainContent";
 import { Sidebar } from "$component/sidebar";
 import { connection_ready, server_port, server_url } from "$model/volume";
 import { getNumber } from "$util/generic";
 import wrapper from "./index.module.less";
-import { AppButton } from "$component/button";
 
 export function AudioMixer() {
     const connect_url = useAtomValue(server_url);

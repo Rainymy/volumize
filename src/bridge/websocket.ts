@@ -20,16 +20,21 @@ export class ConnectSocket {
         }
     }
 
-    parse_data(data: Message): { type: string; data: string } | null {
+    parse_data(data: Message): { channel: string; data: string } | null {
         if (data.type === "Text") {
-            return data;
+            try {
+                const data2: { type: string; data: string } = JSON.parse(data.data);
+                return {
+                    // rust double parsing string
+                    channel: JSON.parse(data2.type),
+                    data: data2.data,
+                };
+            } catch (err) {
+                console.log(err);
+                return null;
+            }
         }
-        if (data.type === "Binary") {
-            return {
-                type: data.type,
-                data: Buffer.from(data.data).toString(),
-            };
-        }
+
         return null;
     }
 

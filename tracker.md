@@ -1,18 +1,16 @@
 ## Priority
 
-- [ ] Bug in UI sometimes the connection is stale.
-    - Sometimes the device applications not changing.
-
-## Todo
-
-- [ ] Add system tray
-    - [ ] system tray icon and menu
-    - [ ] minimize to tray functionality
-- [ ] Implement server discovery/scanning
-    - I do not know how to. Will look into it.
 - [ ] Tauri uses tokio under the hood.
     - Check if need to use tokio package directly or
       indirectly via tauri runtime tokio.
+- [ ] Add system tray
+    - [ ] system tray icon and menu
+    - [ ] minimize to tray functionality
+
+## Todo
+
+- [ ] Implement server discovery/scanning
+    - I do not know how to. Will look into it.
 
 ## Done
 
@@ -32,3 +30,6 @@
         - Can't make it work with serde.
     - [x] Integrate WebSocket into current implementation.
         - Try not to change how it is used in the UI.
+- [x] Bug in UI sometimes the connection is stale.
+    - Sometimes the device applications not changing.
+    - Wireless connection has high latency.

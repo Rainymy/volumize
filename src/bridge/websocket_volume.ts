@@ -42,16 +42,49 @@ export class WebsocketTauriVolumeController
         this.connection?.close();
     }
 
-    private sendEvent<T>(action: T_RUST_INVOKE, data: string) {
-        return new Promise<T>((resolve) => {
-            this.eventListenerHandler.addEventListener(
-                action,
-                (event: Event & CustomEventInit) => {
-                    // console.log("[send event]: ", event.detail);
-                    resolve(try_json<T>(event.detail));
-                },
-                { once: true },
-            );
+    private sendEvent<T>(
+        action: T_RUST_INVOKE,
+        data: string,
+        timeoutMs: number = 5_000,
+    ) {
+        return new Promise<T>((resolve, reject) => {
+            let eventListener:
+                | ((event: Event & CustomEventInit) => void)
+                | null = null;
+            let timeoutId: NodeJS.Timeout | null = null;
+
+            const cleanup = () => {
+                if (eventListener) {
+                    this.eventListenerHandler.removeEventListener(
+                        action,
+                        eventListener,
+                    );
+                    eventListener = null;
+                }
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+            };
+
+            timeoutId = setTimeout(() => {
+                cleanup();
+                reject(
+                    new Error(
+                        `Event '${action}' timed out after ${timeoutMs}ms`,
+                    ),
+                );
+            }, timeoutMs);
+
+            eventListener = (event: Event & CustomEventInit) => {
+                cleanup();
+                // console.log("[send event]: ", event.detail);
+                resolve(try_json<T>(event.detail));
+            };
+
+            this.eventListenerHandler.addEventListener(action, eventListener, {
+                once: true,
+            });
 
             const custom_event = new CustomEvent(this.event_name, {
                 detail: { channel: action, data: data },

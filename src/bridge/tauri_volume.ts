@@ -15,7 +15,7 @@ export class TauriVolumeController
     extends ATauriVolumeController
     implements ITauriVolumeController {
     getMasterVolume = debounce((device_id: DeviceIdentifier) => {
-        return invoke(RUST_INVOKE.GET_DEVICE_VOLUME, { deviceId: device_id });
+        return invoke<VolumePercent>(RUST_INVOKE.GET_DEVICE_VOLUME, { deviceId: device_id });
     }, BOUNCE_DELAY.NORMAL);
 
     setMasterVolume = debounce(

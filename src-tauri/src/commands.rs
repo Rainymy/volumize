@@ -62,13 +62,17 @@ pub async fn get_all_applications(
 pub async fn get_app_volume(
     app_identifier: AppIdentifier,
     state: State<'_, VolumeCommandSender>,
-) -> Result<VolumePercent, ()> {
+) -> Result<Option<VolumePercent>, ()> {
     let (tx, mut rx) = unbounded_channel();
 
     let _ = state.send(VolumeCommand::GetAppVolume(app_identifier, tx));
 
     if let Some(value) = rx.recv().await {
-        return Ok(value);
+        let volume = match value {
+            Ok(volume) => volume,
+            Err(_) => None,
+        };
+        return Ok(volume);
     }
 
     Err(())

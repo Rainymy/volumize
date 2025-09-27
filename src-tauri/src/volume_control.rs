@@ -19,7 +19,7 @@ mod platform;
 #[path = "linux/linux.rs"]
 mod platform;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum VolumeCommand {
     // Device
@@ -37,7 +37,8 @@ pub enum VolumeCommand {
     ),
     GetAppVolume(
         AppIdentifier,
-        #[serde(skip, default = "default_sender")] UnboundedSender<VolumePercent>,
+        #[serde(skip, default = "default_sender")]
+        UnboundedSender<VolumeResult<Option<VolumePercent>>>,
     ),
     SetAppVolume(AppIdentifier, VolumePercent),
     MuteApp(AppIdentifier),
@@ -179,11 +180,11 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
             let _ = controller.set_app_volume(app_id, volume);
         }
         VolumeCommand::GetAppVolume(app_id, resp_tx) => {
-            if let Ok(app_volume) = controller.get_app_volume(app_id) {
-                let _ = resp_tx.send(app_volume.current);
-            } else {
-                let _ = resp_tx.send(0.0);
-            }
+            let result = match controller.get_app_volume(app_id) {
+                Ok(app_volume) => Some(app_volume.current),
+                Err(_) => None,
+            };
+            let _ = resp_tx.send(Ok(result));
         }
         VolumeCommand::UnmuteApp(app_id) => {
             let _ = controller.unmute_app(app_id);

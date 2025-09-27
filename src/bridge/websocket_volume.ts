@@ -118,7 +118,14 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(RUST_INVOKE.GET_DEVICE_VOLUME, {
                 device_id,
             });
-            return await this.sendEvent(RUST_INVOKE.GET_DEVICE_VOLUME, data);
+            try {
+                return await this.sendEvent(
+                    RUST_INVOKE.GET_DEVICE_VOLUME,
+                    data,
+                );
+            } catch (error) {
+                console.log(`[${this.getMasterVolume.name}]: `, error);
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -132,7 +139,14 @@ export class WebsocketTauriVolumeController
                 device_id,
                 percent,
             });
-            return await this.sendEvent(RUST_INVOKE.SET_DEVICE_VOLUME, data);
+            try {
+                return await this.sendEvent(
+                    RUST_INVOKE.SET_DEVICE_VOLUME,
+                    data,
+                );
+            } catch (error) {
+                console.log(`[${this.setMasterVolume.name}]: `, error);
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -142,7 +156,11 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(RUST_INVOKE.MUTE_DEVICE, {
                 device_id,
             });
-            return await this.sendEvent(RUST_INVOKE.MUTE_DEVICE, data);
+            try {
+                return await this.sendEvent(RUST_INVOKE.MUTE_DEVICE, data);
+            } catch (error) {
+                console.log(`[${this.muteMaster.name}]: `, error);
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -152,7 +170,11 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(RUST_INVOKE.MUTE_DEVICE, {
                 device_id,
             });
-            return await this.sendEvent(RUST_INVOKE.UNMUTE_DEVICE, data);
+            try {
+                return await this.sendEvent(RUST_INVOKE.UNMUTE_DEVICE, data);
+            } catch (error) {
+                console.log(`[${this.unmuteMaster.name}]: `, error);
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -160,10 +182,15 @@ export class WebsocketTauriVolumeController
     getAllApplications: ITauriVolumeController["getAllApplications"] = debounce(
         async () => {
             const data = this.parse_params(RUST_INVOKE.GET_ALL_APPLICATIONS);
-            return await this.sendEvent<AudioSession[]>(
-                RUST_INVOKE.GET_ALL_APPLICATIONS,
-                data,
-            );
+            try {
+                return await this.sendEvent<AudioSession[]>(
+                    RUST_INVOKE.GET_ALL_APPLICATIONS,
+                    data,
+                );
+            } catch (error) {
+                console.log(`[${this.getAllApplications.name}]: `, error);
+                return [];
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -171,10 +198,15 @@ export class WebsocketTauriVolumeController
     getAppVolume: ITauriVolumeController["getAppVolume"] = debounce(
         async (app: AppIdentifier) => {
             const data = this.parse_params(RUST_INVOKE.GET_APP_VOLUME, { app });
-            return await this.sendEvent<VolumePercent>(
-                RUST_INVOKE.GET_APP_VOLUME,
-                data,
-            );
+            try {
+                return await this.sendEvent<VolumePercent>(
+                    RUST_INVOKE.GET_APP_VOLUME,
+                    data,
+                );
+            } catch (error) {
+                console.log(`[${this.getAppVolume.name}]: `, error);
+                return 0.0 as VolumePercent;
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -188,7 +220,11 @@ export class WebsocketTauriVolumeController
                 app,
                 percent,
             });
-            return await this.sendEvent(RUST_INVOKE.SET_APP_VOLUME, data);
+            try {
+                return await this.sendEvent(RUST_INVOKE.SET_APP_VOLUME, data);
+            } catch (error) {
+                console.log(`[${this.setAppVolume.name}]: `, error);
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -196,10 +232,14 @@ export class WebsocketTauriVolumeController
     muteApp: ITauriVolumeController["muteApp"] = debounce(
         async (app: AppIdentifier) => {
             const data = this.parse_params(RUST_INVOKE.MUTE_DEVICE, { app });
-            return await this.sendEvent<VolumePercent>(
-                RUST_INVOKE.MUTE_APP_VOLUME,
-                data,
-            );
+            try {
+                return await this.sendEvent<VolumePercent>(
+                    RUST_INVOKE.MUTE_APP_VOLUME,
+                    data,
+                );
+            } catch (error) {
+                console.log(`[${this.muteApp.name}]: `, error);
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -207,10 +247,14 @@ export class WebsocketTauriVolumeController
     unmuteApp: ITauriVolumeController["unmuteApp"] = debounce(
         async (app: AppIdentifier) => {
             const data = this.parse_params(RUST_INVOKE.MUTE_DEVICE, { app });
-            return await this.sendEvent<VolumePercent>(
-                RUST_INVOKE.UNMUTE_APP_VOLUME,
-                data,
-            );
+            try {
+                return await this.sendEvent<VolumePercent>(
+                    RUST_INVOKE.UNMUTE_APP_VOLUME,
+                    data,
+                );
+            } catch (error) {
+                console.log(`[${this.unmuteApp.name}]: `, error);
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -218,10 +262,15 @@ export class WebsocketTauriVolumeController
     getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debounce(
         async () => {
             const data = this.parse_params(RUST_INVOKE.GET_PLAYBACK_DEVICES);
-            return await this.sendEvent<AudioDevice[]>(
-                RUST_INVOKE.GET_PLAYBACK_DEVICES,
-                data,
-            );
+            try {
+                return await this.sendEvent<AudioDevice[]>(
+                    RUST_INVOKE.GET_PLAYBACK_DEVICES,
+                    data,
+                );
+            } catch (error) {
+                console.log(`[${this.getPlaybackDevices.name}]: `, error);
+                return [];
+            }
         },
         BOUNCE_DELAY.FAST,
     );
@@ -231,9 +280,14 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(
                 RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE,
             );
-            return await this.sendEvent<AudioDevice | null>(
-                RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE,
-                data,
-            );
+            try {
+                return await this.sendEvent<AudioDevice | null>(
+                    RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE,
+                    data,
+                );
+            } catch (error) {
+                console.log(`[${this.getCurrentPlaybackDevice.name}]: `, error);
+                return null;
+            }
         }, BOUNCE_DELAY.FAST);
 }

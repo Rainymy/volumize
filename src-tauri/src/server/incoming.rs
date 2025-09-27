@@ -1,4 +1,5 @@
 use futures_util::{stream::SplitStream, StreamExt};
+use serde_json::json;
 use tauri::{AppHandle, Manager};
 use tokio::{net::TcpStream, sync::mpsc::unbounded_channel};
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
@@ -31,45 +32,44 @@ pub async fn handle_incoming_messages(
                         let v_state = _app_handle.state::<VolumeCommandSender>();
                         if let Some(c_client) = clients.lock().await.get(&client_id) {
                             match command {
-                                VolumeCommand::GetAllApplications(mut unbounded_sender) => {
+                                VolumeCommand::GetAllApplications(mut sender) => {
                                     let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
-                                    unbounded_sender.clone_from(&tx);
-                                    let temp = VolumeCommand::GetAllApplications(unbounded_sender);
-
+                                    sender.clone_from(&tx);
+                                    let temp = VolumeCommand::GetAllApplications(sender);
                                     if let Ok(v_send_error) = v_state.tx.lock() {
                                         let _ = v_send_error.send(temp);
                                     };
 
+                                    let temp2 = VolumeCommand::GetAllApplications(tx.clone());
                                     if let Some(r_value) = rx.recv().await {
-                                        if let Ok(value) = r_value {
-                                            match serde_json::to_string(&value) {
-                                                Ok(value) => {
-                                                    let _ = c_client
-                                                        .1
-                                                        .send(Message::Text(value.into()));
-                                                }
-                                                Err(err) => {
-                                                    dbg!(err);
-                                                }
-                                            }
-                                        }
+                                        let value = json!({
+                                            "type": temp2.get_name(),
+                                            "data": r_value.unwrap_or_default()
+                                        })
+                                        .to_string();
+                                        let _ = c_client.1.send(Message::Text(value.into()));
                                     };
                                 }
-                                VolumeCommand::GetDeviceVolume(a, mut unbounded_sender) => {
+                                VolumeCommand::GetDeviceVolume(a, mut sender) => {
                                     let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
-                                    unbounded_sender.clone_from(&tx);
+                                    sender.clone_from(&tx);
 
-                                    let temp = VolumeCommand::GetDeviceVolume(a, unbounded_sender);
+                                    let temp = VolumeCommand::GetDeviceVolume(a.clone(), sender);
+
                                     if let Ok(v_send_error) = v_state.tx.lock() {
                                         let _ = v_send_error.send(temp);
                                     };
 
+                                    let temp2 = VolumeCommand::GetDeviceVolume(a, tx.clone());
                                     if let Some(r_value) = rx.recv().await {
-                                        dbg!(&r_value);
                                         if let Ok(value) = r_value {
-                                            let _ = c_client
-                                                .1
-                                                .send(value.unwrap_or_default().to_string().into());
+                                            let value = json!({
+                                                "type": temp2.get_name(),
+                                                "data": value
+                                            })
+                                            .to_string();
+
+                                            let _ = c_client.1.send(value.into());
                                         }
                                     };
                                 }
@@ -81,31 +81,34 @@ pub async fn handle_incoming_messages(
                                         let _ = v_send_error.send(temp);
                                     };
 
-                                    if let Some(value) = rx.recv().await {
-                                        let _ = c_client.1.send(value.to_string().into());
-                                    };
+                                    let temp2 = VolumeCommand::GetAppVolume(a, tx.clone());
+                                    let value = rx.recv().await;
+                                    let s_value = json!({
+                                        "type": temp2.get_name(),
+                                        "data": value.unwrap_or_default()
+                                    })
+                                    .to_string();
+
+                                    let _ = c_client.1.send(s_value.into());
                                 }
-                                VolumeCommand::GetCurrentPlaybackDevice(mut unbounded_sender) => {
+                                VolumeCommand::GetCurrentPlaybackDevice(mut sender) => {
                                     let (tx, mut rx) = unbounded_channel::<VolumeResult<_>>();
-                                    unbounded_sender.clone_from(&tx);
-                                    let temp =
-                                        VolumeCommand::GetCurrentPlaybackDevice(unbounded_sender);
+                                    sender.clone_from(&tx);
+                                    let temp = VolumeCommand::GetCurrentPlaybackDevice(sender);
                                     if let Ok(v_send_error) = v_state.tx.lock() {
                                         let _ = v_send_error.send(temp);
                                     };
 
+                                    let temp2 = VolumeCommand::GetCurrentPlaybackDevice(tx.clone());
                                     if let Some(r_value) = rx.recv().await {
                                         if let Ok(value) = r_value {
-                                            match serde_json::to_string(&value) {
-                                                Ok(value) => {
-                                                    let _ = c_client
-                                                        .1
-                                                        .send(Message::Text(value.into()));
-                                                }
-                                                Err(err) => {
-                                                    dbg!(err);
-                                                }
-                                            }
+                                            let s_value = json!({
+                                                "type": temp2.get_name(),
+                                                "data": value
+                                            })
+                                            .to_string();
+
+                                            let _ = c_client.1.send(s_value.into());
                                         }
                                     };
                                 }
@@ -118,19 +121,15 @@ pub async fn handle_incoming_messages(
                                         let _ = v_send_error.send(temp);
                                     };
 
+                                    let temp2 = VolumeCommand::GetPlaybackDevices(tx.clone());
                                     if let Some(r_value) = rx.recv().await {
-                                        if let Ok(value) = r_value {
-                                            match serde_json::to_string(&value) {
-                                                Ok(value) => {
-                                                    let _ = c_client
-                                                        .1
-                                                        .send(Message::Text(value.into()));
-                                                }
-                                                Err(err) => {
-                                                    dbg!(err);
-                                                }
-                                            }
-                                        }
+                                        let s_value = json!({
+                                            "type": temp2.get_name(),
+                                            "data": r_value.unwrap_or_default()
+                                        })
+                                        .to_string();
+
+                                        let _ = c_client.1.send(s_value.into());
                                     };
                                 }
                                 rest => {

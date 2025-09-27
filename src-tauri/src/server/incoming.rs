@@ -5,7 +5,7 @@ use serde_json::json;
 use tauri::{AppHandle, Manager};
 use tokio::{
     net::TcpStream,
-    sync::mpsc::{error::SendError, unbounded_channel, UnboundedSender},
+    sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender},
 };
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
@@ -49,6 +49,7 @@ pub async fn handle_incoming_messages(
             }
             Ok(data) => {
                 dbg!(data);
+                break;
             }
             Err(e) => {
                 eprintln!("WebSocket error for client {}: {}", client_id, e);
@@ -73,53 +74,59 @@ async fn handle_volume_command(
     let state = app_handle.state::<VolumeCommandSender>();
 
     let result = match command {
-        VolumeCommand::GetDeviceVolume(x, mut sender) => {
+        VolumeCommand::GetDeviceVolume(x, mut _sender) => {
+            let (tx, rx) = unbounded_channel();
             handle_command_with_result_response(
-                VolumeCommand::GetDeviceVolume(x, sender.clone()),
-                &mut sender,
+                VolumeCommand::GetDeviceVolume(x, tx),
                 &client.1,
                 &state,
+                rx,
             )
             .await
         }
-        VolumeCommand::GetAppVolume(x, mut sender) => {
+        VolumeCommand::GetAppVolume(x, mut _sender) => {
+            let (tx, rx) = unbounded_channel();
             handle_command_with_result_response(
-                VolumeCommand::GetAppVolume(x, sender.clone()),
-                &mut sender,
+                VolumeCommand::GetAppVolume(x, tx),
                 &client.1,
                 &state,
+                rx,
             )
             .await
         }
-        VolumeCommand::GetAllApplications(mut sender) => {
+        VolumeCommand::GetAllApplications(mut _sender) => {
+            let (tx, rx) = unbounded_channel();
             handle_command_with_result_response(
-                VolumeCommand::GetAllApplications(sender.clone()),
-                &mut sender,
+                VolumeCommand::GetAllApplications(tx),
                 &client.1,
                 &state,
+                rx,
             )
             .await
         }
-        VolumeCommand::GetCurrentPlaybackDevice(mut sender) => {
+        VolumeCommand::GetCurrentPlaybackDevice(mut _sender) => {
+            let (tx, rx) = unbounded_channel();
             handle_command_with_result_response(
-                VolumeCommand::GetCurrentPlaybackDevice(sender.clone()),
-                &mut sender,
+                VolumeCommand::GetCurrentPlaybackDevice(tx),
                 &client.1,
                 &state,
+                rx,
             )
             .await
         }
-        VolumeCommand::GetPlaybackDevices(mut sender) => {
+        VolumeCommand::GetPlaybackDevices(mut _sender) => {
+            let (tx, rx) = unbounded_channel();
             handle_command_with_result_response(
-                VolumeCommand::GetPlaybackDevices(sender.clone()),
-                &mut sender,
+                VolumeCommand::GetPlaybackDevices(tx),
                 &client.1,
                 &state,
+                rx,
             )
             .await
         }
         rest => send_command_to_volume_service(rest, &state),
     };
+
     result.map_err(|error| error.to_string().into())
 }
 
@@ -137,17 +144,12 @@ fn send_command_to_volume_service(
         .map_err(|error| SendError(error.to_string().into()))
 }
 
-async fn handle_command_with_result_response<T>(
+async fn handle_command_with_result_response<T: serde::Serialize>(
     command: VolumeCommand,
-    sender: &mut UnboundedSender<VolumeResult<T>>,
     client_sender: &UnboundedSender<Message>,
     v_state: &VolumeCommandSender,
-) -> Result<(), SendError<Message>>
-where
-    T: serde::Serialize,
-{
-    let (tx, mut rx) = unbounded_channel::<VolumeResult<T>>();
-    sender.clone_from(&tx);
+    mut rx: UnboundedReceiver<VolumeResult<T>>,
+) -> Result<(), SendError<Message>> {
     let clone_command = command.clone();
 
     match send_command_to_volume_service(command, v_state) {

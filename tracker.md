@@ -1,8 +1,5 @@
 ## Priority
 
-- [ ] Tauri uses tokio under the hood.
-    - Check if need to use tokio package directly or
-      indirectly via tauri runtime tokio.
 - [ ] Add system tray
     - [ ] system tray icon and menu
     - [ ] minimize to tray functionality
@@ -33,3 +30,7 @@
 - [x] Bug in UI sometimes the connection is stale.
     - Sometimes the device applications not changing.
     - Wireless connection has high latency.
+- [x] Tauri uses Tokio under the hood.
+    - Check if need to use directly or indirectly via Tauri.
+    - Prefer to use the re-exported functionality for compatibility reasons.
+        - Tauri & Tokio runtime may use different version.

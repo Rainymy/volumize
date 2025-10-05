@@ -88,6 +88,23 @@ impl VolumeCommandSender {
             drop(old_tx); // Explicitly drop the sender
         }
     }
+
+    pub fn shutdown(&self) -> Result<(), String> {
+        self.close_channel();
+
+        let mut handle = self
+            .thread_handle
+            .lock()
+            .map_err(|e| format!("Failed to lock thread handle: {}", e))?;
+
+        if let Some(join_handle) = handle.take() {
+            join_handle
+                .join()
+                .map_err(|e| format!("Volume thread panicked during shutdown: {:?}", e))?;
+        }
+
+        Ok(())
+    }
 }
 
 pub fn spawn_volume_thread() -> VolumeCommandSender {

@@ -102,19 +102,14 @@ fn run_application(app: tauri::App) {
 }
 
 fn shutdown_background_thread(app_handle: &AppHandle) {
-    let state = app_handle.state::<VolumeCommandSender>();
-    let handle_clone = state.thread_handle.clone();
+    if let Err(e) = app_handle.state::<VolumeCommandSender>().shutdown() {
+        eprintln!("Volume thread shutdown error: {}", e);
+    }
 
-    state.close_channel(); // close the channel before joining.
-
-    match handle_clone.lock() {
-        Ok(mut handle_guard) => {
-            if let Some(join_handle) = handle_guard.take() {
-                if let Err(e) = join_handle.join() {
-                    eprintln!("Background thread panicked during shutdown: {:?}", e)
-                }
-            }
+    let ws_state = app_handle.state::<WebSocketServerState>();
+    tauri::async_runtime::block_on(async {
+        if let Err(err) = ws_state.shutdown().await {
+            eprintln!("WebSocket server shutdown error: {}", err);
         }
-        Err(e) => eprintln!("Failed to acquire thread handle lock: {:?}", e),
-    };
+    });
 }

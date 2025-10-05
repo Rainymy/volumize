@@ -35,7 +35,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
         .manage(volume_control::spawn_volume_thread())
-        .manage(WebSocketServerState::default())
+        .manage(WebSocketServerState::new())
         .setup(|app| {
             let _ = setup_dev_tools(app);
 

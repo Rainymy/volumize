@@ -121,7 +121,6 @@ pub fn spawn_volume_thread() -> VolumeCommandSender {
 
         let rt = match tokio::runtime::Builder::new_current_thread()
             .thread_name("tokie_spawn_volume_thread")
-            .enable_all()
             .build()
         {
             Ok(rt) => rt,

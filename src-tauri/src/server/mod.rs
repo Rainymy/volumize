@@ -1,3 +1,4 @@
+use std::net::{Ipv4Addr, SocketAddrV4};
 use std::{collections::HashMap, sync::Arc};
 
 use futures_util::future::{select, Either};
@@ -55,9 +56,11 @@ pub struct ServiceDiscovery {
 }
 
 impl ServiceDiscovery {
-    pub const SERVICE_MDNS_DOMAIN: &str = "_volume-service._tcp.local.";
-    pub const SERVICE_MDNS_INSTANCE_NAME: &str = "volumize";
-    pub const SERVICE_DISCOVERY_MSG: &[u8; 17] = b"DISCOVER_VOLUMIZE";
+    pub const MDNS_DOMAIN: &str = "_volume-service._tcp.local.";
+    pub const MDNS_INSTANCE_NAME: &str = "volumize";
+    pub const DISCOVERY_MSG: &str = "DISCOVER_VOLUMIZE";
+    pub const BROADCAST_ADDRESS: SocketAddrV4 = SocketAddrV4::new(Ipv4Addr::BROADCAST, 51280);
+    pub const LISTEN_ADDRESS: SocketAddrV4 = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 51280);
 
     pub fn new() -> Self {
         Self {
@@ -97,8 +100,8 @@ pub async fn start_websocket_server(
     port: u16,
     app_handle: AppHandle,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let addr = format!("0.0.0.0:{}", port);
-    let listener = TcpListener::bind(&addr).await?;
+    let addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
+    let listener = TcpListener::bind(addr).await?;
 
     let state = app_handle.state::<WebSocketServerState>();
     let clients = state.clients.clone();
@@ -145,5 +148,5 @@ pub async fn start_websocket_server(
         }
     }
 
-    Ok(addr)
+    Ok(addr.to_string())
 }

@@ -1,3 +1,4 @@
+use futures_util::future::{select, Either};
 use std::{
     net::{IpAddr, Ipv4Addr},
     time::Duration,
@@ -22,7 +23,7 @@ pub async fn start_service_register(port: u16, app_handle: AppHandle) {
     let new_handle = rt::spawn(async move {
         // List all mDNS command: dns-sd -B _services._dns-sd._udp
         if let Err(e) = register_service(port, cancel_clone).await {
-            println!("{}", e);
+            println!("register_service failed: {}", e);
         }
     });
 
@@ -50,13 +51,12 @@ async fn register_service(
 
 fn init_mdns_service(port: u16) -> Result<mdns_sd::ServiceDaemon, Box<dyn std::error::Error>> {
     let mdns = mdns_sd::ServiceDaemon::new()?;
-    let hostname = "volumize_server.local."; // using fixed host name.
 
     // let properties = [("version", "1.0"), ("api", "v2")];
     let service = mdns_sd::ServiceInfo::new(
-        ServiceDiscovery::SERVICE_MDNS_DOMAIN,
-        ServiceDiscovery::SERVICE_MDNS_INSTANCE_NAME,
-        &hostname,
+        ServiceDiscovery::MDNS_DOMAIN,
+        ServiceDiscovery::MDNS_INSTANCE_NAME,
+        &"volumize_server.local.", // using fixed host name.
         IpAddr::V4(Ipv4Addr::new(192, 168, 1, 115)),
         port,
         None, // &properties[..],
@@ -72,12 +72,10 @@ async fn run_udp_responder(
     port: u16,
     cancel: CancellationToken,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let socket = UdpSocket::bind("0.0.0.0:51820").await?;
+    let socket = UdpSocket::bind(ServiceDiscovery::LISTEN_ADDRESS).await?;
     let mut buf = [0u8; 24];
 
-    println!("Server ready (mDNS + UDP fallback)");
-
-    use futures_util::future::{select, Either};
+    println!("Server ready (mDNS + UDP)");
 
     loop {
         let cancellation = cancel.cancelled();
@@ -88,11 +86,10 @@ async fn run_udp_responder(
             Either::Right((result, _)) => result?,
         };
 
-        if &buf[..len] == ServiceDiscovery::SERVICE_DISCOVERY_MSG {
+        if &buf[..len] == ServiceDiscovery::DISCOVERY_MSG.as_bytes() {
             let response = format!("SERVER:{}", port);
             socket.send_to(response.as_bytes(), addr).await?;
         }
-        println!("looping...");
     }
 
     Ok(())
@@ -101,7 +98,7 @@ async fn run_udp_responder(
 fn shutdown_mdns_service(mdns: &mdns_sd::ServiceDaemon) -> Result<(), String> {
     println!("Shutting down mDNS service...");
     loop {
-        match mdns.unregister(ServiceDiscovery::SERVICE_MDNS_DOMAIN) {
+        match mdns.unregister(ServiceDiscovery::MDNS_DOMAIN) {
             Err(mdns_sd::Error::Again) => {
                 eprintln!("mDNS failed to shutdown, trying again...");
                 std::thread::sleep(Duration::from_millis(50));

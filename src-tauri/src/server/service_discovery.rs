@@ -7,7 +7,7 @@ use super::ServiceDiscovery;
 
 pub async fn mdns_discover(timeout: Duration) -> Result<String, Box<dyn std::error::Error>> {
     let mdns = ServiceDaemon::new()?;
-    let receiver = mdns.browse(&ServiceDiscovery::SERVICE_MDNS_DOMAIN)?;
+    let receiver = mdns.browse(&ServiceDiscovery::MDNS_DOMAIN)?;
 
     loop {
         let deadline = tokio::time::sleep(timeout);
@@ -33,8 +33,8 @@ pub async fn broadcast_discover(timeout: Duration) -> Result<String, Box<dyn std
 
     socket
         .send_to(
-            ServiceDiscovery::SERVICE_DISCOVERY_MSG,
-            "255.255.255.255:51820",
+            ServiceDiscovery::DISCOVERY_MSG.as_bytes(),
+            ServiceDiscovery::BROADCAST_ADDRESS,
         )
         .await?;
 
@@ -62,21 +62,26 @@ pub async fn broadcast_discover(timeout: Duration) -> Result<String, Box<dyn std
 
 pub async fn discover_server() -> Result<String, Box<dyn std::error::Error>> {
     println!("Trying mDNS discovery...");
-    match mdns_discover(Duration::from_secs(20)).await {
+    match mdns_discover(Duration::from_secs(3)).await {
         Ok(addr) => {
             println!("Found via mDNS: {}", addr);
             return Ok(addr);
         }
         Err(err) => {
-            dbg!(err);
+            eprintln!("{}", err);
         }
-    }
+    };
 
-    println!("mDNS failed, trying UDP broadcast...");
-    if let Ok(addr) = broadcast_discover(Duration::from_secs(3)).await {
-        println!("Found via broadcast: {}", addr);
-        return Ok(addr);
-    }
+    println!("Trying UDP broadcast...");
+    match broadcast_discover(Duration::from_secs(3)).await {
+        Ok(addr) => {
+            println!("Found via broadcast: {}", addr);
+            return Ok(addr);
+        }
+        Err(err) => {
+            eprintln!("{}", err);
+        }
+    };
 
     Err("Could not discover server. Please enter IP manually.".into())
 }

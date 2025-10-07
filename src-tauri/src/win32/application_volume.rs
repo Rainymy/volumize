@@ -1,12 +1,12 @@
 use windows::Win32::Media::Audio::{IAudioSessionManager2, ISimpleAudioVolume};
 
 use crate::{
+    server::volume_control::platform::{com_scope::ComManager, convert::get_direction},
     types::shared::{
         AppIdentifier, ApplicationVolumeControl, AudioApplication, AudioDevice, AudioSession,
         AudioVolume, DeviceControl, VolumeControllerError, VolumePercent, VolumeResult,
         VolumeValidation,
     },
-    volume_control::platform::{com_scope::ComManager, convert::get_direction},
 };
 
 use super::{convert, util, VolumeController};

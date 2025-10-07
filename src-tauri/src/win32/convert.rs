@@ -13,11 +13,11 @@ use windows::{
 };
 
 use crate::{
+    server::volume_control::platform::com_scope::ComManager,
     types::shared::{
         AudioApplication, AudioDevice, AudioVolume, ProcessInfo, SessionDirection, SessionType,
         VolumeResult,
     },
-    volume_control::platform::com_scope::ComManager,
 };
 
 use super::util;

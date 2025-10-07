@@ -2,8 +2,8 @@ use tauri::State;
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::{
+    server::{VolumeCommand, VolumeCommandSender},
     types::shared::{AppIdentifier, AudioDevice, AudioSession, DeviceIdentifier, VolumePercent},
-    volume_control::{VolumeCommand, VolumeCommandSender},
 };
 
 // ============================ Master ============================

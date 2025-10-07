@@ -2,16 +2,23 @@ use std::{collections::HashMap, sync::Arc};
 
 use futures_util::future::{select, Either};
 use serde::{Deserialize, Serialize};
-use tauri::async_runtime as rt;
+use tauri::async_runtime::{self as rt};
 use tauri::{AppHandle, Manager};
 use tokio::{net::TcpListener, sync::mpsc, task::JoinSet};
 use tokio_tungstenite::tungstenite::Message;
 use tokio_util::sync::CancellationToken;
 
-use crate::server::handle::handle_client;
-
 mod handle;
 mod incoming;
+mod service_discovery;
+mod service_register;
+mod volume_control;
+
+pub use service_discovery::discover_server;
+#[allow(unused_imports)]
+pub use service_register::start_service_register;
+#[allow(unused_imports)]
+pub use volume_control::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ClientInfo {
@@ -28,9 +35,43 @@ pub struct WebSocketServerState {
     server: Arc<rt::Mutex<Option<RunningServer>>>,
 }
 
-struct RunningServer {
+pub struct RunningServer {
+    pub name: String,
     handle: rt::JoinHandle<()>,
     cancel: CancellationToken,
+}
+
+impl RunningServer {
+    pub async fn shutdown(self) -> Result<(), String> {
+        self.cancel.cancel();
+        self.handle
+            .await
+            .map_err(|e| format!("[{}] shutdown failed: {}", self.name, e))
+    }
+}
+
+pub struct ServiceDiscovery {
+    server: Arc<rt::Mutex<Option<RunningServer>>>,
+}
+
+impl ServiceDiscovery {
+    pub const SERVICE_MDNS_DOMAIN: &str = "_volume-service._tcp.local.";
+    pub const SERVICE_MDNS_INSTANCE_NAME: &str = "volumize";
+    pub const SERVICE_DISCOVERY_MSG: &[u8; 17] = b"DISCOVER_VOLUMIZE";
+
+    pub fn new() -> Self {
+        Self {
+            server: Arc::new(rt::Mutex::new(None)),
+        }
+    }
+
+    pub async fn shutdown(&self) -> Result<(), String> {
+        let mut server = self.server.lock().await;
+        match server.take() {
+            Some(server) => server.shutdown().await,
+            None => Ok(()),
+        }
+    }
 }
 
 impl WebSocketServerState {
@@ -43,13 +84,8 @@ impl WebSocketServerState {
 
     pub async fn shutdown(&self) -> Result<(), String> {
         let mut server = self.server.lock().await;
-
-        if let Some(s) = server.take() {
-            s.cancel.cancel();
-            let _ = s
-                .handle
-                .await
-                .map_err(|e| format!("Server task failed: {}", e))?;
+        if let Some(server) = server.take() {
+            server.shutdown().await?
         }
 
         self.clients.lock().await.clear();
@@ -60,7 +96,7 @@ impl WebSocketServerState {
 pub async fn start_websocket_server(
     port: u16,
     app_handle: AppHandle,
-) -> Result<String, std::io::Error> {
+) -> Result<String, Box<dyn std::error::Error>> {
     let addr = format!("0.0.0.0:{}", port);
     let listener = TcpListener::bind(&addr).await?;
 
@@ -79,20 +115,16 @@ pub async fn start_websocket_server(
             let accept = listener.accept();
 
             match select(Box::pin(cancelled), Box::pin(accept)).await {
-                Either::Left(_) => {
-                    break;
-                }
+                Either::Left(_) => break,
                 Either::Right((Ok((stream, peer_addr)), _)) => {
-                    conns.spawn(handle_client(
+                    conns.spawn(handle::handle_client(
                         stream,
                         peer_addr,
                         clients.clone(),
                         app_handle_clone.clone(),
                     ));
                 }
-                Either::Right((Err(_), _)) => {
-                    break;
-                }
+                Either::Right((Err(_), _)) => break,
             };
         }
 
@@ -101,15 +133,15 @@ pub async fn start_websocket_server(
 
     // Store the server handle
     {
-        let mut current_server = state.server.lock().await;
         let new_server = RunningServer {
+            name: "Websocket".into(),
             handle: new_handle,
             cancel,
         };
 
+        let mut current_server = state.server.lock().await;
         if let Some(old) = current_server.replace(new_server) {
-            old.cancel.cancel();
-            let _ = old.handle.await;
+            let _ = old.shutdown().await;
         }
     }
 

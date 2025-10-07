@@ -26,6 +26,7 @@ tokio-tungstenite = "0.27"
 tauri-plugin-os = "2"
 tauri-plugin-websocket = "2"
 tokio-util = "0.7.16"
+mdns-sd = "0.15.1"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61.3", features = [

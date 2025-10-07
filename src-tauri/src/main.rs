@@ -1,17 +1,16 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{AppHandle, Manager, Result as TauriResult, RunEvent};
-
-use crate::{
-    server::{start_websocket_server, WebSocketServerState},
-    volume_control::VolumeCommandSender,
-};
+pub use tauri::{AppHandle, Manager, Result as TauriResult, RunEvent};
 
 mod commands;
 mod server;
 mod types;
-mod volume_control;
+
+use server::{
+    start_service_register, start_websocket_server, ServiceDiscovery, VolumeCommandSender,
+    WebSocketServerState,
+};
 
 fn main() {
     if let Err(e) = start_application() {
@@ -29,24 +28,37 @@ pub fn start_application() -> TauriResult<()> {
     Ok(())
 }
 
+// #[tauri::command]
+// async fn discover_server_address() -> Option<String> {
+//     server::discover_server().await.ok()
+// }
+
 fn create_tauri_app() -> TauriResult<tauri::App> {
     tauri::Builder::default()
         .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
-        .manage(volume_control::spawn_volume_thread())
+        .manage(server::spawn_volume_thread())
         .manage(WebSocketServerState::new())
+        .manage(ServiceDiscovery::new())
         .setup(|app| {
             let _ = setup_dev_tools(app);
 
-            let app_handle = app.app_handle().clone();
+            let port_address = 9001;
 
+            let app_handle = app.app_handle().clone();
             tauri::async_runtime::spawn(async move {
-                match start_websocket_server(9001, app_handle).await {
+                match start_websocket_server(port_address, app_handle).await {
                     Ok(addr) => println!("WebSocket server listening on {}", addr),
-                    Err(e) => eprintln!("WebSocket server failed to start: {}", e),
+                    Err(e) => eprintln!("\nWebSocket server failed to start: \n\t{}\n", e),
                 }
             });
+
+            let app_handle2 = app.app_handle().clone();
+            tauri::async_runtime::spawn(async move {
+                start_service_register(port_address, app_handle2).await;
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -64,6 +76,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
             // Device controls
             commands::get_current_playback_device,
             commands::get_playback_devices,
+            // discover_server_address
         ])
         .build(tauri::generate_context!())
 }
@@ -105,6 +118,13 @@ fn shutdown_background_thread(app_handle: &AppHandle) {
     if let Err(e) = app_handle.state::<VolumeCommandSender>().shutdown() {
         eprintln!("Volume thread shutdown error: {}", e);
     }
+
+    let service_state = app_handle.state::<ServiceDiscovery>();
+    tauri::async_runtime::block_on(async {
+        if let Err(e) = service_state.shutdown().await {
+            eprintln!("Service thread shutdown error: {}", e);
+        }
+    });
 
     let ws_state = app_handle.state::<WebSocketServerState>();
     tauri::async_runtime::block_on(async {

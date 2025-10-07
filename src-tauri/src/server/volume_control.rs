@@ -12,11 +12,11 @@ use crate::types::shared::{
 };
 
 #[cfg(target_os = "windows")]
-#[path = "win32/mod.rs"]
+#[path = "../win32/mod.rs"]
 mod platform;
 
 #[cfg(target_os = "linux")]
-#[path = "linux/linux.rs"]
+#[path = "../linux/linux.rs"]
 mod platform;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

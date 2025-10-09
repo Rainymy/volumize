@@ -28,10 +28,10 @@ pub fn start_application() -> TauriResult<()> {
     Ok(())
 }
 
-// #[tauri::command]
-// async fn discover_server_address() -> Option<String> {
-//     server::discover_server().await.ok()
-// }
+#[tauri::command]
+async fn discover_server_address() -> Option<String> {
+    server::discover_server().await.ok()
+}
 
 fn create_tauri_app() -> TauriResult<tauri::App> {
     tauri::Builder::default()
@@ -76,7 +76,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
             // Device controls
             commands::get_current_playback_device,
             commands::get_playback_devices,
-            // discover_server_address
+            discover_server_address
         ])
         .build(tauri::generate_context!())
 }

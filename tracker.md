@@ -15,6 +15,7 @@
 ## Done
 
 - [x] Implement server discovery/scanning
+    - Implemented with mDNS & UDP as fallback.
 - [x] Tauri uses Tokio under the hood.
     - Check if need to use directly or indirectly via Tauri.
     - Prefer to use the re-exported functionality for compatibility reasons.

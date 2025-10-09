@@ -6,11 +6,15 @@
 
 ## Todo
 
-- [ ] Implement server discovery/scanning
-    - I do not know how to. Will look into it.
+- [ ] Redesign User interface.
+    - Make it nicer on small screens like phone.
+- [ ] Improve application icon.
+    - Add some transparency.
+    - Make it better when it is small.
 
 ## Done
 
+- [x] Implement server discovery/scanning
 - [x] Tauri uses Tokio under the hood.
     - Check if need to use directly or indirectly via Tauri.
     - Prefer to use the re-exported functionality for compatibility reasons.

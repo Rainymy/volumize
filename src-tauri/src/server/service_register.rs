@@ -1,8 +1,5 @@
 use futures_util::future::{select, Either};
-use std::{
-    net::{IpAddr, Ipv4Addr},
-    time::Duration,
-};
+use std::time::Duration;
 use tauri::{
     async_runtime::{self as rt},
     AppHandle, Manager,
@@ -50,18 +47,16 @@ async fn register_service(
 }
 
 fn init_mdns_service(port: u16) -> Result<mdns_sd::ServiceDaemon, Box<dyn std::error::Error>> {
-    let mdns = mdns_sd::ServiceDaemon::new()?;
-
-    // let properties = [("version", "1.0"), ("api", "v2")];
     let service = mdns_sd::ServiceInfo::new(
         ServiceDiscovery::MDNS_DOMAIN,
         ServiceDiscovery::MDNS_INSTANCE_NAME,
         &"volumize_server.local.", // using fixed host name.
-        IpAddr::V4(Ipv4Addr::new(192, 168, 1, 115)),
+        local_ip_address::local_ip()?,
         port,
-        None, // &properties[..],
+        None,
     )?;
 
+    let mdns = mdns_sd::ServiceDaemon::new()?;
     mdns.register(service)?;
     println!("mDNS service registered on port {}", port);
 

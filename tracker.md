@@ -1,8 +1,7 @@
 ## Priority
 
-- [ ] Add system tray
-    - [ ] system tray icon and menu
-    - [ ] minimize to tray functionality
+- [ ] Functionality get host IP address.
+    - Server discovery depends on having static IP.
 
 ## Todo
 
@@ -14,6 +13,9 @@
 
 ## Done
 
+- [x] Add system tray
+    - [x] system tray icon & menu
+    - [x] minimize to tray functionality
 - [x] Implement server discovery/scanning
     - Implemented with mDNS & UDP as fallback.
 - [x] Tauri uses Tokio under the hood.

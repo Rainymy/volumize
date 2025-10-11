@@ -25,6 +25,7 @@ fn main() {
 pub fn start_application() -> TauriResult<()> {
     let app = create_tauri_app()?;
 
+    #[cfg(debug_assertions)]
     setup_signal_handlers(&app).expect("Failed to set Ctrl-C handler");
     run_application(app);
 
@@ -51,7 +52,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
 
             let port_address = 9001;
 
-            let app_handle = app.app_handle().clone();
+            let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 match start_websocket_server(port_address, app_handle).await {
                     Ok(addr) => println!("WebSocket server listening on {}", addr),
@@ -59,7 +60,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
                 }
             });
 
-            let app_handle2 = app.app_handle().clone();
+            let app_handle2 = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 start_service_register(port_address, app_handle2).await;
             });
@@ -194,7 +195,7 @@ fn _hide_window_visibility(app: &tauri::AppHandle) {
 }
 
 fn setup_signal_handlers(app: &tauri::App) -> Result<(), ctrlc::Error> {
-    let app_handle = app.app_handle().clone();
+    let app_handle = app.handle().clone();
 
     ctrlc::set_handler(move || {
         println!("CTRL-C received, initiating clean shutdown...");

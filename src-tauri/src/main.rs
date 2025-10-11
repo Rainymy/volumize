@@ -1,10 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use tauri::tray::TrayIconBuilder;
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 pub use tauri::{AppHandle, Manager, Result as TauriResult, RunEvent};
 
 mod commands;
 mod server;
+mod tray;
 mod types;
 
 use server::{
@@ -41,8 +44,10 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         .manage(server::spawn_volume_thread())
         .manage(WebSocketServerState::new())
         .manage(ServiceDiscovery::new())
+        .manage(tray::ClickState::new(None))
         .setup(|app| {
             let _ = setup_dev_tools(app);
+            let tray_menu = tray::create_tray(app.handle())?;
 
             let port_address = 9001;
 
@@ -59,7 +64,58 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
                 start_service_register(port_address, app_handle2).await;
             });
 
+            let icon = app
+                .default_window_icon()
+                .expect("Application should have a default window icon configured")
+                .clone();
+
+            let _tray = TrayIconBuilder::new()
+                .menu(&tray_menu)
+                .tooltip("Volumize")
+                .show_menu_on_left_click(false)
+                .icon(icon)
+                .on_tray_icon_event(|tray, event| {
+                    let click_state = tray.app_handle().state::<tray::ClickState>();
+                    match event {
+                        TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } => {
+                            // dbg!(click_state.is_double_click());
+                            if click_state.is_double_click() {
+                                show_window_visibility(tray.app_handle());
+                            }
+                        }
+                        _ => {}
+                    }
+                })
+                .build(app)?;
+
             Ok(())
+        })
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "show" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+            "hide" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
+            }
+            "quit" => {
+                app.exit(0);
+            }
+            _ => {}
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let _ = window.hide();
+                api.prevent_close();
+            }
         })
         .invoke_handler(tauri::generate_handler![
             // Master volume controls
@@ -94,6 +150,47 @@ fn setup_dev_tools(_app: &mut tauri::App) -> Result<(), Box<dyn std::error::Erro
     }
 
     Ok(())
+}
+
+fn show_window_visibility(app: &tauri::AppHandle) {
+    let window = match app.get_webview_window("main") {
+        Some(window) => window,
+        None => return,
+    };
+    let is_visible = window.is_visible().unwrap_or(false);
+    let is_minimized = window.is_minimized().unwrap_or(false);
+
+    match (is_visible, is_minimized) {
+        (true, true) => {
+            // Window is minimized, restore it
+            let _ = window.unminimize();
+            let _ = window.set_focus();
+        }
+        (true, false) => {}
+        (false, _) => {
+            // Window is hidden, show it
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    }
+}
+
+fn _hide_window_visibility(app: &tauri::AppHandle) {
+    let window = match app.get_webview_window("main") {
+        Some(window) => window,
+        None => return,
+    };
+    let is_visible = window.is_visible().unwrap_or(false);
+    let is_minimized = window.is_minimized().unwrap_or(false);
+
+    match (is_visible, is_minimized) {
+        (true, true) => {}
+        (true, false) => {
+            // Window is visible and not minimized, hide it
+            let _ = window.hide();
+        }
+        (false, _) => {}
+    }
 }
 
 fn setup_signal_handlers(app: &tauri::App) -> Result<(), ctrlc::Error> {

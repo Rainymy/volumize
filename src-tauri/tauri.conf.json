@@ -12,6 +12,7 @@
     "app": {
         "windows": [
             {
+                "label": "main",
                 "title": "volumize",
                 "visible": true,
                 "resizable": true,
@@ -30,10 +31,7 @@
         "android": {
             "minSdkVersion": 28
         },
-        "targets": [
-            "msi",
-            "deb"
-        ],
+        "targets": ["msi", "deb"],
         "icon": [
             "./icons/icon.ico",
             "./icons/icon_32x32.ico",

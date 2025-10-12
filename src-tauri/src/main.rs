@@ -1,6 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::str::FromStr;
+
 use tauri::tray::TrayIconBuilder;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 pub use tauri::{AppHandle, Manager, Result as TauriResult, RunEvent};
@@ -14,6 +16,8 @@ use server::{
     start_service_register, start_websocket_server, ServiceDiscovery, VolumeCommandSender,
     WebSocketServerState,
 };
+
+use crate::tray::Discovery;
 
 fn main() {
     if let Err(e) = start_application() {
@@ -48,7 +52,6 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         .manage(tray::ClickState::new(None))
         .setup(|app| {
             let _ = setup_dev_tools(app);
-            let tray_menu = tray::create_tray(app.handle())?;
 
             let port_address = 9001;
 
@@ -70,6 +73,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
                 .expect("Application should have a default window icon configured")
                 .clone();
 
+            let tray_menu = tray::create_tray(app.handle())?;
             let _tray = TrayIconBuilder::new()
                 .menu(&tray_menu)
                 .tooltip("Volumize")
@@ -97,26 +101,36 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
+                show_window_visibility(app);
+            }
+            rest => {
+                let discover = match Discovery::from_str(rest) {
+                    Ok(value) => value,
+                    Err(e) => {
+                        eprintln!("value: {} \n\t - {}", rest, e);
+                        return;
+                    }
+                };
+
+                match discover {
+                    Discovery::AlwaysOn => {
+                        println!("Turn on register service");
+                    }
+                    Discovery::TurnOff => {
+                        println!("Turn off register service");
+                    }
+                    Discovery::OnDuration(duration) => {
+                        println!("Turn on register service for, {:?}", duration);
+                    }
                 }
             }
-            "hide" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
-                }
-            }
-            "quit" => {
-                app.exit(0);
-            }
-            _ => {}
         })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                let _ = window.hide();
-                api.prevent_close();
-            }
+        .on_window_event(|_window, _event| {
+            // Turn off exit to tray functionality to test other features.
+            // if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
+            //     let _ = _window.hide();
+            //     api.prevent_close();
+            // }
         })
         .invoke_handler(tauri::generate_handler![
             // Master volume controls

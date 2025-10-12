@@ -1,7 +1,15 @@
 ## Priority
 
 - [ ] Add functionalities to system tray.
-    - Not really sure yet.
+    - [x] Create menu + submenu
+        - Button for showing hidden window.
+        - Controlling Register service.
+            - Turing off, on, and duration.
+    - [ ] Integrate tray button into main loop.
+        - Try reflect change to tray menus.
+        - Need to look up how often I can update tray menus.
+    - [ ] Save settings
+        - I need to save the settings.
 
 ## Todo
 

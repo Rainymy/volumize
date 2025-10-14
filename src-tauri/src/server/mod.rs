@@ -1,11 +1,16 @@
-use std::net::{Ipv4Addr, SocketAddrV4};
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    net::{Ipv4Addr, SocketAddrV4},
+    sync::Arc,
+};
 
 use futures_util::future::{select, Either};
 use serde::{Deserialize, Serialize};
-use tauri::async_runtime::{self as rt};
-use tauri::{AppHandle, Manager};
-use tokio::{net::TcpListener, sync::mpsc, task::JoinSet};
+use tauri::{
+    async_runtime::{self as rt},
+    AppHandle, Manager,
+};
+use tokio::{net::TcpListener as TokioTcpListener, sync::mpsc::UnboundedSender, task::JoinSet};
 use tokio_tungstenite::tungstenite::Message;
 use tokio_util::sync::CancellationToken;
 
@@ -27,7 +32,7 @@ pub struct ClientInfo {
     pub address: String,
 }
 
-type ClientSender = mpsc::UnboundedSender<Message>;
+type ClientSender = UnboundedSender<Message>;
 type ClientMap = Arc<rt::Mutex<HashMap<String, (ClientInfo, ClientSender)>>>;
 
 #[derive(Default)]
@@ -96,12 +101,11 @@ impl WebSocketServerState {
     }
 }
 
-pub async fn start_websocket_server(
+pub fn start_websocket_server(
     port: u16,
-    app_handle: AppHandle,
+    app_handle: &AppHandle,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
-    let listener = TcpListener::bind(addr).await?;
 
     let state = app_handle.state::<WebSocketServerState>();
     let clients = state.clients.clone();
@@ -110,12 +114,17 @@ pub async fn start_websocket_server(
     let cancel = CancellationToken::new();
     let cancel_clone = cancel.clone();
 
+    let std_listener = std::net::TcpListener::bind(addr)?;
+    std_listener.set_nonblocking(true)?;
+
     let new_handle = rt::spawn(async move {
+        let async_listener = TokioTcpListener::from_std(std_listener)
+            .expect("failed to convert std listener to tokio");
         let mut conns = JoinSet::new();
 
         loop {
             let cancelled = cancel_clone.cancelled();
-            let accept = listener.accept();
+            let accept = async_listener.accept();
 
             match select(Box::pin(cancelled), Box::pin(accept)).await {
                 Either::Left(_) => break,
@@ -135,7 +144,7 @@ pub async fn start_websocket_server(
     });
 
     // Store the server handle
-    {
+    rt::block_on(async {
         let new_server = RunningServer {
             name: "Websocket".into(),
             handle: new_handle,
@@ -146,7 +155,7 @@ pub async fn start_websocket_server(
         if let Some(old) = current_server.replace(new_server) {
             let _ = old.shutdown().await;
         }
-    }
+    });
 
     Ok(addr.to_string())
 }

@@ -1,11 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::str::FromStr;
+use std::{str::FromStr, time::Duration};
 
-use tauri::tray::TrayIconBuilder;
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
-pub use tauri::{AppHandle, Manager, Result as TauriResult, RunEvent};
+use tauri::{
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Manager, Result as TauriResult, RunEvent,
+};
 
 mod commands;
 mod server;
@@ -17,7 +18,7 @@ use server::{
     WebSocketServerState,
 };
 
-use crate::tray::Discovery;
+pub use tray::Discovery;
 
 fn main() {
     if let Err(e) = start_application() {
@@ -43,9 +44,8 @@ async fn discover_server_address() -> Option<String> {
     server::discover_server().await.ok()
 }
 
+const PORT_ADDRESS: u16 = 9001;
 fn create_tauri_app() -> TauriResult<tauri::App> {
-    const PORT_ADDRESS: u16 = 9001;
-
     tauri::Builder::default()
         .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_os::init())
@@ -57,18 +57,17 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         .setup(|app| {
             setup_dev_tools(app);
 
-            let app_handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                match start_websocket_server(PORT_ADDRESS, app_handle).await {
-                    Ok(addr) => println!("WebSocket server listening on {}", addr),
-                    Err(e) => eprintln!("\nWebSocket server failed to start: \n\t{}\n", e),
-                }
-            });
+            let app_handle = app.handle();
+            match start_websocket_server(PORT_ADDRESS, &app_handle) {
+                Ok(addr) => println!("WebSocket server listening on {}", addr),
+                Err(e) => eprintln!("\nWebSocket server failed to start: \n\t{}\n", e),
+            }
 
-            let app_handle2 = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                start_service_register(PORT_ADDRESS, app_handle2).await;
-            });
+            start_service_register(
+                PORT_ADDRESS,
+                &app_handle,
+                Discovery::OnDuration(Duration::from_secs(1 * 30)),
+            );
 
             setup_tray_system(app)?;
 
@@ -87,17 +86,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
                     }
                 };
 
-                match discover {
-                    Discovery::AlwaysOn => {
-                        println!("Turn on register service");
-                    }
-                    Discovery::TurnOff => {
-                        println!("Turn off register service");
-                    }
-                    Discovery::OnDuration(duration) => {
-                        println!("Turn on register service for, {:?}", duration);
-                    }
-                }
+                start_service_register(PORT_ADDRESS, app.app_handle(), discover);
             }
         })
         .on_window_event(|_window, _event| {

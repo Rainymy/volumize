@@ -56,7 +56,7 @@ pub fn create_tray(handle: &tauri::AppHandle) -> tauri::Result<Menu<Wry>> {
     Ok(tray_menu)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum Discovery {
     TurnOff,
     OnDuration(Duration),

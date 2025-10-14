@@ -61,7 +61,7 @@ pub async fn broadcast_discover(timeout: Duration) -> Result<String, Box<dyn std
 }
 
 pub async fn discover_server() -> Result<String, Box<dyn std::error::Error>> {
-    println!("Trying mDNS discovery...");
+    println!("[discover_server]: Trying mDNS discovery...");
     match mdns_discover(Duration::from_secs(3)).await {
         Ok(addr) => {
             println!("Found via mDNS: {}", addr);
@@ -72,16 +72,16 @@ pub async fn discover_server() -> Result<String, Box<dyn std::error::Error>> {
         }
     };
 
-    println!("Trying UDP broadcast...");
+    println!("[discover_server]: Trying UDP broadcast...");
     match broadcast_discover(Duration::from_secs(3)).await {
         Ok(addr) => {
-            println!("Found via broadcast: {}", addr);
+            println!("[discover_server]: Found via broadcast: {}", addr);
             return Ok(addr);
         }
         Err(err) => {
-            eprintln!("{}", err);
+            eprintln!("[discover_server]: {}", err);
         }
     };
 
-    Err("Could not discover server. Please enter IP manually.".into())
+    Err("[discover_server]: Could not discover server. Please enter IP manually.".into())
 }

@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 mod server;
+mod tray;
 mod types;
 
 #[tauri::command]

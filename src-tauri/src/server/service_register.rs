@@ -1,27 +1,57 @@
 use futures_util::future::{select, Either};
+use std::sync::Arc;
 use std::time::Duration;
 use tauri::{
     async_runtime::{self as rt},
     AppHandle, Manager,
 };
-use tokio::net::UdpSocket;
+use tokio::{net::UdpSocket, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
 use super::{RunningServer, ServiceDiscovery};
+use crate::tray::Discovery;
 
-// Later in devlopment. Make it so that user can eiter choice to have it:
-// - [always on, off, on some amount of time]
-pub async fn start_service_register(port: u16, app_handle: AppHandle) {
+pub fn start_service_register(port: u16, app_handle: &AppHandle, policy: Discovery) {
     let state = app_handle.state::<ServiceDiscovery>();
 
+    if matches!(policy, Discovery::TurnOff) {
+        // Stop and clear existing server, then return.
+        replace_server_state(&state.server, None);
+        return;
+    }
+
     let cancel = CancellationToken::new();
-    let cancel_clone = cancel.clone();
+    let cancel_for_worker = cancel.clone();
+
+    // If there's a duration, spawn a timer task to cancel later.
+    if let Discovery::OnDuration(run_duration) = policy {
+        println!(
+            "[start_service_register]: Turn on register service for, {:?}",
+            run_duration
+        );
+
+        let cancel_for_timer = cancel.clone();
+        rt::spawn(async move {
+            let deadline = tokio::time::sleep(run_duration);
+            let await_cancel = cancel_for_timer.cancelled();
+
+            // This is to make sure task/thread stops when recieved a cancellation.
+            match select(Box::pin(deadline), Box::pin(await_cancel)).await {
+                Either::Left(_) => cancel_for_timer.cancel(),
+                Either::Right(_) => {} // it is already cancelled, no need to cancel again.
+            }
+        });
+    }
 
     let new_handle = rt::spawn(async move {
+        println!("[start_service_register]: Starting up...");
+
         // List all mDNS command: dns-sd -B _services._dns-sd._udp
-        if let Err(e) = register_service(port, cancel_clone).await {
-            println!("register_service failed: {}", e);
+        if let Err(e) = register_service(port, cancel_for_worker).await {
+            println!("[start_service_register] failed: {}", e);
         }
+
+        println!("[start_service_register]: Closing register_service");
     });
 
     let new_server = RunningServer {
@@ -30,10 +60,26 @@ pub async fn start_service_register(port: u16, app_handle: AppHandle) {
         cancel: cancel,
     };
 
-    let mut current_server = state.server.lock().await;
-    if let Some(old) = current_server.replace(new_server) {
-        let _ = old.shutdown().await;
-    }
+    // Replace old server and clear its state.
+    replace_server_state(&state.server, Some(new_server));
+}
+
+fn replace_server_state(
+    current: &Arc<Mutex<Option<RunningServer>>>,
+    new_server: Option<RunningServer>,
+) {
+    rt::block_on(async move {
+        let mut current_server = current.lock().await;
+
+        let old_server = match new_server {
+            Some(value) => current_server.replace(value),
+            None => current_server.take(),
+        };
+
+        if let Some(old) = old_server {
+            let _ = old.shutdown().await;
+        }
+    });
 }
 
 async fn register_service(
@@ -41,7 +87,15 @@ async fn register_service(
     cancel: CancellationToken,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mdns = init_mdns_service(port)?;
+
+    println!(
+        "[register_service]: mDNS service registered on port {}",
+        port
+    );
+
     let result = run_udp_responder(port, cancel).await;
+
+    println!("[register_service]: Shutting down mDNS service...");
     shutdown_mdns_service(&mdns)?;
     result
 }
@@ -58,7 +112,6 @@ fn init_mdns_service(port: u16) -> Result<mdns_sd::ServiceDaemon, Box<dyn std::e
 
     let mdns = mdns_sd::ServiceDaemon::new()?;
     mdns.register(service)?;
-    println!("mDNS service registered on port {}", port);
 
     Ok(mdns)
 }
@@ -90,8 +143,7 @@ async fn run_udp_responder(
     Ok(())
 }
 
-fn shutdown_mdns_service(mdns: &mdns_sd::ServiceDaemon) -> Result<(), String> {
-    println!("Shutting down mDNS service...");
+fn shutdown_mdns_service(mdns: &mdns_sd::ServiceDaemon) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         match mdns.unregister(ServiceDiscovery::MDNS_DOMAIN) {
             Err(mdns_sd::Error::Again) => {
@@ -100,7 +152,7 @@ fn shutdown_mdns_service(mdns: &mdns_sd::ServiceDaemon) -> Result<(), String> {
             }
             Ok(_) => return Ok(()),
             Err(e) => {
-                return Err(format!("mDNS shutdown error: {}", e));
+                return Err(e.into());
             }
         }
     }

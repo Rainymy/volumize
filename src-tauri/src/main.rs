@@ -30,7 +30,9 @@ pub fn start_application() -> TauriResult<()> {
     let app = create_tauri_app()?;
 
     #[cfg(debug_assertions)]
-    setup_signal_handlers(&app).expect("Failed to set Ctrl-C handler");
+    {
+        setup_signal_handlers(&app).expect("Failed to set Ctrl-C handler");
+    }
     run_application(app);
 
     Ok(())
@@ -42,6 +44,8 @@ async fn discover_server_address() -> Option<String> {
 }
 
 fn create_tauri_app() -> TauriResult<tauri::App> {
+    const PORT_ADDRESS: u16 = 9001;
+
     tauri::Builder::default()
         .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_os::init())
@@ -51,13 +55,11 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         .manage(ServiceDiscovery::new())
         .manage(tray::ClickState::new(None))
         .setup(|app| {
-            let _ = setup_dev_tools(app);
-
-            let port_address = 9001;
+            setup_dev_tools(app);
 
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                match start_websocket_server(port_address, app_handle).await {
+                match start_websocket_server(PORT_ADDRESS, app_handle).await {
                     Ok(addr) => println!("WebSocket server listening on {}", addr),
                     Err(e) => eprintln!("\nWebSocket server failed to start: \n\t{}\n", e),
                 }
@@ -65,37 +67,10 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
 
             let app_handle2 = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                start_service_register(port_address, app_handle2).await;
+                start_service_register(PORT_ADDRESS, app_handle2).await;
             });
 
-            let icon = app
-                .default_window_icon()
-                .expect("Application should have a default window icon configured")
-                .clone();
-
-            let tray_menu = tray::create_tray(app.handle())?;
-            let _tray = TrayIconBuilder::new()
-                .menu(&tray_menu)
-                .tooltip("Volumize")
-                .show_menu_on_left_click(false)
-                .icon(icon)
-                .on_tray_icon_event(|tray, event| {
-                    let click_state = tray.app_handle().state::<tray::ClickState>();
-                    match event {
-                        TrayIconEvent::Click {
-                            button: MouseButton::Left,
-                            button_state: MouseButtonState::Up,
-                            ..
-                        } => {
-                            // dbg!(click_state.is_double_click());
-                            if click_state.is_double_click() {
-                                show_window_visibility(tray.app_handle());
-                            }
-                        }
-                        _ => {}
-                    }
-                })
-                .build(app)?;
+            setup_tray_system(app)?;
 
             Ok(())
         })
@@ -152,7 +127,40 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         .build(tauri::generate_context!())
 }
 
-fn setup_dev_tools(_app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+fn setup_tray_system(app: &mut tauri::App) -> TauriResult<()> {
+    let icon = app
+        .default_window_icon()
+        .expect("Application should have a default window icon configured")
+        .clone();
+
+    let tray_menu = tray::create_tray(app.handle())?;
+    let _tray = TrayIconBuilder::new()
+        .menu(&tray_menu)
+        .tooltip("Volumize")
+        .show_menu_on_left_click(false)
+        .icon(icon)
+        .on_tray_icon_event(|tray, event| {
+            let click_state = tray.app_handle().state::<tray::ClickState>();
+            match event {
+                TrayIconEvent::Click {
+                    button: MouseButton::Left,
+                    button_state: MouseButtonState::Up,
+                    ..
+                } => {
+                    // dbg!(click_state.is_double_click());
+                    if click_state.is_double_click() {
+                        show_window_visibility(tray.app_handle());
+                    }
+                }
+                _ => {}
+            }
+        })
+        .build(app)?;
+
+    Ok(())
+}
+
+fn setup_dev_tools(_app: &mut tauri::App) {
     #[cfg(debug_assertions)]
     {
         for window_config in &_app.config().app.windows {
@@ -163,8 +171,6 @@ fn setup_dev_tools(_app: &mut tauri::App) -> Result<(), Box<dyn std::error::Erro
             }
         }
     }
-
-    Ok(())
 }
 
 fn show_window_visibility(app: &tauri::AppHandle) {

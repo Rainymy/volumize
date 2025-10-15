@@ -1,18 +1,7 @@
 ## Priority
 
-- [ ] Add functionality to system tray.
-    - [x] Create menu + submenu
-        - Button for showing hidden window.
-        - Controlling Register service.
-            - Turing off, on, and duration.
-    - [ ] Integrate tray button into main loop.
-        - [x] Menu selection for register service reflects.
-            - Selection options: ["always on", "off", "on timer"]
-            - Time options: [2m, 5m, 15m]
-        - [ ] Reflect settings changes to tray menus.
-        - Need to look up how often I can update tray menus.
-    - [x] Save settings
-        - I need to save the settings.
+- [ ] System tray menu update on timer.
+    - tray menu is not reflected when choosing timer option.
 
 ## Todo
 
@@ -24,6 +13,18 @@
 
 ## Done
 
+- [x] Add functionality to system tray.
+    - [x] Create menu + submenu
+        - Button for showing hidden window.
+        - Controlling Register service.
+            - Turing off, on, and duration.
+    - [x] Integrate tray button into main loop.
+        - [x] Menu selection for register service reflects.
+            - Selection options: ["always on", "off", "on timer"]
+            - Time options: [2m, 5m, 15m]
+        - [x] Reflect settings changes to tray menus.
+    - [x] Save settings
+        - I need to save the settings.
 - [x] Functionality get host IP address.
     - Server discovery depend on having static IP on startup.
 - [x] Add system tray

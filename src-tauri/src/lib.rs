@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 mod server;
+mod storage;
 mod tray;
 mod types;
 

@@ -19,6 +19,7 @@ use server::{
     WebSocketServerState,
 };
 
+pub use storage::Storage;
 pub use tray::Discovery;
 
 fn main() {
@@ -72,23 +73,23 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
 
             let app_handle = app.handle();
             let storage = app_handle.state::<storage::Storage>();
-            storage.load_settings(app_handle);
-            let settings = storage.get_settings();
+            storage.load(app_handle);
 
-            dbg!(&settings);
+            let settings = storage.get();
 
             match start_websocket_server(settings.port_address, app_handle) {
                 Ok(addr) => println!("WebSocket server listening on {}", addr),
                 Err(e) => eprintln!("\nWebSocket server failed to start: \n\t{}\n", e),
             }
 
-            start_service_register(settings.port_address, app_handle, settings.dutaion);
-            setup_tray_system(app)?;
+            start_service_register(settings.port_address, app_handle, settings.duration);
+            setup_tray_system(app.app_handle())?;
 
             Ok(())
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show" => show_window_visibility(app),
+            "refresh" => {}
             rest => {
                 let discover = match Discovery::from_str(rest) {
                     Ok(value) => value,
@@ -96,27 +97,32 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
                 };
 
                 let sould_save = match discover {
-                    Discovery::OnDuration(_) => true,
-                    _ => false,
+                    Discovery::OnDuration(_) => false,
+                    _ => true,
                 };
 
                 let storage = app.app_handle().state::<storage::Storage>();
-                let mut settings = storage.get_settings();
+                let mut settings = storage.get();
+
+                settings.duration = discover;
 
                 if sould_save {
-                    settings.dutaion = discover;
-
-                    if let Err(err) = storage.save_settings(app, &settings) {
+                    if let Err(err) = storage.save(app, &settings) {
                         eprintln!("{}", err);
                     }
                 }
 
-                start_service_register(settings.port_address, app.app_handle(), discover);
+                storage.update(settings);
+                start_service_register(settings.port_address, app, discover);
+
+                if let Err(e) = setup_tray_system(&app) {
+                    eprintln!("{}", e);
+                }
             }
         })
         .on_window_event(|_window, _event| {
             let storage = _window.app_handle().state::<storage::Storage>();
-            let should_exit_to_tray = storage.get_settings().exit_to_tray;
+            let should_exit_to_tray = storage.get().exit_to_tray;
 
             if should_exit_to_tray {
                 // // Turn off exit to tray functionality to test other features.
@@ -146,14 +152,16 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         .build(tauri::generate_context!())
 }
 
-fn setup_tray_system(app: &mut tauri::App) -> TauriResult<()> {
+fn setup_tray_system(app: &tauri::AppHandle) -> TauriResult<()> {
+    let storage = app.state::<Storage>();
+
     let icon = app
         .default_window_icon()
         .expect("Application should have a default window icon configured")
         .clone();
 
-    let tray_menu = tray::create_tray(app.handle())?;
-    let _tray = TrayIconBuilder::new()
+    let tray_menu = tray::create_tray(app)?;
+    let tray = TrayIconBuilder::new()
         .menu(&tray_menu)
         .tooltip("Volumize")
         .show_menu_on_left_click(false)
@@ -174,6 +182,14 @@ fn setup_tray_system(app: &mut tauri::App) -> TauriResult<()> {
             }
         })
         .build(app)?;
+
+    if let Ok(mut icon_id) = storage.tray_icon_id.lock() {
+        let current_tray_id = tray.id().clone();
+
+        if let Some(old_tray) = icon_id.replace(current_tray_id) {
+            let _ = app.remove_tray_by_id(&old_tray);
+        }
+    }
 
     Ok(())
 }

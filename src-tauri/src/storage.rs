@@ -4,13 +4,13 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
-use tauri::{AppHandle, Manager};
+use tauri::{tray::TrayIconId, AppHandle, Manager};
 
-use crate::Discovery;
+use crate::tray::Discovery;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Settings {
-    pub dutaion: Discovery,
+    pub duration: Discovery,
     pub port_address: u16,
     pub exit_to_tray: bool,
 }
@@ -18,7 +18,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            dutaion: Default::default(),
+            duration: Default::default(),
             port_address: 9002,
             exit_to_tray: Default::default(),
         }
@@ -28,6 +28,7 @@ impl Default for Settings {
 #[derive(Default)]
 pub struct Storage {
     settings: Arc<Mutex<Settings>>,
+    pub tray_icon_id: Arc<Mutex<Option<TrayIconId>>>,
 }
 
 impl Storage {
@@ -39,14 +40,14 @@ impl Storage {
         dir
     }
 
-    pub fn get_settings(&self) -> Settings {
+    pub fn get(&self) -> Settings {
         match self.settings.lock() {
             Ok(setting) => setting.clone(),
             Err(_) => Settings::default(),
         }
     }
 
-    pub fn load_settings(&self, app: &AppHandle) {
+    pub fn load(&self, app: &AppHandle) {
         let settings = match fs::read(&self.settings_path(app)) {
             Ok(bytes) => serde_json::from_slice(&bytes).unwrap_or_default(),
             Err(_) => Settings::default(),
@@ -57,9 +58,14 @@ impl Storage {
         }
     }
 
-    pub fn save_settings(&self, _app: &AppHandle, value: &Settings) -> std::io::Result<()> {
-        let _data = serde_json::to_vec_pretty(value)?;
-        // fs::write(&self.settings_path(app), data)
-        Ok(())
+    pub fn update(&self, value: Settings) {
+        if let Ok(mut item) = self.settings.lock() {
+            *item = value.clone();
+        }
+    }
+
+    pub fn save(&self, app: &AppHandle, value: &Settings) -> std::io::Result<()> {
+        let data = serde_json::to_vec_pretty(value)?;
+        fs::write(&self.settings_path(app), data)
     }
 }

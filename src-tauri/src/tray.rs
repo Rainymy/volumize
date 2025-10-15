@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 use tauri::menu::{
     CheckMenuItemBuilder, Menu, MenuItem, PredefinedMenuItem, Submenu, SubmenuBuilder,
 };
-use tauri::Wry;
+use tauri::{Manager, Wry};
+
+use crate::storage::Storage;
 
 pub struct ClickState {
     pub last_click_time: Arc<Mutex<Instant>>,
@@ -41,17 +43,17 @@ impl ClickState {
 }
 
 pub fn create_tray(handle: &tauri::AppHandle) -> tauri::Result<Menu<Wry>> {
-    let show = MenuItem::with_id(handle, "show", "Show", true, Some("None"))?;
+    let show = MenuItem::with_id(handle, "show", "Show", true, None::<&str>)?;
+    let refresh_token = MenuItem::with_id(handle, "refresh", "Refresh menu", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(handle)?;
     let quit = PredefinedMenuItem::quit(handle, Some("Exit"))?;
-    let about = PredefinedMenuItem::about(handle, Some("about"), None)?;
 
     let tray_menu = Menu::new(handle)?;
     let _ = tray_menu.append(&show)?;
+    let _ = tray_menu.append(&refresh_token)?;
     let _ = tray_menu.append(&separator)?;
     let _ = tray_menu.append(&create_sub_menu(handle)?)?; // Sub-menu
     let _ = tray_menu.append(&separator)?;
-    let _ = tray_menu.append(&about)?;
     let _ = tray_menu.append(&quit)?;
 
     Ok(tray_menu)
@@ -63,6 +65,16 @@ pub enum Discovery {
     OnDuration(Duration),
     #[default]
     AlwaysOn,
+}
+
+impl Discovery {
+    fn display(&self) -> String {
+        match self {
+            Discovery::TurnOff => String::from("Turn off"),
+            Discovery::OnDuration(mins) => format!("On for {}s", mins.as_secs()),
+            Discovery::AlwaysOn => String::from("Always on"),
+        }
+    }
 }
 
 impl std::fmt::Display for Discovery {
@@ -94,31 +106,36 @@ impl FromStr for Discovery {
 }
 
 fn create_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> {
-    let separator = PredefinedMenuItem::separator(handle)?;
+    let settings = handle.state::<Storage>().get();
 
-    let status_info = MenuItem::with_id(handle, "show", "Status: always on", false, None::<&str>)?;
-    let always_off = CheckMenuItemBuilder::with_id(Discovery::TurnOff.to_string(), "Turn off")
-        .checked(true)
-        .build(handle)?;
-    let always_on = CheckMenuItemBuilder::with_id(Discovery::AlwaysOn.to_string(), "Always on")
-        .checked(false)
-        .build(handle)?;
+    let info_text = format!("Status: {}", settings.duration.display());
+    let status_info = MenuItem::with_id(handle, "show", info_text, false, None::<&str>)?;
 
-    SubmenuBuilder::new(handle, "Server Discovery: active")
+    // dbg!(&settings.dutaion);
+
+    let always_off = checked_menu_item(Discovery::TurnOff, settings.duration).build(handle)?;
+    let always_on = checked_menu_item(Discovery::AlwaysOn, settings.duration).build(handle)?;
+
+    SubmenuBuilder::new(handle, "Server Discovery")
         .item(&status_info)
-        .item(&separator)
+        .item(&PredefinedMenuItem::separator(handle)?)
         .item(&always_off)
-        .item(&timer_submenu(2).build(handle)?)
-        .item(&timer_submenu(5).build(handle)?)
-        .item(&timer_submenu(15).build(handle)?)
+        .item(&timer_submenu(2, settings.duration).build(handle)?)
+        .item(&timer_submenu(5, settings.duration).build(handle)?)
+        .item(&timer_submenu(15, settings.duration).build(handle)?)
         .item(&always_on)
         .build()
 }
 
-fn timer_submenu(timer: u32) -> CheckMenuItemBuilder {
+fn checked_menu_item(item: Discovery, settings: Discovery) -> CheckMenuItemBuilder {
+    CheckMenuItemBuilder::with_id(Discovery::to_string(&item), Discovery::display(&item))
+        .checked(settings == item)
+}
+
+fn timer_submenu(timer: u32, discovery: Discovery) -> CheckMenuItemBuilder {
     let duration = Duration::from_secs(u64::from(timer) * 60);
     let id = Discovery::OnDuration(duration).to_string();
     let text = format!("On for {} minute", timer);
 
-    CheckMenuItemBuilder::with_id(id, text).checked(false)
+    CheckMenuItemBuilder::with_id(id, text).checked(discovery == Discovery::OnDuration(duration))
 }

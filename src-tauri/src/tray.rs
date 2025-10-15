@@ -3,6 +3,7 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use serde::{Deserialize, Serialize};
 use tauri::menu::{
     CheckMenuItemBuilder, Menu, MenuItem, PredefinedMenuItem, Submenu, SubmenuBuilder,
 };
@@ -56,10 +57,11 @@ pub fn create_tray(handle: &tauri::AppHandle) -> tauri::Result<Menu<Wry>> {
     Ok(tray_menu)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default, Copy)]
 pub enum Discovery {
     TurnOff,
     OnDuration(Duration),
+    #[default]
     AlwaysOn,
 }
 

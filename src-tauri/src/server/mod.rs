@@ -61,11 +61,14 @@ pub struct ServiceDiscovery {
 }
 
 impl ServiceDiscovery {
+    const LISTEN_PORT: u16 = 31280;
     pub const MDNS_DOMAIN: &str = "_volume-service._tcp.local.";
     pub const MDNS_INSTANCE_NAME: &str = "volumize";
     pub const DISCOVERY_MSG: &str = "DISCOVER_VOLUMIZE";
-    pub const BROADCAST_ADDRESS: SocketAddrV4 = SocketAddrV4::new(Ipv4Addr::BROADCAST, 51280);
-    pub const LISTEN_ADDRESS: SocketAddrV4 = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 51280);
+    pub const BROADCAST_ADDRESS: SocketAddrV4 =
+        SocketAddrV4::new(Ipv4Addr::BROADCAST, Self::LISTEN_PORT);
+    pub const LISTEN_ADDRESS: SocketAddrV4 =
+        SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, Self::LISTEN_PORT);
 
     pub fn new() -> Self {
         Self {

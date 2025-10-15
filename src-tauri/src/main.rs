@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{str::FromStr, time::Duration};
+use std::str::FromStr;
 
 use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -10,6 +10,7 @@ use tauri::{
 
 mod commands;
 mod server;
+mod storage;
 mod tray;
 mod types;
 
@@ -32,9 +33,21 @@ pub fn start_application() -> TauriResult<()> {
 
     #[cfg(debug_assertions)]
     {
-        setup_signal_handlers(&app).expect("Failed to set Ctrl-C handler");
+        let app_handle = app.handle().clone();
+
+        let _ = ctrlc::set_handler(move || {
+            println!("CTRL-C received, initiating clean shutdown...");
+            shutdown_background_thread(&app_handle);
+            app_handle.exit(0);
+        })
+        .inspect_err(|err| eprintln!("Failed to set Ctrl-C handler: {}", err));
     }
-    run_application(app);
+
+    app.run(move |app_handle, event| {
+        if let RunEvent::ExitRequested { .. } = event {
+            shutdown_background_thread(app_handle);
+        }
+    });
 
     Ok(())
 }
@@ -44,7 +57,6 @@ async fn discover_server_address() -> Option<String> {
     server::discover_server().await.ok()
 }
 
-const PORT_ADDRESS: u16 = 9001;
 fn create_tauri_app() -> TauriResult<tauri::App> {
     tauri::Builder::default()
         .plugin(tauri_plugin_websocket::init())
@@ -54,47 +66,57 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         .manage(WebSocketServerState::new())
         .manage(ServiceDiscovery::new())
         .manage(tray::ClickState::new(None))
+        .manage(storage::Storage::default())
         .setup(|app| {
             setup_dev_tools(app);
 
             let app_handle = app.handle();
-            match start_websocket_server(PORT_ADDRESS, &app_handle) {
+            let storage = app_handle.state::<storage::Storage>();
+            storage.load_settings(app_handle);
+            let settings = storage.get_settings();
+
+            dbg!(&settings);
+
+            match start_websocket_server(settings.port_address, app_handle) {
                 Ok(addr) => println!("WebSocket server listening on {}", addr),
                 Err(e) => eprintln!("\nWebSocket server failed to start: \n\t{}\n", e),
             }
 
-            start_service_register(
-                PORT_ADDRESS,
-                &app_handle,
-                Discovery::OnDuration(Duration::from_secs(1 * 30)),
-            );
-
+            start_service_register(settings.port_address, app_handle, settings.dutaion);
             setup_tray_system(app)?;
 
             Ok(())
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
-            "show" => {
-                show_window_visibility(app);
-            }
+            "show" => show_window_visibility(app),
             rest => {
                 let discover = match Discovery::from_str(rest) {
                     Ok(value) => value,
-                    Err(e) => {
-                        eprintln!("value: {} \n\t - {}", rest, e);
-                        return;
-                    }
+                    Err(_) => return,
                 };
 
-                start_service_register(PORT_ADDRESS, app.app_handle(), discover);
+                let storage = app.app_handle().state::<storage::Storage>();
+                let mut settings = storage.get_settings();
+                settings.dutaion = discover;
+
+                if let Err(err) = storage.save_settings(app, &settings) {
+                    eprintln!("{}", err);
+                }
+
+                start_service_register(settings.port_address, app.app_handle(), discover);
             }
         })
         .on_window_event(|_window, _event| {
-            // Turn off exit to tray functionality to test other features.
-            // if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
-            //     let _ = _window.hide();
-            //     api.prevent_close();
-            // }
+            let storage = _window.app_handle().state::<storage::Storage>();
+            let should_exit_to_tray = storage.get_settings().exit_to_tray;
+
+            if should_exit_to_tray {
+                // // Turn off exit to tray functionality to test other features.
+                // if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
+                //     let _ = _window.hide();
+                //     api.prevent_close();
+                // }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             // Master volume controls
@@ -136,7 +158,6 @@ fn setup_tray_system(app: &mut tauri::App) -> TauriResult<()> {
                     button_state: MouseButtonState::Up,
                     ..
                 } => {
-                    // dbg!(click_state.is_double_click());
                     if click_state.is_double_click() {
                         show_window_visibility(tray.app_handle());
                     }
@@ -201,24 +222,6 @@ fn _hide_window_visibility(app: &tauri::AppHandle) {
         }
         (false, _) => {}
     }
-}
-
-fn setup_signal_handlers(app: &tauri::App) -> Result<(), ctrlc::Error> {
-    let app_handle = app.handle().clone();
-
-    ctrlc::set_handler(move || {
-        println!("CTRL-C received, initiating clean shutdown...");
-        shutdown_background_thread(&app_handle);
-        app_handle.exit(0);
-    })
-}
-
-fn run_application(app: tauri::App) {
-    app.run_return(move |app_handle, event| {
-        if let RunEvent::ExitRequested { .. } = event {
-            shutdown_background_thread(app_handle);
-        }
-    });
 }
 
 fn shutdown_background_thread(app_handle: &AppHandle) {

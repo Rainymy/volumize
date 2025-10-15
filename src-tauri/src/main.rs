@@ -95,12 +95,20 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
                     Err(_) => return,
                 };
 
+                let sould_save = match discover {
+                    Discovery::OnDuration(_) => true,
+                    _ => false,
+                };
+
                 let storage = app.app_handle().state::<storage::Storage>();
                 let mut settings = storage.get_settings();
-                settings.dutaion = discover;
 
-                if let Err(err) = storage.save_settings(app, &settings) {
-                    eprintln!("{}", err);
+                if sould_save {
+                    settings.dutaion = discover;
+
+                    if let Err(err) = storage.save_settings(app, &settings) {
+                        eprintln!("{}", err);
+                    }
                 }
 
                 start_service_register(settings.port_address, app.app_handle(), discover);

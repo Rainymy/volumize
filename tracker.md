@@ -11,7 +11,7 @@
             - Time options: [2m, 5m, 15m]
         - [ ] Reflect settings changes to tray menus.
         - Need to look up how often I can update tray menus.
-    - [ ] Save settings
+    - [x] Save settings
         - I need to save the settings.
 
 ## Todo

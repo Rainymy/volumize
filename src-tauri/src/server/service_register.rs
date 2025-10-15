@@ -1,6 +1,5 @@
 use futures_util::future::{select, Either};
-use std::sync::Arc;
-use std::time::Duration;
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 use tauri::{
     async_runtime::{self as rt},
     AppHandle, Manager,
@@ -48,7 +47,7 @@ pub fn start_service_register(port: u16, app_handle: &AppHandle, policy: Discove
 
         // List all mDNS command: dns-sd -B _services._dns-sd._udp
         if let Err(e) = register_service(port, cancel_for_worker).await {
-            println!("[start_service_register] failed: {}", e);
+            println!("[start_service_register] Failed: {}", e);
         }
 
         println!("[start_service_register]: Closing register_service");
@@ -116,11 +115,32 @@ fn init_mdns_service(port: u16) -> Result<mdns_sd::ServiceDaemon, Box<dyn std::e
     Ok(mdns)
 }
 
+fn bind_udp_socket(socket_addr: SocketAddr) -> Result<UdpSocket, std::io::Error> {
+    use socket2::{Domain, Protocol, Type};
+
+    let domain = match socket_addr {
+        SocketAddr::V4(_) => Domain::IPV4,
+        SocketAddr::V6(_) => Domain::IPV6,
+    };
+
+    let socket = socket2::Socket::new(domain, Type::DGRAM, Some(Protocol::UDP))?;
+    let _ = socket.set_reuse_address(true);
+    #[cfg(unix)]
+    let _ = socket.set_reuse_port(true);
+
+    socket.bind(&socket_addr.into())?;
+    socket.set_nonblocking(true)?; // Nonblocking for Tokio
+
+    // Conversion: socket2 --> std --> tokio.
+    let std_udp: std::net::UdpSocket = socket.into();
+    UdpSocket::from_std(std_udp)
+}
+
 async fn run_udp_responder(
     port: u16,
     cancel: CancellationToken,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let socket = UdpSocket::bind(ServiceDiscovery::LISTEN_ADDRESS).await?;
+    let socket = bind_udp_socket(ServiceDiscovery::LISTEN_ADDRESS.into())?;
     let mut buf = [0u8; 24];
 
     println!("Server ready (mDNS + UDP)");

@@ -1,7 +1,8 @@
 ## Priority
 
-- [ ] System tray menu update on timer.
-    - tray menu is not reflected when choosing timer option.
+- [ ] Detect changes in volume.
+- [ ] Redesign the Rust backend architect.
+    - Split up the 1 main API into multple calls.
 
 ## Todo
 
@@ -10,6 +11,8 @@
 - [ ] Improve application icon.
     - Add some transparency.
     - Make it better when it is small.
+- [ ] System tray menu update on timer.
+    - tray menu is not reflected when choosing timer option.
 
 ## Done
 

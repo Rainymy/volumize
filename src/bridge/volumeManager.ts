@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+// import { invoke } from "@tauri-apps/api/core";
 import { is_desktop } from "./generic";
 import { TauriVolumeController } from "./tauri_volume";
 import { WebsocketTauriVolumeController } from "./websocket_volume";
@@ -31,7 +31,7 @@ export const volumeController = is_desktop()
     ? new TauriVolumeController()
     : new WebsocketTauriVolumeController();
 
-(async () => {
-    const h = await invoke("discover_server_address");
-    console.log("adwdwad", h);
-})();
+// (async () => {
+//     const h = await invoke("discover_server_address");
+//     console.log("adwdwad", h);
+// })();

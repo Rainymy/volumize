@@ -6,7 +6,13 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-    plugins: [react()],
+    plugins: [
+        react({
+            // babel: {
+            //     plugins: ["babel-plugin-react-compiler"],
+            // },
+        }),
+    ],
 
     css: {
         preprocessorOptions: {
@@ -20,6 +26,8 @@ export default defineConfig(async () => ({
 
     resolve: {
         alias: {
+            $page: path.resolve(__dirname, "./src/pages"),
+            $base: path.resolve(__dirname, "./src/base"),
             $component: path.resolve(__dirname, "./src/components"),
             $bridge: path.resolve(__dirname, "./src/bridge"),
             $model: path.resolve(__dirname, "./src/models"),
@@ -27,9 +35,8 @@ export default defineConfig(async () => ({
             $util: path.resolve(__dirname, "./src/utils"),
             $hook: path.resolve(__dirname, "./src/hooks"),
             $type: path.resolve(__dirname, "./src/types"),
-        }
+        },
     },
-
 
     // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
     //
@@ -42,10 +49,10 @@ export default defineConfig(async () => ({
         host: host || false,
         hmr: host
             ? {
-                protocol: "ws",
-                host,
-                port: 1421,
-            }
+                  protocol: "ws",
+                  host,
+                  port: 1421,
+              }
             : undefined,
         watch: {
             // 3. tell vite to ignore watching `src-tauri`

@@ -1,9 +1,10 @@
 import { useAtom } from "jotai";
-import { DeviceApplications } from "$component/applicationDevice";
-import { DeviceMaster } from "$component/deviceMaster";
+
+import { DeviceApplications, DeviceMaster } from "$component/device";
 import { useGenerateID } from "$hook/useGenerateID";
 import { audio_session, selected_device_id } from "$model/volume";
 import { comparePriority } from "$util/volume";
+
 import wrapper from "./index.module.less";
 
 /*                          The vision
@@ -35,7 +36,7 @@ export function MainContent() {
     return (
         <main className={wrapper.container}>
             <DeviceMaster master={defaultSession.device}></DeviceMaster>
-            {applicationsWithId.map(([element, key]) => {
+            {applicationsWithId.map(({ element, id: key }) => {
                 return <DeviceApplications app={element} key={key} />;
             })}
         </main>

@@ -1,5 +1,5 @@
 import { FaVolumeMute, FaVolumeUp } from "react-icons/fa";
-import { AppButton } from "$component/button";
+import { AppButton } from "$base/button";
 
 import style from "./index.module.less";
 

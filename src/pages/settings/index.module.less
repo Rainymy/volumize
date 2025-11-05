@@ -1,0 +1,36 @@
+@import "$core_css/core.less";
+
+.container {
+    background: #color_palett[secondary];
+    padding: 1rem 0.5rem;
+
+    border-radius: #element_style[radius];
+    border: #element_style[solid_border];
+
+    & > h1 {
+        margin-bottom: 0.75rem;
+    }
+}
+
+.settings {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+
+    @marginToRight: 50px;
+
+    & input[type="checkbox"] {
+        margin-right: @marginToRight;
+    }
+
+    & input[type="number"] {
+        margin-right: @marginToRight - 35px;
+    }
+}
+
+.settings button {
+    /* align-items: center; */
+    margin: auto;
+    margin-top: 20px;
+}

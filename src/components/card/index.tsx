@@ -1,6 +1,7 @@
-import { VSlider } from "$component/slider";
-import { ToggleableMuteIcon } from "$component/toggleMuteIcon";
+import { VSlider } from "$base/slider";
+import { ToggleableMuteIcon } from "$base/toggleMuteIcon";
 import type { MaybeAsync } from "$type/generic";
+
 import wrapper from "./index.module.less";
 
 type CardType = {

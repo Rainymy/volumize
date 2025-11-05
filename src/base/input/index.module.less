@@ -1,0 +1,16 @@
+@import "$core_css/core.less";
+
+.input {
+    border: #element_style[solid_border];
+    border-radius: #element_style[radius];
+    padding: 0.5rem 0.5rem;
+    color: #type_palett[black];
+    background-color: #D9D9D9;
+    /* background-color: #color_palett[darkContrast]; */
+    transition: border-color 0.3s ease;
+
+    &:focus {
+        outline: none;
+        border-color: #color_palett[highlight];
+    }
+}

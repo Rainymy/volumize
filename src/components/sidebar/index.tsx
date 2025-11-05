@@ -1,7 +1,9 @@
 import { useAtom } from "jotai";
 import { useEffect } from "react";
-import { AppButton } from "$component/button";
+
+import { AppButton } from "$base/button";
 import { audio_session, selected_device_id } from "$model/volume";
+
 import wrapper from "./index.module.less";
 
 export function Sidebar() {

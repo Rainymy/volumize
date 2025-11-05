@@ -23,8 +23,14 @@
         "noFallthroughCasesInSwitch": true,
         "baseUrl": ".",
         "paths": {
+            "$base/*": [
+                "./src/base/*"
+            ],
             "$component/*": [
                 "./src/components/*"
+            ],
+            "$page/*": [
+                "./src/pages/*"
             ],
             "$bridge/*": [
                 "./src/bridge/*"

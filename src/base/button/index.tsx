@@ -21,3 +21,19 @@ export function AppButton(props: AppButtonProps) {
         </button>
     );
 }
+
+export function NavButton(props: AppButtonProps) {
+    const { is_active, className, children, ...rest } = props;
+
+    const combineclass = classnames([
+        style.nav_button,
+        className,
+        is_active ? style.isActive : "",
+    ]);
+
+    return (
+        <button type="button" className={combineclass} {...rest}>
+            {children}
+        </button>
+    );
+}

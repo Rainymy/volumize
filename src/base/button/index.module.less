@@ -1,13 +1,11 @@
 @import "$core_css/core.less";
 
-@grad_start_color: #color_palett[seconderyColor];
-@grad_end_color: #color_palett[darkContrastColor];
-@grad_hover_start_color: desaturate(@grad_start_color, 25%);
+/* @grad_start_color: #color_palett[secondary]; */
+@grad_end_color: #color_palett[darkContrast];
+/* @grad_hover_start_color: desaturate(@grad_start_color, 25%); */
 @grad_hover_end_color: desaturate(@grad_end_color, 15%);
 
-/* @linear_grad: linear-gradient(-180deg, @grad_start_color 0%, @grad_end_color 100%); */
-/* @linear_grad_hover: linear-gradient(-180deg, @grad_hover_start_color 0%, @grad_hover_end_color 100%); */
-@linear_grad: #color_palett[contrastColor];
+@linear_grad: #color_palett[contrast];
 @linear_grad_hover: shade(@linear_grad, 10%);
 @linear_grad_select: spin(@linear_grad_hover, 50%);
 
@@ -46,4 +44,27 @@
 
 .isActive {
     background: @linear_grad_select;
+}
+
+/* ------- NAVBAR BUTTON --------- */
+.nav_button {
+  .button();
+
+  background: inherit;
+  font-size: 1.25rem;
+  text-decoration: none;
+  margin: inherit;
+
+  align-items: center;
+  column-gap: 0.4rem;
+
+  &:hover {
+    color: lighten(#color_palett[primary], 5%);
+    background: inherit;
+  }
+
+  &:active {
+    color: #color_palett[primary];
+    background: inherit;
+  }
 }

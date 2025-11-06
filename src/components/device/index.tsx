@@ -1,4 +1,5 @@
 import { useSetAtom } from "jotai";
+import { MdOutlineSpeaker } from "react-icons/md";
 import { volumeController } from "$bridge/volumeManager";
 import { Card } from "$component/card";
 import { audio_session } from "$model/volume";
@@ -12,11 +13,9 @@ export function DeviceMaster({ master }: { master: AudioDevice }) {
             isMuted={master.volume.muted}
             title={master.friendly_name}
             volume={master.volume.current}
+            icon={<MdOutlineSpeaker />}
             onButtonClick={async () => {
-                await volumeController.toggleMuteMaster(
-                    master.id,
-                    master.volume.muted,
-                );
+                await volumeController.toggleMuteMaster(master.id, master.volume.muted);
                 refreshable();
             }}
             onSlider={async (value) => {
@@ -34,11 +33,9 @@ export function DeviceApplications({ app }: { app: AudioApplication }) {
             isMuted={app.volume.muted}
             title={app.process.name}
             volume={app.volume.current}
+            icon={app.process.path}
             onButtonClick={async () => {
-                await volumeController.toggleMuteApp(
-                    app.process.id,
-                    app.volume.muted,
-                );
+                await volumeController.toggleMuteApp(app.process.id, app.volume.muted);
                 refreshable();
             }}
             onSlider={async (value) => {

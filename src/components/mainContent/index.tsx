@@ -7,7 +7,7 @@ import { comparePriority } from "$util/volume";
 
 import wrapper from "./index.module.less";
 
-/*                          The vision
+/*                          UI Design
  * [   static    ][                    Carousel                    ]
  * |-------------||-------------|-------------|-------------|------|
  * |             ||             |             |             |      |
@@ -34,11 +34,11 @@ export function MainContent() {
     }
 
     return (
-        <main className={wrapper.container}>
+        <div className={wrapper.container}>
             <DeviceMaster master={defaultSession.device}></DeviceMaster>
             {applicationsWithId.map(({ element, id: key }) => {
                 return <DeviceApplications app={element} key={key} />;
             })}
-        </main>
+        </div>
     );
 }

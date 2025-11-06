@@ -1,0 +1,20 @@
+@import "$core_css/core.less";
+
+.card_icon {
+    width: 30px;
+    height: 30px;
+
+    & > img, & > svg {
+        border-radius: #element_style[radius];
+
+        margin: auto;
+
+        width: auto;
+        height: 100%;
+        aspect-ratio: 1 / 1;
+    }
+
+    .no_icon {
+        transform: translateX(-1.5px);
+    }
+}

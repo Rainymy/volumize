@@ -6,3 +6,115 @@
 
     margin: 0.5rem 1rem;
 }
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    /* position: relative; */
+
+    text-align: center;
+
+    width: 100%;
+    transition: width 0.5s ease;
+
+    & > div {
+        width: 100%;
+    }
+
+    &.vertical {
+        flex-direction: column;
+        padding: 0.5rem 0.6rem;
+        /* box-shadow: 20px 0px 2px 20px rgba(0,0,0,1); */
+    }
+
+    &.collapsed {
+        width: #navbar_style[collapsed-width];
+    }
+
+    &.wide {
+        width: #navbar_style[expand-width];
+    }
+
+    &.hidden {
+        width: 0%;
+        padding: 0;
+    }
+}
+
+.hidden_navbar_button {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+
+    width: 1.25rem;
+    height: 2.5rem;
+
+    font-size: 2rem;
+
+    border: none;
+
+    border-radius: 0 0.75rem 0.75rem 0;
+    /* background-color: #fff; */
+    background-color: shade(#color_palett[contrast], 25%);
+    position: absolute;
+
+    top: 5%;
+    left: 0;
+
+    transition: left 0.5s ease;
+
+    & > svg {
+        transform: scale(3);
+        /* width: auto;
+        height: 100%; */
+    }
+
+    &.hide {
+        left: -1.25rem * 3;
+        /* left: -100%; */
+    }
+}
+
+.navbar_devices {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+
+    width: 100%;
+    max-height: 100%;
+
+    margin: 1rem 0;
+
+    overflow-x: auto;
+
+    & > div {
+        width: 100%;
+    }
+}
+
+.navbar_title {
+    font-size: 1.2rem;
+    /* font-weight: bold; */
+
+    width: 100%;
+
+    align-items: center;
+    gap: 4px;
+
+    transition: all 0.5s ease;
+
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+
+    & > span {
+
+    }
+    &.collapsed > span {
+        visibility: hidden;
+        width: 0%;
+    }
+}

@@ -1,21 +1,27 @@
 ## Priority
 
-- [ ] Detect changes in volume.
 - [ ] Redesign the Rust backend architect.
     - Split up the 1 main API into multple calls.
+    - Send application icon via API.
+        - send icon as PNG (try WebP first).
+        - when sending icon, hash it with Blake3 (for caching).
+- [ ] Integrate the UI with new backend implementation.
 
 ## Todo
 
-- [ ] Redesign User interface.
-    - Make it nicer on small screens like phone.
-- [ ] Improve application icon.
-    - Add some transparency.
-    - Make it better when it is small.
+- [ ] Detect changes in volume.
 - [ ] System tray menu update on timer.
     - tray menu is not reflected when choosing timer option.
 
 ## Done
 
+<!--### v2.0 Improvements-->
+
+- [x] Redesign User interface.
+    - Make it nicer on small screens like phone.
+- [x] Improve application icon.
+    - Add some transparency.
+    - Make it better when it is small.
 - [x] Add functionality to system tray.
     - [x] Create menu + submenu
         - Button for showing hidden window.
@@ -39,6 +45,9 @@
     - Check if need to use directly or indirectly via Tauri.
     - Prefer to use the re-exported functionality for compatibility reasons.
         - Tauri & Tokio runtime may use different version.
+
+### v1.0 Prototype
+
 - [x] Bug in UI sometimes the connection is stale.
     - Sometimes the device applications not changing.
     - Wireless connection has high latency.

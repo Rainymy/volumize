@@ -1,15 +1,15 @@
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useEffect } from "react";
 import { FaAngleRight, FaArrowLeft, FaHamburger } from "react-icons/fa";
 import { FiArrowLeft } from "react-icons/fi";
 import { IoSettingsOutline } from "react-icons/io5";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-
+import { useLocation, useNavigate } from "react-router-dom";
 import { AppButton, NavButton } from "$base/button";
 import { SidebarDevices } from "$component/sidebar";
 import { isVeritcalNavbar, NavbarState, navbar_state } from "$model/nav";
+import { connection_ready } from "$model/volume";
 import { NavigationType } from "$type/navigation";
 import { classnames } from "$util/react";
-
 import style from "./index.module.less";
 
 export function Navbar() {
@@ -17,7 +17,10 @@ export function Navbar() {
     const setVerticalNavbar = useSetAtom(isVeritcalNavbar);
 
     const isMainPath = location.pathname === NavigationType.MAIN;
-    setVerticalNavbar(isMainPath);
+    // Not really sure why this needs to be in a useEffect.
+    useEffect(() => {
+        setVerticalNavbar(() => isMainPath);
+    }, [isMainPath, setVerticalNavbar]);
 
     return isMainPath ? <VNavbar /> : <HNavbar />;
 }
@@ -83,11 +86,6 @@ export function VNavbar() {
 
             <SidebarDevices />
 
-            {/*<NavLink to={NavigationType.HOME}>
-                <NavButton>
-                    <span>Home</span>
-                </NavButton>
-            </NavLink>*/}
             <NavButton onClick={() => navigate(NavigationType.SETTINGS)}>
                 <IoSettingsOutline />
                 {navbarState === NavbarState.EXPANDED && <span>Settings</span>}
@@ -103,6 +101,7 @@ export function VNavbar() {
 export function HNavbar() {
     const location = useLocation();
     const navigate = useNavigate();
+    const is_ready = useAtomValue(connection_ready);
 
     return (
         <nav className={style.navbar}>
@@ -115,11 +114,11 @@ export function HNavbar() {
 
             <div />
 
-            <NavLink to={NavigationType.MAIN}>
-                <NavButton>
-                    <span>Main</span>
+            {is_ready && (
+                <NavButton onClick={() => navigate(NavigationType.HOME)}>
+                    <span>Close</span>
                 </NavButton>
-            </NavLink>
+            )}
 
             {location.pathname !== NavigationType.SETTINGS && (
                 <NavButton onClick={() => navigate(NavigationType.SETTINGS)}>

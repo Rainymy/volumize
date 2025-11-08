@@ -4,7 +4,7 @@ export function is_desktop() {
     switch (platform()) {
         case "android":
         case "ios":
-            return false
+            return false;
         default:
             return true;
     }

@@ -1,21 +1,16 @@
 @import "$core_css/core.less";
 
-/* @grad_start_color: #color_palett[secondary]; */
-@grad_end_color: #color_palett[darkContrast];
-/* @grad_hover_start_color: desaturate(@grad_start_color, 25%); */
-@grad_hover_end_color: desaturate(@grad_end_color, 15%);
-
 @linear_grad: #color_palett[contrast];
-@linear_grad_hover: shade(@linear_grad, 10%);
-@linear_grad_select: spin(@linear_grad_hover, 50%);
+@linear_grad_hover: shade(saturate(@linear_grad, 10%), 20%);
+@linear_grad_active: shade(desaturate(@linear_grad, 20%), 30%);
+@linear_grad_is_active: shade(darken(@linear_grad, 10%), 40%);
 
 .button {
   display: flex;
   justify-content: center;
 
   color: #type_palett[black];
-  /* background-color: @linear_grad; */
-  background: @linear_grad;
+  background-color: @linear_grad;
   font-size: 16px;
   text-decoration: none;
 
@@ -34,23 +29,24 @@
   touch-action: manipulation;
 
   &:hover {
-    background: @linear_grad_hover;
+    background-color: @linear_grad_hover;
   }
 
   &:active {
-    background: @grad_hover_end_color;
+    background-color: @linear_grad_active;
   }
 }
 
 .isActive {
-    background: @linear_grad_select;
+    background-color: @linear_grad_is_active;
+    border: #element_style[solid_thin_border];
 }
 
 /* ------- NAVBAR BUTTON --------- */
 .nav_button {
   .button();
 
-  background: inherit;
+  background-color: inherit;
   font-size: 1.25rem;
   text-decoration: none;
   margin: inherit;
@@ -60,11 +56,11 @@
 
   &:hover {
     color: lighten(#color_palett[primary], 5%);
-    background: inherit;
+    background-color: inherit;
   }
 
   &:active {
     color: #color_palett[primary];
-    background: inherit;
+    background-color: inherit;
   }
 }

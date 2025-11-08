@@ -1,7 +1,7 @@
 .defaultFontFamily {
     font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
     font-size: 16px;
-    line-height: 24px;
+    line-height: normal;
     font-weight: 400;
 
     color: #0f0f0f;
@@ -15,9 +15,11 @@
 }
 
 #element_style() {
+    @border-color: fade(#type_palett[light_shadow], 75%);
+
     radius: 8px;
-    solid_border: 2px #type_palett[white] solid;
-    solid_thin_border: 1px #type_palett[white] solid;
+    solid_border: 2px @border-color solid;
+    solid_thin_border: 1px @border-color solid;
 }
 
 #color_palett() {
@@ -36,6 +38,8 @@
 }
 
 #navbar_style() {
-    collapsed-width: 100px;
-    expand-width: clamp(100px, 200px, 50%);
+    @nav-min-width: 100px;
+
+    collapsed-width: @nav-min-width;
+    expand-width: clamp(@nav-min-width, 175px, 50%);
 }

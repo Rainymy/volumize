@@ -1,71 +1,46 @@
-import { FaSearch } from "react-icons/fa";
+import { useAtomValue } from "jotai";
+import { useEffect } from "react";
 import { IoClose } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
 
 import { AppLogo } from "$base/appLogo";
 import { AppButton } from "$base/button";
-import { AppInput } from "$base/input";
+import { ServerURLComponent } from "$component/serverInput";
+import { useConnect } from "$hook/useWebsocket";
+import { connection_ready } from "$model/volume";
+import { NavigationType } from "$type/navigation";
 
 import style from "./index.module.less";
 
 export function Entry() {
-    const isLoading = false;
+    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useConnect();
+
+    const is_ready = useAtomValue(connection_ready);
+
+    useEffect(() => {
+        if (is_ready) {
+            navigate(NavigationType.MAIN);
+        }
+    }, [is_ready, navigate]);
 
     return (
         <div className={style.box}>
             <AppLogo />
-            {isLoading ? <ServerDiscoveryLoading /> : <ServerDiscoveryInput />}
+            {isLoading ? (
+                <ServerDiscoveryLoading cancel={() => setIsLoading(false)} />
+            ) : (
+                <ServerURLComponent />
+            )}
         </div>
     );
 }
 
-function ServerInput() {
-    const style = {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0.75rem 0",
-        gap: "0.5rem",
-
-        width: "100%",
-    };
-
-    return (
-        <div style={style}>
-            <AppInput placeholder="Enter server address" />
-            <AppButton type="submit">
-                <FaSearch />
-            </AppButton>
-        </div>
-    );
-}
-
-function ServerDiscoveryInput() {
-    const style = {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0.75rem 0",
-        gap: "0.5rem",
-
-        width: "100%",
-    };
-
-    return (
-        <div>
-            <ServerInput />
-            <hr />
-            <div style={style}>
-                <AppButton>Discover Servers</AppButton>
-            </div>
-        </div>
-    );
-}
-
-function ServerDiscoveryLoading() {
+function ServerDiscoveryLoading(props: { cancel: () => void }) {
     return (
         <div>
             <h2>Server discovery in progress...</h2>
-            <AppButton>
+            <AppButton onClick={() => props.cancel()}>
                 <IoClose /> Cancel
             </AppButton>
         </div>

@@ -9,7 +9,7 @@ import { Settings } from "$page/settings";
 import { NavigationType } from "$type/navigation";
 import { classnames } from "$util/react";
 
-export default function App() {
+export default function AudioMixer() {
     const navbarState = useNavbarState();
     const isDestinationSettings = useIsNavigateToSettings();
 

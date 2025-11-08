@@ -1,5 +1,6 @@
 import { useAtom } from "jotai";
 import { useEffect } from "react";
+
 import { CiSpeaker } from "react-icons/ci";
 
 import { AppButton } from "$base/button";
@@ -7,53 +8,17 @@ import { useGenerateID } from "$hook/useGenerateID";
 import { NavbarState, navbar_state } from "$model/nav";
 import { audio_session, selected_device_id } from "$model/volume";
 import { classnames } from "$util/react";
+
 import style from "./index.module.less";
-
-export function Sidebar() {
-    const [selected_device, set_device_id] = useAtom(selected_device_id);
-    const [audio_devices, refreshable] = useAtom(audio_session);
-
-    useEffect(() => {
-        if (typeof selected_device === "undefined" && audio_devices.length) {
-            // set either default device or the first device as "selected".
-            const find_default =
-                audio_devices.find((val) => val.device.is_default) ?? audio_devices[0];
-            set_device_id(find_default.device.id);
-        }
-    }, [selected_device, audio_devices, set_device_id]);
-
-    return (
-        <aside className={style.container}>
-            <h2>Devices</h2>
-            {audio_devices
-                .map((val) => val.device)
-                .map((device) => (
-                    <AppButton
-                        is_active={device.id === selected_device}
-                        key={device.id}
-                        onClick={() => {
-                            set_device_id(() => device.id);
-                            // SOULD NOT CALL "refreshable" ON EVERYCLICK.
-                            // TODO: Optimize this call, it's freezing the UI.
-                            refreshable();
-                        }}
-                    >
-                        {device.name}
-                    </AppButton>
-                ))}
-        </aside>
-    );
-}
 
 export function SidebarDevices() {
     const [selected_device, set_device_id] = useAtom(selected_device_id);
-    const [audio_devices, _refreshable] = useAtom(audio_session);
-    const audio_devices_ids = useGenerateID(audio_devices);
-
+    const [audio_devices, refreshable] = useAtom(audio_session);
     const [navbarState, _setNavbarState] = useAtom(navbar_state);
 
-    const collapsed = navbarState === NavbarState.EXPANDED;
+    const audio_devices_ids = useGenerateID(audio_devices);
 
+    const collapsed = navbarState === NavbarState.EXPANDED;
     const nav_item = classnames([style.navbar_title, !collapsed ? style.collapsed : ""]);
 
     useEffect(() => {
@@ -61,7 +26,7 @@ export function SidebarDevices() {
             // set either default device or the first device as "selected".
             const find_default =
                 audio_devices.find((val) => val.device.is_default) ?? audio_devices[0];
-            set_device_id(find_default.device.id);
+            set_device_id(() => find_default.device.id);
         }
     }, [selected_device, audio_devices, set_device_id]);
 
@@ -75,7 +40,12 @@ export function SidebarDevices() {
                         <AppButton
                             is_active={device.id === selected_device}
                             className={nav_item}
-                            onClick={() => set_device_id(() => device.id)}
+                            onClick={() => {
+                                set_device_id(() => device.id);
+                                // SOULD NOT CALL "refreshable" ON EVERYCLICK.
+                                // TODO: Optimize this call, it's freezing the UI.
+                                refreshable();
+                            }}
                         >
                             <CiSpeaker />
                             <span>{device.name}</span>

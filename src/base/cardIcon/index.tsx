@@ -1,20 +1,13 @@
 import { isValidElement, type ReactNode, useState } from "react";
 import { FiXOctagon } from "react-icons/fi";
 
-import { classnames } from "$util/react";
-
 import style from "./index.module.less";
 
 export function CardIcon(props: { icon?: string | ReactNode }) {
     const [isIconValid, setIsIconValid] = useState(true);
 
-    const className = classnames([
-        style.card_icon,
-        !isIconValid ? style.no_icon : undefined,
-    ]);
-
     return (
-        <div className={className}>
+        <div className={style.card_icon}>
             <InnerCardIcon
                 isIconValid={isIconValid}
                 setIconState={() => setIsIconValid(false)}

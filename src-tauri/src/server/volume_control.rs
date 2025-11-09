@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 
 use crate::types::shared::{
-    AppIdentifier, AudioDevice, AudioSession, DeviceIdentifier, VolumeControllerTrait,
+    AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumeControllerTrait,
     VolumePercent, VolumeResult,
 };
 
@@ -23,6 +23,10 @@ mod platform;
 #[serde(rename_all = "snake_case")]
 pub enum VolumeCommand {
     // Device
+    GetAllDevices(
+        #[serde(skip, default = "default_sender")]
+        UnboundedSender<VolumeResult<Vec<DeviceIdentifier>>>,
+    ),
     SetDeviceVolume(DeviceIdentifier, VolumePercent),
     GetDeviceVolume(
         DeviceIdentifier,
@@ -32,8 +36,15 @@ pub enum VolumeCommand {
     MuteDevice(DeviceIdentifier),
     UnmuteDevice(DeviceIdentifier),
     // Application
-    GetAllApplications(
-        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<Vec<AudioSession>>>,
+    GetDeviceApplications(
+        DeviceIdentifier,
+        #[serde(skip, default = "default_sender")]
+        UnboundedSender<VolumeResult<Vec<AppIdentifier>>>,
+    ),
+    GetApplication(
+        AppIdentifier,
+        #[serde(skip, default = "default_sender")]
+        UnboundedSender<VolumeResult<Option<AudioApplication>>>,
     ),
     GetAppVolume(
         AppIdentifier,
@@ -146,6 +157,10 @@ pub fn spawn_volume_thread() -> VolumeCommandSender {
 fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeControllerTrait>) {
     match command {
         // Master Controll
+        VolumeCommand::GetAllDevices(resp_tx) => {
+            let devices = controller.get_all_devices();
+            let _ = resp_tx.send(Ok(devices));
+        }
         VolumeCommand::SetDeviceVolume(device_id, p) => {
             let _ = controller.set_device_volume(device_id, p);
         }
@@ -160,9 +175,9 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
             let _ = controller.unmute_device(device_id);
         }
         // Application Controll
-        VolumeCommand::GetAllApplications(resp_tx) => {
-            let all_app = controller.get_all_applications();
-            let _ = resp_tx.send(all_app);
+        VolumeCommand::GetDeviceApplications(device_id, resp_tx) => {
+            let applications = controller.get_device_applications(device_id);
+            let _ = resp_tx.send(Ok(applications));
         }
         VolumeCommand::SetAppVolume(app_id, volume) => {
             let _ = controller.set_app_volume(app_id, volume);

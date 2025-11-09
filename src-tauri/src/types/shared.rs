@@ -6,6 +6,7 @@ use thiserror::Error;
 pub type VolumePercent = f32;
 pub type AppIdentifier = u32;
 pub type DeviceIdentifier = String;
+
 pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,7 +37,7 @@ pub struct AudioApplication {
     pub session_type: SessionType,
     pub direction: SessionDirection,
     pub volume: AudioVolume,
-    pub sound_playing: bool,
+    pub device_id: DeviceIdentifier,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,11 +50,14 @@ pub struct AudioDevice {
     pub volume: AudioVolume,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AudioSession {
-    pub device: AudioDevice,
-    pub applications: Vec<AudioApplication>,
-}
+/*
+ * GetAllDevices
+ * AudioSession[] ->
+ *                            GetDeviceApplications
+ *         AudioSession.id -> AudioApplication[]
+ *                                    GetApplication
+ *                                    AudioApplication.ProcessInfo
+ */
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AudioVolume {
@@ -87,8 +91,12 @@ pub enum VolumeControllerError {
 }
 
 pub trait DeviceVolumeControl {
-    fn get_device_volume(&self, device_id: DeviceIdentifier)
-        -> VolumeResult<Option<VolumePercent>>;
+    fn get_all_devices(&self) -> VolumeResult<Vec<DeviceIdentifier>>;
+    fn get_device_applications(
+        &self,
+        device_id: DeviceIdentifier,
+    ) -> VolumeResult<Vec<AppIdentifier>>;
+    fn get_device_volume(&self, device_id: DeviceIdentifier) -> VolumeResult<VolumePercent>;
     fn set_device_volume(
         &self,
         device_id: DeviceIdentifier,
@@ -99,7 +107,7 @@ pub trait DeviceVolumeControl {
 }
 
 pub trait ApplicationVolumeControl {
-    fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>>;
+    fn get_application_device(&self, app: AppIdentifier) -> VolumeResult<AudioDevice>;
     fn find_application_with_id(&self, id: AppIdentifier) -> VolumeResult<AudioApplication>;
     fn get_app_volume(&self, app: AppIdentifier) -> VolumeResult<AudioVolume>;
     fn set_app_volume(&self, app: AppIdentifier, percent: VolumePercent) -> VolumeResult<()>;

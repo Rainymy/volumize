@@ -4,9 +4,8 @@ use windows::{
         Devices::FunctionDiscovery::{PKEY_Device_DeviceDesc, PKEY_Device_FriendlyName},
         Foundation::{MAX_PATH, S_OK},
         Media::Audio::{
-            eCapture, eRender, AudioSessionStateActive, EDataFlow, Endpoints::IAudioEndpointVolume,
-            IAudioSessionControl2, IAudioSessionEnumerator, IMMDevice, IMMEndpoint,
-            ISimpleAudioVolume,
+            eCapture, eRender, EDataFlow, Endpoints::IAudioEndpointVolume, IAudioSessionControl2,
+            IAudioSessionEnumerator, IMMDevice, IMMEndpoint, ISimpleAudioVolume,
         },
         UI::Shell::SHLoadIndirectString,
     },
@@ -15,8 +14,8 @@ use windows::{
 use crate::{
     server::volume_control::platform::com_scope::ComManager,
     types::shared::{
-        AudioApplication, AudioDevice, AudioVolume, ProcessInfo, SessionDirection, SessionType,
-        VolumeResult,
+        AudioApplication, AudioDevice, AudioVolume, DeviceIdentifier, ProcessInfo,
+        SessionDirection, SessionType, VolumeResult,
     },
 };
 
@@ -99,8 +98,9 @@ pub fn process_sessions(
     sessions: &IAudioSessionEnumerator,
     direction: Option<SessionDirection>,
     is_default_deivce: bool,
+    device_id: &DeviceIdentifier,
 ) -> VolumeResult<Vec<AudioApplication>> {
-    let mut result: Vec<AudioApplication> = Vec::new();
+    let mut applications = vec![];
 
     unsafe {
         for i in 0..sessions.GetCount()? {
@@ -112,11 +112,7 @@ pub fn process_sessions(
                 continue;
             }
 
-            let is_active = session_control
-                .GetState()
-                .is_ok_and(|state| state == AudioSessionStateActive);
-
-            result.push(AudioApplication {
+            applications.push(AudioApplication {
                 process: ProcessInfo {
                     id: process_id,
                     name: get_display_name(&session_control, process_id),
@@ -125,12 +121,12 @@ pub fn process_sessions(
                 session_type: determine_session_type(&session_control),
                 direction: direction.clone().unwrap_or(SessionDirection::Unknown),
                 volume: get_volume_info_generic(&session_control),
-                sound_playing: is_active,
+                device_id: device_id.clone(),
             });
         }
     }
 
-    Ok(result)
+    Ok(applications)
 }
 
 fn determine_session_type(session_control: &IAudioSessionControl2) -> SessionType {
@@ -160,29 +156,27 @@ fn get_display_name(session_control: &IAudioSessionControl2, pid: u32) -> String
 }
 
 fn get_session_display_name(session_control: &IAudioSessionControl2) -> String {
-    unsafe {
+    let raw_name = unsafe {
         let name_pwstr = session_control.GetDisplayName().unwrap_or(PWSTR::null());
-        let raw_name = util::pwstr_to_string(name_pwstr);
-
-        // Handle indirect strings (like @%SystemRoot%\System32\AudioSrv.DLL,-202)
-        if raw_name.starts_with("@") {
-            // Fall back to raw string if expansion fails
-            expand_indirect_string(&raw_name)
-                .inspect_err(|e| eprintln!("Failed to expand indirect string, {:?}", e))
-                .unwrap_or_else(|_| raw_name)
-        } else {
-            raw_name
-        }
+        util::pwstr_to_string(name_pwstr)
+    };
+    // Handle indirect strings (like @%SystemRoot%\System32\AudioSrv.DLL,-202)
+    if raw_name.starts_with("@") {
+        // Fall back to raw string if expansion fails
+        expand_indirect_string(&raw_name)
+            .inspect_err(|e| eprintln!("Failed to expand indirect string, {:?}", e))
+            .unwrap_or_else(|_| raw_name)
+    } else {
+        raw_name
     }
 }
 
 fn expand_indirect_string(indirect_string: &str) -> VolumeResult<String> {
+    let mut buffer = [0u16; MAX_PATH as usize];
+    let (_buffer_str, read_str) = util::string_to_pcwstr(indirect_string);
+
     unsafe {
-        let mut buffer = [0u16; MAX_PATH as usize];
-        let (_buffer_str, read_str) = util::string_to_pcwstr(indirect_string);
-
         SHLoadIndirectString(read_str, &mut buffer, None)?;
-
-        Ok(util::process_lossy_name(&buffer))
     }
+    Ok(util::process_lossy_name(&buffer))
 }

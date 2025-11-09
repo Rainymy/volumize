@@ -3,7 +3,7 @@ use tokio::sync::mpsc::unbounded_channel;
 
 use crate::{
     server::{VolumeCommand, VolumeCommandSender},
-    types::shared::{AppIdentifier, AudioDevice, AudioSession, DeviceIdentifier, VolumePercent},
+    types::shared::{AppIdentifier, AudioDevice, DeviceIdentifier, VolumePercent},
 };
 
 // ============================ Master ============================
@@ -46,7 +46,7 @@ pub fn unmute_device(device_id: DeviceIdentifier, state: State<VolumeCommandSend
 #[tauri::command]
 pub async fn get_all_applications(
     state: State<'_, VolumeCommandSender>,
-) -> Result<Vec<AudioSession>, ()> {
+) -> Result<Vec<DeviceIdentifier>, ()> {
     let (tx, mut rx) = unbounded_channel();
 
     let _ = state.send(VolumeCommand::GetAllApplications(tx));

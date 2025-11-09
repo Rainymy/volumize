@@ -16,7 +16,7 @@ use windows::{
 };
 
 use super::util;
-use crate::types::shared::{VolumeControllerError, VolumeResult};
+use crate::types::shared::{DeviceIdentifier, VolumeControllerError, VolumeResult};
 
 static INITIALIZED: AtomicBool = AtomicBool::new(false);
 
@@ -92,7 +92,7 @@ impl ComManager {
         }
     }
 
-    pub fn with_application_sesstion_control(
+    pub fn with_application_session_control(
         &self,
         target_pid: u32,
         device_id: &str,
@@ -101,9 +101,8 @@ impl ComManager {
 
         unsafe {
             let session_enum = endpoint.GetSessionEnumerator()?;
-            let count = session_enum.GetCount()?;
 
-            for i in 0..count {
+            for i in 0..session_enum.GetCount()? {
                 let session_control = session_enum.GetSession(i)?;
                 let pid = session_control
                     .cast::<IAudioSessionControl2>()?
@@ -120,17 +119,6 @@ impl ComManager {
             target_pid, device_id
         )))
     }
-
-    // pub fn with_default_generic_activate<T>(&self) -> VolumeResult<T>
-    // where
-    //     T: Interface,
-    // {
-    //     unsafe {
-    //         self.get_default_device()?
-    //             .Activate::<T>(Self::CLS_CONTEXT, None)
-    //             .map_err(VolumeControllerError::WindowsApiError)
-    //     }
-    // }
 
     pub fn with_generic_device_activate<T>(&self, id: &str) -> VolumeResult<T>
     where
@@ -156,14 +144,14 @@ impl ComManager {
         }
     }
 
-    pub fn get_all_device_id(&self) -> VolumeResult<Vec<String>> {
+    pub fn get_all_device_id(&self) -> VolumeResult<Vec<DeviceIdentifier>> {
         unsafe {
             let device_collection = self
                 .device_enumerator
                 .EnumAudioEndpoints(eRender, Self::DEVICE_STATE_CONTEXT)?;
 
             let count = device_collection.GetCount()?;
-            let mut ids = Vec::with_capacity(count as usize);
+            let mut ids: Vec<DeviceIdentifier> = Vec::with_capacity(count as usize);
 
             for i in 0..count {
                 match device_collection.Item(i) {

@@ -1,87 +1,58 @@
-use windows::Win32::Media::Audio::{IAudioSessionManager2, ISimpleAudioVolume};
+use windows::Win32::Media::Audio::IAudioSessionManager2;
 
 use crate::{
     server::volume_control::platform::{com_scope::ComManager, convert::get_direction},
     types::shared::{
-        AppIdentifier, ApplicationVolumeControl, AudioApplication, AudioDevice, AudioSession,
-        AudioVolume, DeviceControl, VolumeControllerError, VolumePercent, VolumeResult,
-        VolumeValidation,
+        AppIdentifier, ApplicationVolumeControl, AudioApplication, AudioDevice, AudioVolume,
+        DeviceControl, VolumeControllerError, VolumePercent, VolumeResult, VolumeValidation,
     },
 };
 
 use super::{convert, util, VolumeController};
 
-impl VolumeController {
-    fn get_application_device(&self, app: AppIdentifier) -> VolumeResult<AudioDevice> {
-        let session = self
-            .get_all_applications()?
-            .into_iter()
-            .find(|val| val.applications.iter().any(|val| val.process.id == app))
-            .ok_or_else(|| {
-                VolumeControllerError::ApplicationNotFound(format!(
-                    "[ get_application_device ] Application not found - id: {}",
-                    app
-                ))
-            })?;
-
-        Ok(session.device)
-    }
-
-    fn get_application_session_control(
-        &self,
-        app: AppIdentifier,
-    ) -> VolumeResult<ISimpleAudioVolume> {
-        let id = self.get_application_device(app)?.id;
-        self.com.with_application_sesstion_control(app, &id)
-    }
-}
+impl VolumeController {}
 
 impl ApplicationVolumeControl for VolumeController {
-    fn get_all_applications(&self) -> VolumeResult<Vec<AudioSession>> {
-        let mut applications = vec![];
+    fn get_application_device(&self, app: AppIdentifier) -> VolumeResult<AudioDevice> {
+        let device_id = self.find_application_with_id(app)?.device_id;
+        convert::process_device(self.com.get_device_with_id(&device_id)?)
+    }
 
+    fn find_application_with_id(&self, app: AppIdentifier) -> VolumeResult<AudioApplication> {
         for device in self.get_playback_devices()? {
-            let device_id = device.id;
-
             let session_enums = {
                 let session: IAudioSessionManager2 =
-                    self.com.with_generic_device_activate(&device_id)?;
+                    self.com.with_generic_device_activate(&device.id)?;
 
                 unsafe { session.GetSessionEnumerator()? }
             };
 
-            let imm_device = self.com.get_device_with_id(&device_id)?;
+            let imm_device = self.com.get_device_with_id(&device.id)?;
             let direction = get_direction(&imm_device)?;
 
-            let current_device = self.com.get_device_with_id(&device_id)?;
-
             let is_default_device =
-                util::is_default_device(&current_device, direction.edataflow, ComManager::E_ROLE);
+                util::is_default_device(&imm_device, direction.edataflow, ComManager::E_ROLE);
 
-            applications.push(AudioSession {
-                applications: convert::process_sessions(
-                    &session_enums,
-                    Some(direction.direction),
-                    is_default_device,
-                )?,
-                device: convert::process_device(imm_device)?,
-            });
+            let device_applications = convert::process_sessions(
+                &session_enums,
+                Some(direction.direction),
+                is_default_device,
+                &util::pwstr_to_string(unsafe { imm_device.GetId()? }),
+            )?;
+
+            let application = device_applications
+                .into_iter()
+                .find(|val| val.process.id == app);
+
+            if let Some(application) = application {
+                return Ok(application);
+            }
         }
 
-        Ok(applications)
-    }
-
-    fn find_application_with_id(&self, app: AppIdentifier) -> VolumeResult<AudioApplication> {
-        self.get_all_applications()?
-            .into_iter()
-            .flat_map(|session| session.applications.into_iter())
-            .find(|val| val.process.id == app)
-            .ok_or_else(|| {
-                VolumeControllerError::ApplicationNotFound(format!(
-                    "[ find ] Application not found - id: {}",
-                    app
-                ))
-            })
+        Err(VolumeControllerError::ApplicationNotFound(format!(
+            "[ find ] Application not found - id: {}",
+            app
+        )))
     }
 
     fn get_app_volume(&self, app: AppIdentifier) -> VolumeResult<AudioVolume> {
@@ -90,7 +61,9 @@ impl ApplicationVolumeControl for VolumeController {
 
     fn set_app_volume(&self, app: AppIdentifier, volume: VolumePercent) -> VolumeResult<()> {
         let volume = AudioVolume::validate_volume(volume)?;
-        let endpoint = self.get_application_session_control(app)?;
+
+        let id = self.get_application_device(app)?.id;
+        let endpoint = self.com.with_application_session_control(app, &id)?;
 
         unsafe {
             endpoint
@@ -105,7 +78,8 @@ impl ApplicationVolumeControl for VolumeController {
     }
 
     fn mute_app(&self, app: AppIdentifier) -> VolumeResult<()> {
-        let endpoint = self.get_application_session_control(app)?;
+        let id = self.get_application_device(app)?.id;
+        let endpoint = self.com.with_application_session_control(app, &id)?;
 
         unsafe {
             endpoint
@@ -120,7 +94,8 @@ impl ApplicationVolumeControl for VolumeController {
     }
 
     fn unmute_app(&self, app: AppIdentifier) -> VolumeResult<()> {
-        let endpoint = self.get_application_session_control(app)?;
+        let id = self.get_application_device(app)?.id;
+        let endpoint = self.com.with_application_session_control(app, &id)?;
 
         unsafe {
             endpoint

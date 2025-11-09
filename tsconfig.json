@@ -2,13 +2,9 @@
     "compilerOptions": {
         "target": "ES2024",
         "useDefineForClassFields": true,
-        "lib": [
-            "ES2020",
-            "DOM",
-            "DOM.Iterable"
-        ],
+        "lib": ["ES2020", "DOM", "DOM.Iterable"],
         "module": "ESNext",
-        "skipLibCheck": true,
+        "skipLibCheck": false,
         /* Bundler mode */
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
@@ -18,46 +14,23 @@
         "jsx": "react-jsx",
         /* Linting */
         "strict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noFallthroughCasesInSwitch": true,
+        // "noUnusedLocals": true,
+        // "noUnusedParameters": true,
+        // "noFallthroughCasesInSwitch": true,
+        // "allowSyntheticDefaultImports": false,
+
         "baseUrl": ".",
         "paths": {
-            "$base/*": [
-                "./src/base/*"
-            ],
-            "$component/*": [
-                "./src/components/*"
-            ],
-            "$page/*": [
-                "./src/pages/*"
-            ],
-            "$bridge/*": [
-                "./src/bridge/*"
-            ],
-            "$model/*": [
-                "./src/models/*"
-            ],
-            "$core_css/*": [
-                "./src/css/*"
-            ],
-            "$util/*": [
-                "./src/utils/*"
-            ],
-            "$hook/*": [
-                "./src/hooks/*"
-            ],
-            "$type/*": [
-                "./src/types/*"
-            ]
+            "$base/*": ["./src/base/*"],
+            "$component/*": ["./src/components/*"],
+            "$page/*": ["./src/pages/*"],
+            "$bridge/*": ["./src/bridge/*"],
+            "$model/*": ["./src/models/*"],
+            "$core_css/*": ["./src/css/*"],
+            "$util/*": ["./src/utils/*"],
+            "$hook/*": ["./src/hooks/*"],
+            "$type/*": ["./src/types/*"]
         }
     },
-    "include": [
-        "src"
-    ],
-    "references": [
-        {
-            "path": "./tsconfig.node.json"
-        }
-    ]
+    "include": ["src", "vite.config.ts"]
 }

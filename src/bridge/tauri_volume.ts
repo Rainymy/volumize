@@ -20,22 +20,22 @@ export class TauriVolumeController
     }, BOUNCE_DELAY.NORMAL);
 
     getDeviceVolume: ITauriVolumeController["getDeviceVolume"] = debounce(
-        (device_id: DeviceIdentifier) => {
+        (id: DeviceIdentifier) => {
             return invoke<VolumePercent>(RUST_INVOKE.GET_DEVICE_VOLUME, {
-                deviceId: device_id,
+                id,
             });
         },
         BOUNCE_DELAY.NORMAL,
     );
 
     setDeviceVolume: ITauriVolumeController["setDeviceVolume"] = debounce(
-        (device_id: DeviceIdentifier, percent: number) => {
+        (id: DeviceIdentifier, percent: number) => {
             if (!isVolumePercent(percent)) {
                 throw Error(`Invalid VolumePercent value: ${percent}`);
             }
 
             return invoke(RUST_INVOKE.SET_DEVICE_VOLUME, {
-                deviceId: device_id,
+                id: id,
                 percent: percent,
             });
         },
@@ -43,8 +43,8 @@ export class TauriVolumeController
     );
 
     muteDevice: ITauriVolumeController["muteDevice"] = debounce(
-        (device_id: DeviceIdentifier) => {
-            return invoke(RUST_INVOKE.MUTE_DEVICE, { deviceId: device_id });
+        (id: DeviceIdentifier) => {
+            return invoke(RUST_INVOKE.MUTE_DEVICE, { id });
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -59,9 +59,9 @@ export class TauriVolumeController
     /* =================== APPLICATIONS ===================== */
 
     getDeviceApplications: ITauriVolumeController["getDeviceApplications"] = debounce(
-        (device_id: DeviceIdentifier) => {
+        (id: DeviceIdentifier) => {
             return invoke<AppIdentifier[]>(RUST_INVOKE.GET_DEVICE_APPLICATIONS, {
-                deviceId: device_id,
+                id,
             });
         },
         BOUNCE_DELAY.NORMAL,
@@ -77,50 +77,55 @@ export class TauriVolumeController
     getApplicationDevice: ITauriVolumeController["getApplicationDevice"] = debounce(
         (id: AppIdentifier) => {
             return invoke<AudioDevice>(RUST_INVOKE.GET_APPLICATION_DEVICE, {
-                id,
+                app_id: id,
             });
         },
         BOUNCE_DELAY.NORMAL,
     );
 
     getAppVolume: ITauriVolumeController["getAppVolume"] = debounce(
-        (app: AppIdentifier) => {
+        (id: AppIdentifier) => {
             return invoke<VolumePercent>(RUST_INVOKE.GET_APP_VOLUME, {
-                appIdentifier: app,
+                appIdentifier: id,
             });
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     setAppVolume: ITauriVolumeController["setAppVolume"] = debounce(
-        (app: AppIdentifier, percent: number) => {
+        (id: AppIdentifier, percent: number) => {
             if (!isVolumePercent(percent)) {
                 throw Error(`Invalid VolumePercent value: ${percent}`);
             }
 
             return invoke(RUST_INVOKE.SET_APP_VOLUME, {
-                appIdentifier: app,
+                appIdentifier: id,
                 volume: percent,
             });
         },
         BOUNCE_DELAY.NORMAL,
     );
 
-    muteApp: ITauriVolumeController["muteApp"] = debounce((app: AppIdentifier) => {
-        return invoke(RUST_INVOKE.MUTE_APP_VOLUME, { appIdentifier: app });
+    muteApp: ITauriVolumeController["muteApp"] = debounce((id: AppIdentifier) => {
+        return invoke(RUST_INVOKE.MUTE_APP_VOLUME, { appIdentifier: id });
     }, BOUNCE_DELAY.NORMAL);
 
-    unmuteApp: ITauriVolumeController["unmuteApp"] = debounce((app: AppIdentifier) => {
+    unmuteApp: ITauriVolumeController["unmuteApp"] = debounce((id: AppIdentifier) => {
         return invoke(RUST_INVOKE.UNMUTE_APP_VOLUME, {
-            appIdentifier: app,
+            appIdentifier: id,
         });
     }, BOUNCE_DELAY.NORMAL);
 
     getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debounce(() => {
         return invoke<AudioDevice[]>(RUST_INVOKE.GET_PLAYBACK_DEVICES);
-    }, BOUNCE_DELAY.FAST);
+    }, BOUNCE_DELAY.NORMAL);
+
     getCurrentPlaybackDevice: ITauriVolumeController["getCurrentPlaybackDevice"] =
         debounce(() => {
             return invoke<AudioDevice | null>(RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE);
-        }, BOUNCE_DELAY.FAST);
+        }, BOUNCE_DELAY.NORMAL);
+
+    discoverServer: ITauriVolumeController["discoverServer"] = debounce(() => {
+        return { url: "127.0.0.1", port: 9002 };
+    }, BOUNCE_DELAY.NORMAL);
 }

@@ -26,21 +26,21 @@ pub async fn get_all_devices(
 
 #[tauri::command]
 pub fn set_device_volume(
-    device_id: DeviceIdentifier,
+    id: DeviceIdentifier,
     percent: VolumePercent,
     state: State<VolumeCommandSender>,
 ) {
-    let _ = state.send(VolumeCommand::SetDeviceVolume(device_id, percent));
+    let _ = state.send(VolumeCommand::SetDeviceVolume(id, percent));
 }
 
 #[tauri::command]
 pub async fn get_device_volume(
-    device_id: DeviceIdentifier,
+    id: DeviceIdentifier,
     state: State<'_, VolumeCommandSender>,
 ) -> Result<f32, ()> {
     let (tx, mut rx) = unbounded_channel();
 
-    let _ = state.send(VolumeCommand::GetDeviceVolume(device_id, tx));
+    let _ = state.send(VolumeCommand::GetDeviceVolume(id, tx));
 
     if let Some(value) = rx.recv().await {
         return value.map_err(|_err| ());
@@ -62,12 +62,12 @@ pub fn unmute_device(device_id: DeviceIdentifier, state: State<VolumeCommandSend
 // ============================ Application ============================
 #[tauri::command]
 pub async fn get_application(
-    app_id: AppIdentifier,
+    id: AppIdentifier,
     state: State<'_, VolumeCommandSender>,
 ) -> Result<Option<AudioApplication>, ()> {
     let (tx, mut rx) = unbounded_channel();
 
-    let _ = state.send(VolumeCommand::GetApplication(app_id, tx));
+    let _ = state.send(VolumeCommand::GetApplication(id, tx));
 
     if let Some(value) = rx.recv().await {
         return Ok(value.unwrap_or(None));
@@ -78,12 +78,12 @@ pub async fn get_application(
 
 #[tauri::command]
 pub async fn get_device_applications(
-    device_id: DeviceIdentifier,
+    id: DeviceIdentifier,
     state: State<'_, VolumeCommandSender>,
 ) -> Result<Vec<AppIdentifier>, ()> {
     let (tx, mut rx) = unbounded_channel();
 
-    let _ = state.send(VolumeCommand::GetDeviceApplications(device_id, tx));
+    let _ = state.send(VolumeCommand::GetDeviceApplications(id, tx));
 
     if let Some(value) = rx.recv().await {
         return Ok(value.unwrap_or(vec![]));
@@ -94,12 +94,12 @@ pub async fn get_device_applications(
 
 #[tauri::command]
 pub async fn get_app_volume(
-    app_identifier: AppIdentifier,
+    id: AppIdentifier,
     state: State<'_, VolumeCommandSender>,
 ) -> Result<Option<VolumePercent>, ()> {
     let (tx, mut rx) = unbounded_channel();
 
-    let _ = state.send(VolumeCommand::GetAppVolume(app_identifier, tx));
+    let _ = state.send(VolumeCommand::GetAppVolume(id, tx));
 
     if let Some(value) = rx.recv().await {
         return Ok(value.ok());
@@ -109,22 +109,18 @@ pub async fn get_app_volume(
 }
 
 #[tauri::command]
-pub fn set_app_volume(
-    app_identifier: AppIdentifier,
-    volume: VolumePercent,
-    state: State<VolumeCommandSender>,
-) {
-    let _ = state.send(VolumeCommand::SetAppVolume(app_identifier, volume));
+pub fn set_app_volume(id: AppIdentifier, volume: VolumePercent, state: State<VolumeCommandSender>) {
+    let _ = state.send(VolumeCommand::SetAppVolume(id, volume));
 }
 
 #[tauri::command]
-pub fn mute_app_volume(app_identifier: AppIdentifier, state: State<VolumeCommandSender>) {
-    let _ = state.send(VolumeCommand::MuteApp(app_identifier));
+pub fn mute_app_volume(id: AppIdentifier, state: State<VolumeCommandSender>) {
+    let _ = state.send(VolumeCommand::MuteApp(id));
 }
 
 #[tauri::command]
-pub fn unmute_app_volume(app_identifier: AppIdentifier, state: State<VolumeCommandSender>) {
-    let _ = state.send(VolumeCommand::UnmuteApp(app_identifier));
+pub fn unmute_app_volume(id: AppIdentifier, state: State<VolumeCommandSender>) {
+    let _ = state.send(VolumeCommand::UnmuteApp(id));
 }
 
 // ============================ DeviceControl ============================

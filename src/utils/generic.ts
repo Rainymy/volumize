@@ -1,3 +1,5 @@
+export type SimplePrimitives = string | number | boolean | null | undefined;
+
 export function debounceSync<T extends (...args: never[]) => unknown>(
     func: T,
     delay: number,
@@ -48,14 +50,19 @@ export function debounce<TArgs extends readonly unknown[], TReturn>(
  * - If it cannot be converted, return undefined.
  * - Also return undefined for NaN, Infinity, and -Infinity.
  */
-export function getNumber(num: unknown): number | undefined {
-    // Some reason; Number(null) = 0
-    if (num === null) {
+export function getNumber(value: unknown): number | undefined {
+    const number = Number(value);
+    // Some reason; Number(null | "" | undefined) = 0
+    if (
+        value === null ||
+        value === undefined ||
+        value === "" ||
+        !Number.isFinite(number)
+    ) {
         return undefined;
     }
 
-    const number = Number(num);
-    return Number.isFinite(number) ? number : undefined;
+    return number;
 }
 
 export async function sleep(timeMs: number) {

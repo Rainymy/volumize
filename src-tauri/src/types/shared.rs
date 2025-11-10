@@ -59,7 +59,7 @@ pub struct AudioDevice {
  *                                    AudioApplication.ProcessInfo
  */
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AudioVolume {
     pub current: VolumePercent,
     pub muted: bool,

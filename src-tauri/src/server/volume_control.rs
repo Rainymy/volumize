@@ -30,8 +30,7 @@ pub enum VolumeCommand {
     SetDeviceVolume(DeviceIdentifier, VolumePercent),
     GetDeviceVolume(
         DeviceIdentifier,
-        #[serde(skip, default = "default_sender")]
-        UnboundedSender<VolumeResult<Option<VolumePercent>>>,
+        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<VolumePercent>>,
     ),
     MuteDevice(DeviceIdentifier),
     UnmuteDevice(DeviceIdentifier),
@@ -48,8 +47,7 @@ pub enum VolumeCommand {
     ),
     GetAppVolume(
         AppIdentifier,
-        #[serde(skip, default = "default_sender")]
-        UnboundedSender<VolumeResult<Option<VolumePercent>>>,
+        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<VolumePercent>>,
     ),
     SetAppVolume(AppIdentifier, VolumePercent),
     MuteApp(AppIdentifier),
@@ -158,15 +156,15 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
     match command {
         // Master Controll
         VolumeCommand::GetAllDevices(resp_tx) => {
-            let devices = controller.get_all_devices();
+            let devices = controller.get_all_devices().unwrap_or(vec![]);
             let _ = resp_tx.send(Ok(devices));
         }
         VolumeCommand::SetDeviceVolume(device_id, p) => {
             let _ = controller.set_device_volume(device_id, p);
         }
         VolumeCommand::GetDeviceVolume(device_id, resp_tx) => {
-            let volume = controller.get_device_volume(device_id);
-            let _ = resp_tx.send(volume);
+            let volume = controller.get_device_volume(device_id).unwrap_or_default();
+            let _ = resp_tx.send(Ok(volume));
         }
         VolumeCommand::MuteDevice(device_id) => {
             let _ = controller.mute_device(device_id);
@@ -175,19 +173,22 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
             let _ = controller.unmute_device(device_id);
         }
         // Application Controll
+        VolumeCommand::GetApplication(app_id, resp_tx) => {
+            let application = controller.find_application_with_id(app_id);
+            let _ = resp_tx.send(Ok(application.ok()));
+        }
         VolumeCommand::GetDeviceApplications(device_id, resp_tx) => {
-            let applications = controller.get_device_applications(device_id);
+            let applications = controller
+                .get_device_applications(device_id)
+                .unwrap_or(vec![]);
             let _ = resp_tx.send(Ok(applications));
         }
         VolumeCommand::SetAppVolume(app_id, volume) => {
             let _ = controller.set_app_volume(app_id, volume);
         }
         VolumeCommand::GetAppVolume(app_id, resp_tx) => {
-            let result = match controller.get_app_volume(app_id) {
-                Ok(app_volume) => Some(app_volume.current),
-                Err(_) => None,
-            };
-            let _ = resp_tx.send(Ok(result));
+            let result = controller.get_app_volume(app_id).unwrap_or_default();
+            let _ = resp_tx.send(Ok(result.current));
         }
         VolumeCommand::UnmuteApp(app_id) => {
             let _ = controller.unmute_app(app_id);

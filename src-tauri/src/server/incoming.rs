@@ -82,16 +82,6 @@ async fn handle_volume_command(
             )
             .await
         }
-        VolumeCommand::GetAllApplications(_) => {
-            let (tx, rx) = unbounded_channel();
-            handle_command_with_response(
-                VolumeCommand::GetAllApplications(tx),
-                &client_sender,
-                &state,
-                rx,
-            )
-            .await
-        }
         VolumeCommand::GetCurrentPlaybackDevice(_) => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
@@ -106,6 +96,16 @@ async fn handle_volume_command(
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
                 VolumeCommand::GetPlaybackDevices(tx),
+                &client_sender,
+                &state,
+                rx,
+            )
+            .await
+        }
+        VolumeCommand::GetDeviceApplications(device_id, _) => {
+            let (tx, rx) = unbounded_channel();
+            handle_command_with_response(
+                VolumeCommand::GetDeviceApplications(device_id, tx),
                 &client_sender,
                 &state,
                 rx,

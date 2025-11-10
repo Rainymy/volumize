@@ -32,6 +32,7 @@ export interface AudioApplication {
     direction: SessionDirection;
     volume: AudioVolume;
     sound_playing: boolean;
+    device_id: DeviceIdentifier;
 }
 
 export interface AudioDevice {
@@ -40,10 +41,5 @@ export interface AudioDevice {
     friendly_name: string;
     direction: SessionDirection;
     is_default: boolean;
-    volume: AudioVolume
-}
-
-export interface AudioSession {
-    device: AudioDevice;
-    applications: AudioApplication[];
+    volume: AudioVolume;
 }

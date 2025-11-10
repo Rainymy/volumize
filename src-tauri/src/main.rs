@@ -134,12 +134,14 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         })
         .invoke_handler(tauri::generate_handler![
             // Master volume controls
+            commands::get_all_devices,
             commands::set_device_volume,
             commands::get_device_volume,
             commands::unmute_device,
             commands::mute_device,
             // Application volume controls
-            commands::get_all_applications,
+            commands::get_device_applications,
+            commands::get_application,
             commands::get_app_volume,
             commands::set_app_volume,
             commands::mute_app_volume,

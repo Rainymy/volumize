@@ -25,6 +25,7 @@ export interface ITauriVolumeController {
 
     getPlaybackDevices(): Promise<AudioDevice[]>;
     getCurrentPlaybackDevice(): Promise<AudioDevice | null>;
+    discoverServer(): Promise<{ url: string; port: number } | null>;
 }
 
 export abstract class ATauriVolumeController {

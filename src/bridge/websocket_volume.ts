@@ -5,7 +5,7 @@ import type {
     DeviceIdentifier,
     VolumePercent,
 } from "$type/volume";
-import { debounce } from "$util/generic";
+import { debounce, getNumber } from "$util/generic";
 import { isVolumePercent } from "$util/volume";
 import { ATauriVolumeController, type ITauriVolumeController } from "./type";
 import { BOUNCE_DELAY, RUST_INVOKE } from "./volumeManager";
@@ -40,8 +40,8 @@ export class WebsocketTauriVolumeController
         return this;
     }
 
-    close() {
-        this.connection?.close();
+    async close() {
+        await this.connection?.close();
     }
 
     private async sendEvent<T>(
@@ -110,7 +110,7 @@ export class WebsocketTauriVolumeController
             console.log(`[${this.getAllDevices.name}]: `, error);
             return [];
         }
-    }, BOUNCE_DELAY.FAST);
+    }, BOUNCE_DELAY.NORMAL);
 
     getDeviceVolume: ITauriVolumeController["getDeviceVolume"] = debounce(
         async (device_id: DeviceIdentifier) => {
@@ -127,7 +127,7 @@ export class WebsocketTauriVolumeController
                 return 0.0 as VolumePercent;
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     setDeviceVolume: ITauriVolumeController["setDeviceVolume"] = debounce(
@@ -145,7 +145,7 @@ export class WebsocketTauriVolumeController
                 console.log(`[${this.setDeviceVolume.name}]: `, error);
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     muteDevice: ITauriVolumeController["muteDevice"] = debounce(
@@ -159,7 +159,7 @@ export class WebsocketTauriVolumeController
                 console.log(`[${this.muteDevice.name}]: `, error);
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     unmuteDevice: ITauriVolumeController["unmuteDevice"] = debounce(
@@ -173,7 +173,7 @@ export class WebsocketTauriVolumeController
                 console.log(`[${this.unmuteDevice.name}]: `, error);
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     getDeviceApplications: ITauriVolumeController["getDeviceApplications"] = debounce(
@@ -191,7 +191,7 @@ export class WebsocketTauriVolumeController
                 return [];
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     findApplicationWithId: ITauriVolumeController["findApplicationWithId"] = debounce(
@@ -209,7 +209,7 @@ export class WebsocketTauriVolumeController
                 return null;
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.SLOW,
     );
 
     getApplicationDevice: ITauriVolumeController["getApplicationDevice"] = debounce(
@@ -227,7 +227,7 @@ export class WebsocketTauriVolumeController
                 return null;
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     getAppVolume: ITauriVolumeController["getAppVolume"] = debounce(
@@ -243,7 +243,7 @@ export class WebsocketTauriVolumeController
                 return 0.0 as VolumePercent;
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     setAppVolume: ITauriVolumeController["setAppVolume"] = debounce(
@@ -261,7 +261,7 @@ export class WebsocketTauriVolumeController
                 console.log(`[${this.setAppVolume.name}]: `, error);
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     muteApp: ITauriVolumeController["muteApp"] = debounce(async (app: AppIdentifier) => {
@@ -271,7 +271,7 @@ export class WebsocketTauriVolumeController
         } catch (error) {
             console.log(`[${this.muteApp.name}]: `, error);
         }
-    }, BOUNCE_DELAY.FAST);
+    }, BOUNCE_DELAY.NORMAL);
 
     unmuteApp: ITauriVolumeController["unmuteApp"] = debounce(
         async (app: AppIdentifier) => {
@@ -285,7 +285,7 @@ export class WebsocketTauriVolumeController
                 console.log(`[${this.unmuteApp.name}]: `, error);
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debounce(
@@ -301,7 +301,7 @@ export class WebsocketTauriVolumeController
                 return [];
             }
         },
-        BOUNCE_DELAY.FAST,
+        BOUNCE_DELAY.NORMAL,
     );
 
     getCurrentPlaybackDevice: ITauriVolumeController["getCurrentPlaybackDevice"] =
@@ -316,5 +316,27 @@ export class WebsocketTauriVolumeController
                 console.log(`[${this.getCurrentPlaybackDevice.name}]: `, error);
                 return null;
             }
-        }, BOUNCE_DELAY.FAST);
+        }, BOUNCE_DELAY.NORMAL);
+
+    discoverServer: ITauriVolumeController["discoverServer"] = debounce(async () => {
+        const data = this.parse_params(RUST_INVOKE.DISCOVER_SERVER_ADDRESS);
+        try {
+            const address = await this.sendEvent<string>(
+                RUST_INVOKE.DISCOVER_SERVER_ADDRESS,
+                data,
+            );
+            // TEMP FIX: find a way to handle parse IP or URL address without protocol.
+            const url = new URL(`https://${address}`);
+            const port = getNumber(url.port);
+
+            if (port === undefined) {
+                return null;
+            }
+
+            return { url: url.hostname, port: port };
+        } catch (error) {
+            console.log(`[${this.discoverServer.name}]: `, error);
+            return null;
+        }
+    }, BOUNCE_DELAY.NORMAL);
 }

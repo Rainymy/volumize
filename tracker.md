@@ -1,22 +1,24 @@
 ## Priority
 
-- [ ] Redesign the Rust backend architect.
-    - Split up the 1 main API into multple calls.
-    - Send application icon via API.
-        - send icon as PNG (try WebP first).
-        - when sending icon, hash it with Blake3 (for caching).
-- [ ] Integrate the UI with new backend implementation.
+- [ ] Send application icon via API.
+    - send icon as PNG (try WebP first).
+    - when sending icon, hash it with Blake3 (for caching).
 
 ## Todo
 
 - [ ] Detect changes in volume.
 - [ ] System tray menu update on timer.
     - tray menu is not reflected when choosing timer option.
+- [ ] Improved UI design.
+    - The new design is better than the old one.
 
 ## Done
 
 <!--### v2.0 Improvements-->
 
+- [x] Redesign the Rust backend architect.
+    - Split up the 1 main API into multple calls.
+    - [x] Integrate the UI with new backend implementation.
 - [x] Redesign User interface.
     - Make it nicer on small screens like phone.
 - [x] Improve application icon.

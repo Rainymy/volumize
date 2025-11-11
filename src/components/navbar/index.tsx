@@ -4,12 +4,14 @@ import { FaAngleRight, FaArrowLeft, FaHamburger } from "react-icons/fa";
 import { FiArrowLeft } from "react-icons/fi";
 import { IoSettingsOutline } from "react-icons/io5";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import { AppButton, NavButton } from "$base/button";
 import { SidebarDevices } from "$component/sidebar";
 import { isVeritcalNavbar, NavbarState, navbar_state } from "$model/nav";
 import { connection_ready } from "$model/volume";
 import { NavigationType } from "$type/navigation";
 import { classnames } from "$util/react";
+
 import style from "./index.module.less";
 
 export function Navbar() {

@@ -1,11 +1,10 @@
-import { useAtom } from "jotai";
+import { useAtomValue } from "jotai";
 
 import { DeviceApplications, DeviceMaster } from "$component/device";
 import { useGenerateID } from "$hook/useGenerateID";
-import { audio_session, selected_device_id } from "$model/volume";
-import { comparePriority } from "$util/volume";
+import { application_ids } from "$model/volume";
 
-import wrapper from "./index.module.less";
+import style from "./index.module.less";
 
 /*                          UI Design
  * [   static    ][                    Carousel                    ]
@@ -19,25 +18,14 @@ import wrapper from "./index.module.less";
  */
 
 export function MainContent() {
-    const [session, _refreshSessions] = useAtom(audio_session);
-    const [selectedDevice, _setSelectedDevice] = useAtom(selected_device_id);
-
-    const defaultSession = session.find((val) => val.device.id === selectedDevice);
-    const applications = (defaultSession?.applications ?? []).sort((a, b) =>
-        comparePriority(a.session_type, b.session_type),
-    );
-
-    const applicationsWithId = useGenerateID(applications);
-
-    if (!defaultSession) {
-        return null;
-    }
+    const app_ids = useAtomValue(application_ids);
+    const elementsWithId = useGenerateID(app_ids);
 
     return (
-        <div className={wrapper.container}>
-            <DeviceMaster master={defaultSession.device}></DeviceMaster>
-            {applicationsWithId.map(({ element, id: key }) => {
-                return <DeviceApplications app={element} key={key} />;
+        <div className={style.container}>
+            <DeviceMaster />
+            {elementsWithId.map(({ element, id: key }) => {
+                return <DeviceApplications id={element} key={key} />;
             })}
         </div>
     );

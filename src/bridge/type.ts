@@ -10,12 +10,16 @@ export interface ITauriVolumeController {
     getAllDevices(): Promise<DeviceIdentifier[]>;
 
     getDeviceVolume(id: DeviceIdentifier): Promise<VolumePercent>;
-    setDeviceVolume(id: DeviceIdentifier, percent: VolumePercent): Promise<unknown>;
+    setDeviceVolume(id: DeviceIdentifier, percent: number): Promise<unknown>;
     muteDevice(id: DeviceIdentifier): Promise<unknown>;
     unmuteDevice(id: DeviceIdentifier): Promise<unknown>;
 
     getDeviceApplications(id: DeviceIdentifier): Promise<AppIdentifier[]>;
-    findApplicationWithId(id: AppIdentifier): Promise<AudioApplication | null>;
+    findApplicationWithId(
+        key: string | number,
+        id: AppIdentifier,
+    ): Promise<AudioApplication | null>;
+    // findApplicationWithId(id: AppIdentifier): Promise<AudioApplication | null>;
     getApplicationDevice(app: AppIdentifier): Promise<AudioDevice | null>;
 
     getAppVolume(app: AppIdentifier): Promise<VolumePercent>;

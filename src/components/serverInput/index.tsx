@@ -1,6 +1,5 @@
 import { useAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
-
 import { FaSearch } from "react-icons/fa";
 
 import { AppButton } from "$base/button";
@@ -9,7 +8,7 @@ import { volumeController } from "$bridge/volumeManager";
 import { WebsocketTauriVolumeController } from "$bridge/websocket_volume";
 import { server_port, server_url } from "$model/server_url";
 import { connection_ready as connection_status } from "$model/volume";
-import { PORT } from "$type/globals";
+import { PORT } from "$type/constant";
 import { getNumber } from "$util/generic";
 
 import style from "./index.module.less";

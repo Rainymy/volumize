@@ -1,46 +1,10 @@
-export type SimplePrimitives = string | number | boolean | null | undefined;
-
-export function debounceSync<T extends (...args: never[]) => unknown>(
-    func: T,
-    delay: number,
-): (...args: Parameters<T>) => void {
-    let timeoutId: number | null = null;
-
-    return (...args: Parameters<T>) => {
-        if (timeoutId !== null) {
-            clearTimeout(timeoutId);
-        }
-
-        timeoutId = setTimeout(func, delay, ...args);
-    };
-}
-
-export function debounce<TArgs extends readonly unknown[], TReturn>(
-    func: (...args: TArgs) => TReturn | Promise<TReturn>,
-    delay: number,
-): (...args: TArgs) => Promise<Awaited<TReturn>> {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let pendingResolvers: Array<(value: Awaited<TReturn>) => void> = [];
-
-    return (...args: TArgs): Promise<Awaited<TReturn>> => {
-        if (timeoutId !== null) {
-            clearTimeout(timeoutId);
-        }
-
-        return new Promise<Awaited<TReturn>>((resolve) => {
-            pendingResolvers.push(resolve);
-
-            timeoutId = setTimeout(async () => {
-                const result = await func(...args);
-
-                for (const resolver of pendingResolvers) {
-                    resolver(result);
-                }
-                pendingResolvers = [];
-                timeoutId = null;
-            }, delay);
-        });
-    };
+export function awaitAbortSignal(signal: AbortSignal) {
+    if (signal.aborted) {
+        return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+        signal.addEventListener("abort", () => resolve(), { once: true });
+    });
 }
 
 /**

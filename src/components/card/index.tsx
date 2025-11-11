@@ -38,12 +38,12 @@ export function Card(props: CardProps) {
                 max={100}
                 min={0}
                 step={0.1}
-                onChange={(val) => {
+                onChange={async (val) => {
                     if (Number.isNaN(val.currentTarget.valueAsNumber)) {
                         console.error("Invalid volume value", val.currentTarget);
                         return;
                     }
-                    onSlider?.(val.currentTarget.valueAsNumber / 100);
+                    await onSlider?.(val.currentTarget.valueAsNumber / 100);
                 }}
             />
 

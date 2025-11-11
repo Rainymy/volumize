@@ -6,7 +6,7 @@ import type {
     DeviceIdentifier,
     VolumePercent,
 } from "$type/volume";
-import { debounce } from "$util/generic";
+import { debounce, debouncePerKey } from "$util/debounce";
 import { isVolumePercent } from "$util/volume";
 import { ATauriVolumeController, type ITauriVolumeController } from "./type";
 import { BOUNCE_DELAY, RUST_INVOKE } from "./volumeManager";
@@ -21,9 +21,7 @@ export class TauriVolumeController
 
     getDeviceVolume: ITauriVolumeController["getDeviceVolume"] = debounce(
         (id: DeviceIdentifier) => {
-            return invoke<VolumePercent>(RUST_INVOKE.GET_DEVICE_VOLUME, {
-                id,
-            });
+            return invoke<VolumePercent>(RUST_INVOKE.GET_DEVICE_VOLUME, { id });
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -34,10 +32,7 @@ export class TauriVolumeController
                 throw Error(`Invalid VolumePercent value: ${percent}`);
             }
 
-            return invoke(RUST_INVOKE.SET_DEVICE_VOLUME, {
-                id: id,
-                percent: percent,
-            });
+            return invoke(RUST_INVOKE.SET_DEVICE_VOLUME, { id, percent });
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -50,8 +45,8 @@ export class TauriVolumeController
     );
 
     unmuteDevice: ITauriVolumeController["unmuteDevice"] = debounce(
-        (device_id: DeviceIdentifier) => {
-            return invoke(RUST_INVOKE.UNMUTE_DEVICE, { deviceId: device_id });
+        (id: DeviceIdentifier) => {
+            return invoke(RUST_INVOKE.UNMUTE_DEVICE, { id });
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -66,18 +61,16 @@ export class TauriVolumeController
         },
         BOUNCE_DELAY.NORMAL,
     );
-    findApplicationWithId: ITauriVolumeController["findApplicationWithId"] = debounce(
-        (id: AppIdentifier) => {
+    findApplicationWithId: ITauriVolumeController["findApplicationWithId"] =
+        debouncePerKey((id: AppIdentifier) => {
             return invoke<AudioApplication>(RUST_INVOKE.FIND_APPLICATION_WITH_ID, {
                 id,
             });
-        },
-        BOUNCE_DELAY.NORMAL,
-    );
+        }, BOUNCE_DELAY.FAST);
     getApplicationDevice: ITauriVolumeController["getApplicationDevice"] = debounce(
         (id: AppIdentifier) => {
             return invoke<AudioDevice>(RUST_INVOKE.GET_APPLICATION_DEVICE, {
-                app_id: id,
+                id,
             });
         },
         BOUNCE_DELAY.NORMAL,
@@ -85,9 +78,7 @@ export class TauriVolumeController
 
     getAppVolume: ITauriVolumeController["getAppVolume"] = debounce(
         (id: AppIdentifier) => {
-            return invoke<VolumePercent>(RUST_INVOKE.GET_APP_VOLUME, {
-                appIdentifier: id,
-            });
+            return invoke<VolumePercent>(RUST_INVOKE.GET_APP_VOLUME, { id });
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -99,7 +90,7 @@ export class TauriVolumeController
             }
 
             return invoke(RUST_INVOKE.SET_APP_VOLUME, {
-                appIdentifier: id,
+                id,
                 volume: percent,
             });
         },
@@ -107,13 +98,11 @@ export class TauriVolumeController
     );
 
     muteApp: ITauriVolumeController["muteApp"] = debounce((id: AppIdentifier) => {
-        return invoke(RUST_INVOKE.MUTE_APP_VOLUME, { appIdentifier: id });
+        return invoke(RUST_INVOKE.MUTE_APP_VOLUME, { id });
     }, BOUNCE_DELAY.NORMAL);
 
     unmuteApp: ITauriVolumeController["unmuteApp"] = debounce((id: AppIdentifier) => {
-        return invoke(RUST_INVOKE.UNMUTE_APP_VOLUME, {
-            appIdentifier: id,
-        });
+        return invoke(RUST_INVOKE.UNMUTE_APP_VOLUME, { id });
     }, BOUNCE_DELAY.NORMAL);
 
     getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debounce(() => {

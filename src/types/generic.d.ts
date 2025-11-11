@@ -1,4 +1,8 @@
-export type MaybeAsync<T extends (...args: never[]) => unknown> = T | ((...args: Parameters<T>) => Promise<ReturnType<T>>);
+export type MaybeAsync<T extends (...args: never[]) => unknown> =
+    | T
+    | ((...args: Parameters<T>) => Promise<ReturnType<T>>);
+
+export type SimplePrimitives = string | number | boolean | null | undefined;
 
 export type EnumKeyFromValue<
     E extends Record<string, string | number>,

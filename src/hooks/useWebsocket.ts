@@ -3,7 +3,8 @@ import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 
 import { volumeController } from "$bridge/volumeManager";
 import { WebsocketTauriVolumeController } from "$bridge/websocket_volume";
-import { connection_ready, server_port, server_url } from "$model/volume";
+import { server_port, server_url } from "$model/server_url";
+import { connection_ready } from "$model/volume";
 
 export function useConnect(): [boolean, Dispatch<SetStateAction<boolean>>] {
     const [isLoading, setIsLoading] = useState(false);

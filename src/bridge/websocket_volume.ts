@@ -5,7 +5,8 @@ import type {
     DeviceIdentifier,
     VolumePercent,
 } from "$type/volume";
-import { debounce, getNumber } from "$util/generic";
+import { debounce } from "$util/debounce";
+import { getNumber } from "$util/generic";
 import { isVolumePercent } from "$util/volume";
 import { ATauriVolumeController, type ITauriVolumeController } from "./type";
 import { BOUNCE_DELAY, RUST_INVOKE } from "./volumeManager";

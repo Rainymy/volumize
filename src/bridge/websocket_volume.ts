@@ -5,7 +5,7 @@ import type {
     DeviceIdentifier,
     VolumePercent,
 } from "$type/volume";
-import { debounce } from "$util/debounce";
+import { debounce, debouncePerKey } from "$util/debounce";
 import { getNumber } from "$util/generic";
 import { isVolumePercent } from "$util/volume";
 import { ATauriVolumeController, type ITauriVolumeController } from "./type";
@@ -172,6 +172,25 @@ export class WebsocketTauriVolumeController
                 return await this.sendEvent(RUST_INVOKE.UNMUTE_DEVICE, data);
             } catch (error) {
                 console.log(`[${this.unmuteDevice.name}]: `, error);
+            }
+        },
+        BOUNCE_DELAY.NORMAL,
+    );
+
+    /* ============== DEVICES ============== */
+    getApplicationIcon: ITauriVolumeController["getApplicationIcon"] = debouncePerKey(
+        async (app: AppIdentifier) => {
+            const data = this.parse_params(RUST_INVOKE.GET_APPLICATION_ICON, {
+                app,
+            });
+            try {
+                return await this.sendEvent<Uint8Array | null>(
+                    RUST_INVOKE.GET_APPLICATION_ICON,
+                    data,
+                );
+            } catch (error) {
+                console.log(`[${this.getApplicationIcon.name}]: `, error);
+                return null;
             }
         },
         BOUNCE_DELAY.NORMAL,

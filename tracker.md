@@ -1,11 +1,13 @@
 ## Priority
 
-- [ ] Send application icon via API.
-    - send icon as PNG (try WebP first).
-    - when sending icon, hash it with Blake3 (for caching).
+- [ ] Implement the settings + including the settings page.
+    - Add different settings functionality.
 
 ## Todo
 
+- [ ] Update README.md
+    - Add instructions for installation and usage.
+    - Project logo
 - [ ] Detect changes in volume.
 - [ ] System tray menu update on timer.
     - tray menu is not reflected when choosing timer option.
@@ -16,6 +18,8 @@
 
 <!--### v2.0 Improvements-->
 
+- [x] Send application icon via API.
+    - send icon as PNG.
 - [x] Redesign the Rust backend architect.
     - Split up the 1 main API into multple calls.
     - [x] Integrate the UI with new backend implementation.

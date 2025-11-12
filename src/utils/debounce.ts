@@ -29,18 +29,24 @@ export function debounce<TArgs extends readonly unknown[], TReturn>(
 }
 
 type TKey = string | number;
+type PendingResolvers2<T> = {
+    resolve: (value: Awaited<T>) => void;
+    reject: (reason: unknown) => void;
+};
 
 export function debouncePerKey<TArgs extends readonly unknown[], TReturn>(
     fn: (...args: TArgs) => TReturn | Promise<TReturn>,
     wait: number,
-): (key: TKey, ...args: TArgs) => Promise<Awaited<TReturn>> {
+): (...args: TArgs) => Promise<Awaited<TReturn>> {
     const timers = new Map<TKey, ReturnType<typeof setTimeout>>();
-    const pendingResolvers = new Map<TKey, PendingResolvers<TReturn>>();
+    const pendingResolvers = new Map<TKey, PendingResolvers2<TReturn>[]>();
 
-    return (key: TKey, ...args: TArgs) => {
-        const promise = new Promise<Awaited<TReturn>>((resolve) => {
-            const arr = pendingResolvers.get(key) ?? [];
-            arr.push(resolve);
+    return (...args: TArgs) => {
+        const key: TKey = args[0] as TKey;
+
+        const promise = new Promise<Awaited<TReturn>>((p_resolve, p_reject) => {
+            const arr = pendingResolvers.get(key) ?? ([] as PendingResolvers2<TReturn>[]);
+            arr.push({ resolve: p_resolve, reject: p_reject });
             pendingResolvers.set(key, arr);
         });
 
@@ -53,9 +59,15 @@ export function debouncePerKey<TArgs extends readonly unknown[], TReturn>(
             const resolvers = pendingResolvers.get(key) ?? [];
             pendingResolvers.delete(key);
 
-            const result = await fn(...args);
-            for (const resolve of resolvers) {
-                resolve(result);
+            try {
+                const result = await fn(...args);
+                for (const { resolve } of resolvers) {
+                    resolve(result);
+                }
+            } catch (error) {
+                for (const { reject } of resolvers) {
+                    reject(error);
+                }
             }
         }, wait);
 

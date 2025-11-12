@@ -140,6 +140,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
             commands::unmute_device,
             commands::mute_device,
             // Application volume controls
+            commands::get_application_icon,
             commands::find_application_with_id,
             commands::get_device_applications,
             commands::get_application,

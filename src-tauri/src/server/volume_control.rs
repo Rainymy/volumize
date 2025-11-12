@@ -35,6 +35,10 @@ pub enum VolumeCommand {
     MuteDevice(DeviceIdentifier),
     UnmuteDevice(DeviceIdentifier),
     // Application
+    GetApplicationIcon(
+        AppIdentifier,
+        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<Option<Vec<u8>>>>,
+    ),
     GetDeviceApplications(
         DeviceIdentifier,
         #[serde(skip, default = "default_sender")]
@@ -173,6 +177,24 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
             let _ = controller.unmute_device(device_id);
         }
         // Application Controll
+        VolumeCommand::GetApplicationIcon(app_id, icon_tx) => {
+            let icon = controller.find_application_with_id(app_id);
+
+            match icon {
+                Ok(icon) => {
+                    if let Some(ref path) = icon.process.path {
+                        let app_icon = platform::extract_icon(path.clone());
+                        // println!("Icon path {}", path.to_string_lossy());
+                        let _ = icon_tx.send(Ok(app_icon));
+                    } else {
+                        let _ = icon_tx.send(Ok(None));
+                    }
+                }
+                Err(_) => {
+                    let _ = icon_tx.send(Ok(None));
+                }
+            }
+        }
         VolumeCommand::GetApplication(app_id, resp_tx) => {
             let application = controller.find_application_with_id(app_id);
             let _ = resp_tx.send(Ok(application.ok()));

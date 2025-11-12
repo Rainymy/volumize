@@ -19,10 +19,14 @@ export function useAsyncSignalEffect(
         let cleanup: CleanupFunction | null = null;
 
         (async () => {
-            cleanup = await Promise.race([
-                awaitAbortSignal(abortController.signal),
-                effect(abortController.signal),
-            ]);
+            try {
+                cleanup = await Promise.race([
+                    awaitAbortSignal(abortController.signal),
+                    effect(abortController.signal),
+                ]);
+            } catch (error) {
+                console.error("One of the effects threw an error: ", error);
+            }
         })();
 
         return () => {

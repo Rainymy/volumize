@@ -11,6 +11,7 @@ export enum RUST_INVOKE {
     MUTE_DEVICE = "mute_device",
     UNMUTE_DEVICE = "unmute_device",
 
+    GET_APPLICATION_ICON = "get_application_icon",
     GET_DEVICE_APPLICATIONS = "get_device_applications",
     FIND_APPLICATION_WITH_ID = "find_application_with_id",
     GET_APPLICATION_DEVICE = "get_application_device",

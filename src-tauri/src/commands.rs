@@ -61,6 +61,26 @@ pub fn unmute_device(id: DeviceIdentifier, state: State<VolumeCommandSender>) {
 
 // ============================ Application ============================
 #[tauri::command]
+pub async fn get_application_icon(
+    id: AppIdentifier,
+    state: State<'_, VolumeCommandSender>,
+) -> Result<Vec<u8>, ()> {
+    let (tx, mut rx) = unbounded_channel();
+
+    let _ = state.send(VolumeCommand::GetApplicationIcon(id, tx));
+
+    if let Some(value) = rx.recv().await {
+        return match value {
+            Ok(Some(icon)) => Ok(icon),
+            Ok(None) => Err(()),
+            Err(_) => Err(()),
+        };
+    }
+
+    Err(())
+}
+
+#[tauri::command]
 pub async fn get_application(
     id: AppIdentifier,
     state: State<'_, VolumeCommandSender>,

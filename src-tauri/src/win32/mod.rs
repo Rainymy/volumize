@@ -4,10 +4,13 @@ mod com_scope;
 
 mod application_volume;
 mod device_control;
+mod icon;
 mod master_volume;
 
 mod convert;
 mod util;
+
+pub use icon::*;
 
 pub struct VolumeController {
     com: com_scope::ComManager,

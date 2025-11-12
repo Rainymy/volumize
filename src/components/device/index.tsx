@@ -6,6 +6,7 @@ import { volumeController } from "$bridge/volumeManager";
 import { Card } from "$component/card";
 import { useAsyncSignalEffect } from "$hook/useAsyncSignalEffect";
 import { useRefreshable } from "$hook/useRefreshable";
+import { useURLObjectIcon } from "$hook/useURLObjectIcon";
 import { device_list, selected_device_id } from "$model/volume";
 import type { AppIdentifier, AudioApplication } from "$type/volume";
 
@@ -40,6 +41,8 @@ export function DeviceMaster() {
 
 export function DeviceApplications({ id }: { id: AppIdentifier }) {
     const [app, setApp] = useState<AudioApplication | null>(null);
+    const base64 = useURLObjectIcon(app?.process.id);
+
     // This is used as a trigger to refresh the application data.
     // - As force rerender of this component.
     const [token, refreshable] = useRefreshable();
@@ -47,7 +50,7 @@ export function DeviceApplications({ id }: { id: AppIdentifier }) {
     useAsyncSignalEffect(
         async (signal) => {
             token;
-            const data = await volumeController.findApplicationWithId(id, id);
+            const data = await volumeController.findApplicationWithId(id);
             if (!signal.aborted) {
                 setApp(() => data);
             }
@@ -64,7 +67,7 @@ export function DeviceApplications({ id }: { id: AppIdentifier }) {
             isMuted={app.volume.muted}
             title={app.process.name}
             volume={app.volume.current}
-            icon={app.process.path}
+            icon={base64 ? base64 : undefined}
             onButtonClick={async () => {
                 await volumeController.toggleMuteApp(app.process.id, app.volume.muted);
                 // Force rerender of this component.

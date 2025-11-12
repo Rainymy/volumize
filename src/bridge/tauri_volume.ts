@@ -53,6 +53,14 @@ export class TauriVolumeController
 
     /* =================== APPLICATIONS ===================== */
 
+    getApplicationIcon: ITauriVolumeController["getApplicationIcon"] = debouncePerKey(
+        (id: AppIdentifier) => {
+            return invoke<Uint8Array | null>(RUST_INVOKE.GET_APPLICATION_ICON, {
+                id,
+            });
+        },
+        BOUNCE_DELAY.NORMAL,
+    );
     getDeviceApplications: ITauriVolumeController["getDeviceApplications"] = debounce(
         (id: DeviceIdentifier) => {
             return invoke<AppIdentifier[]>(RUST_INVOKE.GET_DEVICE_APPLICATIONS, {

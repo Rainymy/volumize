@@ -7,6 +7,15 @@ export function awaitAbortSignal(signal: AbortSignal) {
     });
 }
 
+export async function bufferToBlob(buffer: BufferSource) {
+    const base64url = await new Promise<ArrayBuffer>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as ArrayBuffer);
+        reader.readAsArrayBuffer(new Blob([buffer]));
+    });
+    return new Blob([base64url], { type: "image/png" });
+}
+
 /**
  * Try to turn any input into a number.
  *

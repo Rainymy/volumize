@@ -2,12 +2,12 @@
 
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
-
-## Todo
-
 - [ ] Update README.md
     - Add instructions for installation and usage.
     - Project logo
+
+## Todo
+
 - [ ] Detect changes in volume.
 - [ ] System tray menu update on timer.
     - tray menu is not reflected when choosing timer option.

@@ -31,6 +31,9 @@
         "android": {
             "minSdkVersion": 28
         },
+        "iOS": {
+            "minimumSystemVersion": "13.0"
+        },
         "targets": ["msi", "deb"],
         "icon": [
             "./icons/icon.ico",

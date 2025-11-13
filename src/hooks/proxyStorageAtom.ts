@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import type { SimplePrimitives } from "$util/generic";
+import type { SimplePrimitives } from "$type/generic";
 import { serializeToString } from "$util/serialize";
 
 export function proxyStorageAtom<T extends SimplePrimitives>(value: T, key: string) {

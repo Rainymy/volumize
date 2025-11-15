@@ -1,3 +1,6 @@
+import type { volumeController } from "$bridge/volumeManager";
+import { WebsocketTauriVolumeController } from "$bridge/websocket_volume";
+
 export function awaitAbortSignal(signal: AbortSignal) {
     if (signal.aborted) {
         return Promise.resolve();
@@ -14,6 +17,11 @@ export async function bufferToBlob(buffer: BufferSource) {
         reader.readAsArrayBuffer(new Blob([buffer]));
     });
     return new Blob([base64url], { type: "image/png" });
+}
+
+type TController = typeof volumeController;
+export function isSocketController(t: TController): t is WebsocketTauriVolumeController {
+    return t instanceof WebsocketTauriVolumeController;
 }
 
 /**

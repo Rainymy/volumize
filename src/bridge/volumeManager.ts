@@ -1,5 +1,4 @@
 // import { invoke } from "@tauri-apps/api/core";
-import { is_desktop } from "./generic";
 import { TauriVolumeController } from "./tauri_volume";
 import { WebsocketTauriVolumeController } from "./websocket_volume";
 
@@ -34,7 +33,8 @@ export enum BOUNCE_DELAY {
     SUPER_FAST = 50,
 }
 
-export const volumeController = is_desktop()
+// biome-ignore lint/correctness/noConstantCondition: temp
+export const volumeController = false //is_desktop()
     ? new TauriVolumeController()
     : new WebsocketTauriVolumeController();
 

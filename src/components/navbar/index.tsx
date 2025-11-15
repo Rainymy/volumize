@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { FaAngleRight, FaArrowLeft, FaHamburger } from "react-icons/fa";
 import { FiArrowLeft } from "react-icons/fi";
 import { IoSettingsOutline } from "react-icons/io5";
@@ -7,18 +7,21 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { AppButton, NavButton } from "$base/button";
 import { SidebarDevices } from "$component/sidebar";
+import { useLogout } from "$hook/useLogout";
 import { isVeritcalNavbar, NavbarState, navbar_state } from "$model/nav";
-import { connection_ready } from "$model/volume";
-import { NavigationType } from "$type/navigation";
+import { connection_state } from "$model/volume";
+import { ConnectionState, NavigationType } from "$type/navigation";
 import { classnames } from "$util/react";
-
 import style from "./index.module.less";
 
 export function Navbar() {
     const location = useLocation();
     const setVerticalNavbar = useSetAtom(isVeritcalNavbar);
 
-    const isMainPath = location.pathname === NavigationType.MAIN;
+    const isMainPath = useMemo(
+        () => location.pathname === NavigationType.MAIN,
+        [location.pathname],
+    );
     // Not really sure why this needs to be in a useEffect.
     useEffect(() => {
         setVerticalNavbar(() => isMainPath);
@@ -103,7 +106,11 @@ export function VNavbar() {
 export function HNavbar() {
     const location = useLocation();
     const navigate = useNavigate();
-    const is_ready = useAtomValue(connection_ready);
+
+    const state = useAtomValue(connection_state);
+    const logout = useLogout();
+
+    const is_ready = state === ConnectionState.CONNECTED;
 
     return (
         <nav className={style.navbar}>
@@ -117,8 +124,8 @@ export function HNavbar() {
             <div />
 
             {is_ready && (
-                <NavButton onClick={() => navigate(NavigationType.HOME)}>
-                    <span>Close</span>
+                <NavButton onClick={logout}>
+                    <span>Logout</span>
                 </NavButton>
             )}
 

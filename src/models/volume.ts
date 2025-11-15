@@ -1,10 +1,11 @@
 import { atom } from "jotai";
 import { atomWithRefresh } from "jotai/utils";
-import { is_desktop } from "$bridge/generic";
 import { volumeController } from "$bridge/volumeManager";
+import { ConnectionState } from "$type/navigation";
 import type { AudioApplication } from "$type/volume";
 
-export const connection_ready = atom(is_desktop());
+// is_desktop() ? ConnectionState.CONNECTED : ConnectionState.DISCONNECTED;
+export const connection_state = atom(ConnectionState.DISCONNECTED);
 
 export const selected_device_id = atom<string>();
 export const device_list = atomWithRefresh(async () => {

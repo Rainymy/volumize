@@ -1,4 +1,5 @@
 use std::{
+    path::PathBuf,
     sync::{Arc, Mutex},
     thread::JoinHandle,
 };
@@ -7,8 +8,8 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 
 use crate::types::shared::{
-    AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumeControllerTrait,
-    VolumePercent, VolumeResult,
+    AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumeControllerError,
+    VolumeControllerTrait, VolumePercent, VolumeResult,
 };
 
 #[cfg(target_os = "windows")]
@@ -37,7 +38,7 @@ pub enum VolumeCommand {
     // Application
     GetApplicationIcon(
         AppIdentifier,
-        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<Option<Vec<u8>>>>,
+        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<Vec<u8>>>,
     ),
     GetDeviceApplications(
         DeviceIdentifier,
@@ -46,8 +47,7 @@ pub enum VolumeCommand {
     ),
     GetApplication(
         AppIdentifier,
-        #[serde(skip, default = "default_sender")]
-        UnboundedSender<VolumeResult<Option<AudioApplication>>>,
+        #[serde(skip, default = "default_sender")] UnboundedSender<VolumeResult<AudioApplication>>,
     ),
     GetAppVolume(
         AppIdentifier,
@@ -70,10 +70,22 @@ fn default_sender<T>() -> UnboundedSender<T> {
 
 impl VolumeCommand {
     pub fn get_name(&self) -> String {
-        if let Ok(name) = serde_json::to_string(&self) {
-            return name;
+        if let Ok(name) = serde_json::to_value(&self) {
+            if let Some(obj) = name.as_object() {
+                for key in obj.keys() {
+                    return key.to_string();
+                }
+            }
+
+            if let Some(name) = name.as_str() {
+                return name.to_string();
+            }
         }
-        return "unknown_name".into();
+
+        match serde_json::to_string(&self) {
+            Ok(name) => name,
+            Err(_) => "unknown_name".into(),
+        }
     }
 }
 
@@ -160,15 +172,13 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
     match command {
         // Master Controll
         VolumeCommand::GetAllDevices(resp_tx) => {
-            let devices = controller.get_all_devices().unwrap_or(vec![]);
-            let _ = resp_tx.send(Ok(devices));
+            let _ = resp_tx.send(controller.get_all_devices());
         }
         VolumeCommand::SetDeviceVolume(device_id, p) => {
             let _ = controller.set_device_volume(device_id, p);
         }
         VolumeCommand::GetDeviceVolume(device_id, resp_tx) => {
-            let volume = controller.get_device_volume(device_id).unwrap_or_default();
-            let _ = resp_tx.send(Ok(volume));
+            let _ = resp_tx.send(controller.get_device_volume(device_id));
         }
         VolumeCommand::MuteDevice(device_id) => {
             let _ = controller.mute_device(device_id);
@@ -178,32 +188,30 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
         }
         // Application Controll
         VolumeCommand::GetApplicationIcon(app_id, icon_tx) => {
-            let icon = controller.find_application_with_id(app_id);
+            let error = VolumeControllerError::ApplicationNotFound("Application not found".into());
 
-            match icon {
-                Ok(icon) => {
-                    if let Some(ref path) = icon.process.path {
-                        let app_icon = platform::extract_icon(path.clone());
-                        // println!("Icon path {}", path.to_string_lossy());
-                        let _ = icon_tx.send(Ok(app_icon));
-                    } else {
-                        let _ = icon_tx.send(Ok(None));
-                    }
-                }
+            let get_app = match controller.get_application(app_id) {
+                Ok(app) => app,
                 Err(_) => {
-                    let _ = icon_tx.send(Ok(None));
+                    let _ = icon_tx.send(Err(error));
+                    return ();
                 }
-            }
+            };
+
+            let path = match get_app.process.path {
+                Some(path) => path,
+                None => PathBuf::new(),
+            };
+
+            let error = VolumeControllerError::Unknown("Could not extract icon from path.".into());
+            let app_icon = platform::extract_icon(path).ok_or(error);
+            let _ = icon_tx.send(app_icon);
         }
         VolumeCommand::GetApplication(app_id, resp_tx) => {
-            let application = controller.find_application_with_id(app_id);
-            let _ = resp_tx.send(Ok(application.ok()));
+            let _ = resp_tx.send(controller.get_application(app_id));
         }
         VolumeCommand::GetDeviceApplications(device_id, resp_tx) => {
-            let applications = controller
-                .get_device_applications(device_id)
-                .unwrap_or(vec![]);
-            let _ = resp_tx.send(Ok(applications));
+            let _ = resp_tx.send(controller.get_device_applications(device_id));
         }
         VolumeCommand::SetAppVolume(app_id, volume) => {
             let _ = controller.set_app_volume(app_id, volume);
@@ -220,12 +228,10 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
         }
         // Deevice Controll
         VolumeCommand::GetPlaybackDevices(resp_tx) => {
-            let current_device = controller.get_playback_devices();
-            let _ = resp_tx.send(current_device);
+            let _ = resp_tx.send(controller.get_playback_devices());
         }
         VolumeCommand::GetCurrentPlaybackDevice(resp_tx) => {
-            let current_device = controller.get_current_playback_device();
-            let _ = resp_tx.send(current_device);
+            let _ = resp_tx.send(controller.get_current_playback_device());
         }
     }
 }

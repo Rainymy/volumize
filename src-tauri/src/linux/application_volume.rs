@@ -10,10 +10,6 @@ impl ApplicationVolumeControl for VolumeController {
         Ok(vec![])
     }
 
-    fn find_application_with_id(&self, _app: AppIdentifier) -> VolumeResult<AudioApplication> {
-        Err(VolumeControllerError::NotImplemented())
-    }
-
     fn get_app_volume(&self, _app: AppIdentifier) -> VolumeResult<AudioVolume> {
         Err(VolumeControllerError::NotImplemented())
     }

@@ -14,11 +14,11 @@ impl VolumeController {}
 
 impl ApplicationVolumeControl for VolumeController {
     fn get_application_device(&self, app: AppIdentifier) -> VolumeResult<AudioDevice> {
-        let device_id = self.find_application_with_id(app)?.device_id;
+        let device_id = self.get_application(app)?.device_id;
         convert::process_device(self.com.get_device_with_id(&device_id)?)
     }
 
-    fn find_application_with_id(&self, app: AppIdentifier) -> VolumeResult<AudioApplication> {
+    fn get_application(&self, app: AppIdentifier) -> VolumeResult<AudioApplication> {
         for device in self.get_playback_devices()? {
             let session_enums = {
                 let session: IAudioSessionManager2 =
@@ -56,7 +56,7 @@ impl ApplicationVolumeControl for VolumeController {
     }
 
     fn get_app_volume(&self, app: AppIdentifier) -> VolumeResult<AudioVolume> {
-        Ok(self.find_application_with_id(app)?.volume)
+        Ok(self.get_application(app)?.volume)
     }
 
     fn set_app_volume(&self, app: AppIdentifier, volume: VolumePercent) -> VolumeResult<()> {

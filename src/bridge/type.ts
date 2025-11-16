@@ -16,13 +16,13 @@ export interface ITauriVolumeController {
 
     getApplicationIcon(app: AppIdentifier): Promise<Uint8Array | null>;
     getDeviceApplications(id: DeviceIdentifier): Promise<AppIdentifier[]>;
-    findApplicationWithId(id: AppIdentifier): Promise<AudioApplication | null>;
+    getApplication(id: AppIdentifier): Promise<AudioApplication | null>;
     getApplicationDevice(app: AppIdentifier): Promise<AudioDevice | null>;
 
-    getAppVolume(app: AppIdentifier): Promise<VolumePercent>;
-    setAppVolume(app: AppIdentifier, percent: number): Promise<unknown>;
-    muteApp(app: AppIdentifier): Promise<unknown>;
-    unmuteApp(app: AppIdentifier): Promise<unknown>;
+    getApplicationVolume(app: AppIdentifier): Promise<VolumePercent>;
+    setApplicationVolume(app: AppIdentifier, percent: number): Promise<unknown>;
+    muteApplication(app: AppIdentifier): Promise<unknown>;
+    unmuteApplication(app: AppIdentifier): Promise<unknown>;
 
     getPlaybackDevices(): Promise<AudioDevice[]>;
     getCurrentPlaybackDevice(): Promise<AudioDevice | null>;
@@ -39,8 +39,8 @@ export abstract class ATauriVolumeController {
 
     toggleMuteApp(app: AppIdentifier, value: boolean) {
         if (value) {
-            return (this as unknown as ITauriVolumeController).unmuteApp(app);
+            return (this as unknown as ITauriVolumeController).unmuteApplication(app);
         }
-        return (this as unknown as ITauriVolumeController).muteApp(app);
+        return (this as unknown as ITauriVolumeController).muteApplication(app);
     }
 }

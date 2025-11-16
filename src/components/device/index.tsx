@@ -50,7 +50,7 @@ export function DeviceApplications({ id }: { id: AppIdentifier }) {
     useAsyncSignalEffect(
         async (signal) => {
             token;
-            const data = await volumeController.findApplicationWithId(id);
+            const data = await volumeController.getApplication(id);
             if (!signal.aborted) {
                 setApp(() => data);
             }
@@ -74,7 +74,7 @@ export function DeviceApplications({ id }: { id: AppIdentifier }) {
                 refreshable();
             }}
             onSlider={async (value) => {
-                volumeController.setAppVolume(app.process.id, value);
+                volumeController.setApplicationVolume(app.process.id, value);
             }}
         ></Card>
     );

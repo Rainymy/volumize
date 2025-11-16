@@ -17,11 +17,12 @@ pub async fn get_all_devices(
 
     let _ = state.send(VolumeCommand::GetAllDevices(tx));
 
-    if let Some(value) = rx.recv().await {
-        return Ok(value.unwrap_or(vec![]));
-    }
+    let value = match rx.recv().await {
+        Some(v) => v,
+        None => return Err(()),
+    };
 
-    Err(())
+    value.map_err(|_| ())
 }
 
 #[tauri::command]
@@ -42,11 +43,12 @@ pub async fn get_device_volume(
 
     let _ = state.send(VolumeCommand::GetDeviceVolume(id, tx));
 
-    if let Some(value) = rx.recv().await {
-        return value.map_err(|_err| ());
-    }
+    let value = match rx.recv().await {
+        Some(v) => v,
+        None => return Err(()),
+    };
 
-    Err(())
+    value.map_err(|_| ())
 }
 
 #[tauri::command]
@@ -69,35 +71,26 @@ pub async fn get_application_icon(
 
     let _ = state.send(VolumeCommand::GetApplicationIcon(id, tx));
 
-    if let Some(value) = rx.recv().await {
-        return match value {
-            Ok(Some(icon)) => Ok(icon),
-            Ok(None) => Err(()),
-            Err(_) => Err(()),
-        };
-    }
+    let value = match rx.recv().await {
+        Some(v) => v,
+        None => return Err(()),
+    };
 
-    Err(())
+    value.map_err(|_| ())
+
+    // if let Some(value) = rx.recv().await {
+    //     return match value {
+    //         Ok(Some(icon)) => Ok(icon),
+    //         Ok(None) => Err(()),
+    //         Err(_) => Err(()),
+    //     };
+    // }
+
+    // Err(())
 }
 
 #[tauri::command]
 pub async fn get_application(
-    id: AppIdentifier,
-    state: State<'_, VolumeCommandSender>,
-) -> Result<Option<AudioApplication>, ()> {
-    let (tx, mut rx) = unbounded_channel();
-
-    let _ = state.send(VolumeCommand::GetApplication(id, tx));
-
-    if let Some(value) = rx.recv().await {
-        return Ok(value.unwrap_or(None));
-    }
-
-    Err(())
-}
-
-#[tauri::command]
-pub async fn find_application_with_id(
     id: AppIdentifier,
     state: State<'_, VolumeCommandSender>,
 ) -> Result<AudioApplication, ()> {
@@ -105,16 +98,12 @@ pub async fn find_application_with_id(
 
     let _ = state.send(VolumeCommand::GetApplication(id, tx));
 
-    // ngl this is a "bit" hacky, but it works
-    if let Some(value) = rx.recv().await {
-        if let Ok(app) = value {
-            if let Some(app) = app {
-                return Ok(app);
-            }
-        }
-    }
+    let value = match rx.recv().await {
+        Some(v) => v,
+        None => return Err(()),
+    };
 
-    Err(())
+    value.map_err(|_| ())
 }
 
 #[tauri::command]

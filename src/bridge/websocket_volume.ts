@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import type {
     AppIdentifier,
     AudioApplication,
@@ -30,6 +31,7 @@ export class WebsocketTauriVolumeController
         this.connection.addListener((event) => {
             const data = this.connection.parse_data(event);
             if (data === null) {
+                console.log("Encountered parse error: ", event);
                 return;
             }
 
@@ -48,8 +50,8 @@ export class WebsocketTauriVolumeController
     private async sendEvent<T>(
         action: T_RUST_INVOKE,
         data: string,
-        timeoutMs: number = 5_000,
-    ): Promise<T> {
+        timeoutMs: number = 2_500,
+    ): Promise<T | null> {
         let eventListener: ((event: EventType) => void) | null = null;
 
         const cleanup = () => {
@@ -69,7 +71,7 @@ export class WebsocketTauriVolumeController
         const waitFor = new Promise<T>((resolve) => {
             eventListener = (event: EventType) => {
                 cleanup();
-                console.log("[send event]: ", event.detail);
+                // console.log("[send event]: ", event.detail);
                 resolve(event.detail as T);
             };
 
@@ -78,7 +80,12 @@ export class WebsocketTauriVolumeController
 
         await this.connection.send(data);
 
-        return await Promise.race([waitFor, timer]);
+        try {
+            return await Promise.race([waitFor, timer]);
+        } catch (error) {
+            console.log(`[ ${this.sendEvent.name}/${action} ]:`, error);
+            return null;
+        }
     }
 
     private parse_params(
@@ -92,41 +99,29 @@ export class WebsocketTauriVolumeController
         const { app, device_id, percent } = data ?? {};
         const params = [];
 
-        if (app) params.push(app);
-        if (device_id) params.push(device_id);
-        if (percent) params.push(percent);
+        if (app !== undefined) params.push(app);
+        if (device_id !== undefined) params.push(device_id);
+        if (percent !== undefined) params.push(percent);
 
         return JSON.stringify(params.length ? { [action]: params } : action);
     }
 
     /* ============== DEVICES ============== */
-    getAllDevices: ITauriVolumeController["getAllDevices"] = debounce(async () => {
-        const data = this.parse_params(RUST_INVOKE.GET_ALL_DEVICES);
-        try {
-            return await this.sendEvent<DeviceIdentifier[]>(
-                RUST_INVOKE.GET_ALL_DEVICES,
-                data,
-            );
-        } catch (error) {
-            console.log(`[${this.getAllDevices.name}]: `, error);
-            return [];
-        }
+    getAllDevices: ITauriVolumeController["getAllDevices"] = debouncePerKey(async () => {
+        const invoke_action = RUST_INVOKE.GET_ALL_DEVICES;
+        const data = this.parse_params(invoke_action);
+        const devices = await this.sendEvent<DeviceIdentifier[]>(invoke_action, data);
+        return devices ?? [];
     }, BOUNCE_DELAY.NORMAL);
 
     getDeviceVolume: ITauriVolumeController["getDeviceVolume"] = debounce(
         async (device_id: DeviceIdentifier) => {
-            const data = this.parse_params(RUST_INVOKE.GET_DEVICE_VOLUME, {
+            const invoke_action = RUST_INVOKE.GET_DEVICE_VOLUME;
+            const data = this.parse_params(invoke_action, {
                 device_id,
             });
-            try {
-                return await this.sendEvent<VolumePercent>(
-                    RUST_INVOKE.GET_DEVICE_VOLUME,
-                    data,
-                );
-            } catch (error) {
-                console.log(`[${this.getDeviceVolume.name}]: `, error);
-                return 0.0 as VolumePercent;
-            }
+            const volume = await this.sendEvent<VolumePercent>(invoke_action, data);
+            return volume ?? (0.0 as VolumePercent);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -136,43 +131,34 @@ export class WebsocketTauriVolumeController
             if (!isVolumePercent(percent)) {
                 throw Error(`Invalid VolumePercent value: ${percent}`);
             }
-            const data = this.parse_params(RUST_INVOKE.SET_DEVICE_VOLUME, {
+            const invoke_action = RUST_INVOKE.SET_DEVICE_VOLUME;
+            const data = this.parse_params(invoke_action, {
                 device_id,
                 percent,
             });
-            try {
-                return await this.sendEvent(RUST_INVOKE.SET_DEVICE_VOLUME, data);
-            } catch (error) {
-                console.log(`[${this.setDeviceVolume.name}]: `, error);
-            }
+            return await this.sendEvent(invoke_action, data);
         },
         BOUNCE_DELAY.NORMAL,
     );
 
     muteDevice: ITauriVolumeController["muteDevice"] = debounce(
         async (device_id: DeviceIdentifier) => {
-            const data = this.parse_params(RUST_INVOKE.MUTE_DEVICE, {
+            const invoke_action = RUST_INVOKE.MUTE_DEVICE;
+            const data = this.parse_params(invoke_action, {
                 device_id,
             });
-            try {
-                return await this.sendEvent(RUST_INVOKE.MUTE_DEVICE, data);
-            } catch (error) {
-                console.log(`[${this.muteDevice.name}]: `, error);
-            }
+            return await this.sendEvent(invoke_action, data);
         },
         BOUNCE_DELAY.NORMAL,
     );
 
     unmuteDevice: ITauriVolumeController["unmuteDevice"] = debounce(
         async (device_id: DeviceIdentifier) => {
-            const data = this.parse_params(RUST_INVOKE.MUTE_DEVICE, {
+            const invoke_action = RUST_INVOKE.UNMUTE_DEVICE;
+            const data = this.parse_params(invoke_action, {
                 device_id,
             });
-            try {
-                return await this.sendEvent(RUST_INVOKE.UNMUTE_DEVICE, data);
-            } catch (error) {
-                console.log(`[${this.unmuteDevice.name}]: `, error);
-            }
+            return await this.sendEvent(invoke_action, data);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -180,183 +166,140 @@ export class WebsocketTauriVolumeController
     /* ============== DEVICES ============== */
     getApplicationIcon: ITauriVolumeController["getApplicationIcon"] = debouncePerKey(
         async (app: AppIdentifier) => {
-            const data = this.parse_params(RUST_INVOKE.GET_APPLICATION_ICON, {
+            const invoke_action = RUST_INVOKE.GET_APPLICATION_ICON;
+            const data = this.parse_params(invoke_action, {
                 app,
             });
-            try {
-                return await this.sendEvent<Uint8Array | null>(
-                    RUST_INVOKE.GET_APPLICATION_ICON,
-                    data,
-                );
-            } catch (error) {
-                console.log(`[${this.getApplicationIcon.name}]: `, error);
-                return null;
-            }
+
+            return await this.sendEvent<Uint8Array | null>(invoke_action, data);
         },
         BOUNCE_DELAY.NORMAL,
     );
 
-    getDeviceApplications: ITauriVolumeController["getDeviceApplications"] = debounce(
-        async (device_id: DeviceIdentifier) => {
-            const data = this.parse_params(RUST_INVOKE.GET_DEVICE_APPLICATIONS, {
+    getDeviceApplications: ITauriVolumeController["getDeviceApplications"] =
+        debouncePerKey(async (device_id: DeviceIdentifier) => {
+            const invoke_action = RUST_INVOKE.GET_DEVICE_APPLICATIONS;
+            const data = this.parse_params(invoke_action, {
                 device_id,
             });
-            try {
-                return await this.sendEvent<AppIdentifier[]>(
-                    RUST_INVOKE.GET_DEVICE_APPLICATIONS,
-                    data,
-                );
-            } catch (error) {
-                console.log(`[${this.getDeviceApplications.name}]: `, error);
-                return [];
-            }
-        },
-        BOUNCE_DELAY.NORMAL,
-    );
+            const applications_ids = await this.sendEvent<AppIdentifier[]>(
+                invoke_action,
+                data,
+            );
+            return applications_ids ?? [];
+        }, BOUNCE_DELAY.NORMAL);
 
-    findApplicationWithId: ITauriVolumeController["findApplicationWithId"] = debounce(
+    getApplication: ITauriVolumeController["getApplication"] = debouncePerKey(
         async (app: AppIdentifier) => {
-            const data = this.parse_params(RUST_INVOKE.FIND_APPLICATION_WITH_ID, {
+            const invoke_action = RUST_INVOKE.GET_APPLICATION;
+            const data = this.parse_params(invoke_action, {
                 app,
             });
-            try {
-                return await this.sendEvent<AudioApplication>(
-                    RUST_INVOKE.FIND_APPLICATION_WITH_ID,
-                    data,
-                );
-            } catch (error) {
-                console.log(`[${this.findApplicationWithId.name}]: `, error);
-                return null;
-            }
+            return await this.sendEvent<AudioApplication>(invoke_action, data);
         },
         BOUNCE_DELAY.SLOW,
     );
 
-    getApplicationDevice: ITauriVolumeController["getApplicationDevice"] = debounce(
+    getApplicationDevice: ITauriVolumeController["getApplicationDevice"] = debouncePerKey(
         async (app: AppIdentifier) => {
-            const data = this.parse_params(RUST_INVOKE.GET_APPLICATION_DEVICE, {
+            const invoke_action = RUST_INVOKE.GET_APPLICATION_DEVICE;
+            const data = this.parse_params(invoke_action, {
                 app,
             });
-            try {
-                return await this.sendEvent<AudioDevice>(
-                    RUST_INVOKE.GET_APPLICATION_DEVICE,
-                    data,
-                );
-            } catch (error) {
-                console.log(`[${this.getApplicationDevice.name}]: `, error);
-                return null;
-            }
+            return await this.sendEvent<AudioDevice>(invoke_action, data);
         },
         BOUNCE_DELAY.NORMAL,
     );
 
-    getAppVolume: ITauriVolumeController["getAppVolume"] = debounce(
+    getApplicationVolume: ITauriVolumeController["getApplicationVolume"] = debounce(
         async (app: AppIdentifier) => {
-            const data = this.parse_params(RUST_INVOKE.GET_APP_VOLUME, { app });
-            try {
-                return await this.sendEvent<VolumePercent>(
-                    RUST_INVOKE.GET_APP_VOLUME,
-                    data,
-                );
-            } catch (error) {
-                console.log(`[${this.getAppVolume.name}]: `, error);
-                return 0.0 as VolumePercent;
-            }
+            const invoke_action = RUST_INVOKE.GET_APP_VOLUME;
+            const data = this.parse_params(invoke_action, { app });
+            const volume = await this.sendEvent<VolumePercent>(invoke_action, data);
+            return volume ?? (0.0 as VolumePercent);
         },
         BOUNCE_DELAY.NORMAL,
     );
 
-    setAppVolume: ITauriVolumeController["setAppVolume"] = debounce(
+    setApplicationVolume: ITauriVolumeController["setApplicationVolume"] = debounce(
         async (app: AppIdentifier, percent: number) => {
             if (!isVolumePercent(percent)) {
                 throw Error(`Invalid VolumePercent value: ${percent}`);
             }
-            const data = this.parse_params(RUST_INVOKE.SET_APP_VOLUME, {
+            const invoke_action = RUST_INVOKE.SET_APP_VOLUME;
+            const data = this.parse_params(invoke_action, {
                 app,
                 percent,
             });
-            try {
-                return await this.sendEvent(RUST_INVOKE.SET_APP_VOLUME, data);
-            } catch (error) {
-                console.log(`[${this.setAppVolume.name}]: `, error);
-            }
+            return await this.sendEvent(invoke_action, data);
         },
         BOUNCE_DELAY.NORMAL,
     );
 
-    muteApp: ITauriVolumeController["muteApp"] = debounce(async (app: AppIdentifier) => {
-        const data = this.parse_params(RUST_INVOKE.MUTE_DEVICE, { app });
-        try {
-            return await this.sendEvent<VolumePercent>(RUST_INVOKE.MUTE_APP_VOLUME, data);
-        } catch (error) {
-            console.log(`[${this.muteApp.name}]: `, error);
-        }
-    }, BOUNCE_DELAY.NORMAL);
-
-    unmuteApp: ITauriVolumeController["unmuteApp"] = debounce(
+    muteApplication: ITauriVolumeController["muteApplication"] = debounce(
         async (app: AppIdentifier) => {
-            const data = this.parse_params(RUST_INVOKE.MUTE_DEVICE, { app });
-            try {
-                return await this.sendEvent<VolumePercent>(
-                    RUST_INVOKE.UNMUTE_APP_VOLUME,
-                    data,
-                );
-            } catch (error) {
-                console.log(`[${this.unmuteApp.name}]: `, error);
-            }
+            const invoke_action = RUST_INVOKE.MUTE_APP_VOLUME;
+            const data = this.parse_params(invoke_action, { app });
+            return await this.sendEvent<VolumePercent>(invoke_action, data);
         },
         BOUNCE_DELAY.NORMAL,
     );
 
-    getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debounce(
+    unmuteApplication: ITauriVolumeController["unmuteApplication"] = debounce(
+        async (app: AppIdentifier) => {
+            const invoke_action = RUST_INVOKE.UNMUTE_APP_VOLUME;
+            const data = this.parse_params(invoke_action, { app });
+            return await this.sendEvent<VolumePercent>(invoke_action, data);
+        },
+        BOUNCE_DELAY.NORMAL,
+    );
+
+    getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debouncePerKey(
         async () => {
-            const data = this.parse_params(RUST_INVOKE.GET_PLAYBACK_DEVICES);
-            try {
-                return await this.sendEvent<AudioDevice[]>(
-                    RUST_INVOKE.GET_PLAYBACK_DEVICES,
-                    data,
-                );
-            } catch (error) {
-                console.log(`[${this.getPlaybackDevices.name}]: `, error);
-                return [];
-            }
+            const invoke_action = RUST_INVOKE.GET_PLAYBACK_DEVICES;
+            const data = this.parse_params(invoke_action);
+            const devices = await this.sendEvent<AudioDevice[]>(invoke_action, data);
+            return devices ?? [];
         },
         BOUNCE_DELAY.NORMAL,
     );
 
     getCurrentPlaybackDevice: ITauriVolumeController["getCurrentPlaybackDevice"] =
-        debounce(async () => {
-            const data = this.parse_params(RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE);
-            try {
-                return await this.sendEvent<AudioDevice | null>(
-                    RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE,
-                    data,
-                );
-            } catch (error) {
-                console.log(`[${this.getCurrentPlaybackDevice.name}]: `, error);
-                return null;
-            }
+        debouncePerKey(async () => {
+            const invoke_action = RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE;
+            const data = this.parse_params(invoke_action);
+            return await this.sendEvent<AudioDevice | null>(invoke_action, data);
         }, BOUNCE_DELAY.NORMAL);
 
     discoverServer: ITauriVolumeController["discoverServer"] = debounce(async () => {
-        const data = this.parse_params(RUST_INVOKE.DISCOVER_SERVER_ADDRESS);
-        try {
-            const address = await this.sendEvent<string>(
-                RUST_INVOKE.DISCOVER_SERVER_ADDRESS,
-                data,
-            );
-            // TEMP FIX: find a way to handle parse IP or URL address without protocol.
-            const url = new URL(`https://${address}`);
-            const port = getNumber(url.port);
+        const invoke_action = RUST_INVOKE.DISCOVER_SERVER_ADDRESS;
+        const address = await invoke<string | null>(invoke_action);
+        return tryParseURL(address);
+    }, BOUNCE_DELAY.NORMAL);
+}
 
-            if (port === undefined) {
-                return null;
-            }
-
-            return { url: url.hostname, port: port };
-        } catch (error) {
-            console.log(`[${this.discoverServer.name}]: `, error);
+/**
+ * TEMP FIX:
+ *  - find a way to handle parse IP or URL address without protocol.
+ *
+ * This function is implemented with:
+ * ```js
+ *  const url = new URL(`http://${urlString}`);
+ * ```
+ */
+function tryParseURL(urlString: string | null) {
+    if (urlString === null || urlString.length === 0) {
+        return null;
+    }
+    try {
+        const url = new URL(`http://${urlString}`);
+        const port = getNumber(url.port);
+        if (port === undefined) {
             return null;
         }
-    }, BOUNCE_DELAY.NORMAL);
+        return { url: url.hostname, port: port };
+    } catch (error) {
+        console.log(`[ tryParseURL ]: `, urlString, error);
+        return null;
+    }
 }

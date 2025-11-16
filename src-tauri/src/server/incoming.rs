@@ -62,10 +62,40 @@ async fn handle_volume_command(
     let state = app_handle.state::<VolumeCommandSender>();
 
     match command {
+        VolumeCommand::GetAllDevices(_) => {
+            let (tx, rx) = unbounded_channel();
+            handle_command_with_response(
+                VolumeCommand::GetAllDevices(tx),
+                &client_sender,
+                &state,
+                rx,
+            )
+            .await
+        }
         VolumeCommand::GetDeviceVolume(x, _) => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
                 VolumeCommand::GetDeviceVolume(x, tx),
+                &client_sender,
+                &state,
+                rx,
+            )
+            .await
+        }
+        VolumeCommand::GetApplicationIcon(app, _) => {
+            let (tx, rx) = unbounded_channel();
+            handle_command_with_response(
+                VolumeCommand::GetApplicationIcon(app, tx),
+                &client_sender,
+                &state,
+                rx,
+            )
+            .await
+        }
+        VolumeCommand::GetApplication(app, _) => {
+            let (tx, rx) = unbounded_channel();
+            handle_command_with_response(
+                VolumeCommand::GetApplication(app, tx),
                 &client_sender,
                 &state,
                 rx,
@@ -160,5 +190,6 @@ fn create_json_response<T: serde::Serialize>(name: &str, data: &T) -> String {
 }
 
 fn parse_action(action: &str) -> Result<VolumeCommand, serde_json::Error> {
+    println!("Parsing action: {}", action);
     serde_json::from_str::<VolumeCommand>(action)
 }

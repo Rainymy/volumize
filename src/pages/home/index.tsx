@@ -2,7 +2,6 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
-
 import { AppLogo } from "$base/appLogo";
 import { AppButton } from "$base/button";
 import { ServerURLComponent } from "$component/serverInput";

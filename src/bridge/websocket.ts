@@ -12,7 +12,7 @@ export class ConnectSocket {
     }
 
     async send(data: string) {
-        this.socket?.send({ type: "Text", data: data });
+        await this.socket?.send({ type: "Text", data: data });
     }
 
     addListener(cb: (arg: Message) => void) {
@@ -29,8 +29,8 @@ export class ConnectSocket {
         try {
             const data2: { type: string; data: string } = JSON.parse(data.data);
             return {
-                // rust double parsing string
-                channel: JSON.parse(data2.type),
+                // you may get a double stringified JSON object
+                channel: data2.type,
                 data: data2.data,
             };
         } catch (err) {

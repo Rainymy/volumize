@@ -1,4 +1,5 @@
 // import { invoke } from "@tauri-apps/api/core";
+import { is_desktop } from "./generic";
 import { TauriVolumeController } from "./tauri_volume";
 import { WebsocketTauriVolumeController } from "./websocket_volume";
 
@@ -10,10 +11,10 @@ export enum RUST_INVOKE {
     MUTE_DEVICE = "mute_device",
     UNMUTE_DEVICE = "unmute_device",
 
+    GET_APPLICATION = "get_application",
     GET_APPLICATION_ICON = "get_application_icon",
-    GET_DEVICE_APPLICATIONS = "get_device_applications",
-    FIND_APPLICATION_WITH_ID = "find_application_with_id",
     GET_APPLICATION_DEVICE = "get_application_device",
+    GET_DEVICE_APPLICATIONS = "get_device_applications",
 
     GET_APP_VOLUME = "get_app_volume",
     SET_APP_VOLUME = "set_app_volume",
@@ -33,12 +34,7 @@ export enum BOUNCE_DELAY {
     SUPER_FAST = 50,
 }
 
-// biome-ignore lint/correctness/noConstantCondition: temp
-export const volumeController = false //is_desktop()
+export const volumeController = is_desktop()
     ? new TauriVolumeController()
     : new WebsocketTauriVolumeController();
 
-// (async () => {
-//     const h = await invoke("discover_server_address");
-//     console.log("adwdwad", h);
-// })();

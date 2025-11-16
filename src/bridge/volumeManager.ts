@@ -1,4 +1,5 @@
 // import { invoke } from "@tauri-apps/api/core";
+import { isSocketController } from "$util/generic";
 import { is_desktop } from "./generic";
 import { TauriVolumeController } from "./tauri_volume";
 import { WebsocketTauriVolumeController } from "./websocket_volume";
@@ -18,8 +19,8 @@ export enum RUST_INVOKE {
 
     GET_APP_VOLUME = "get_app_volume",
     SET_APP_VOLUME = "set_app_volume",
-    MUTE_APP_VOLUME = "mute_app_volume",
-    UNMUTE_APP_VOLUME = "unmute_app_volume",
+    MUTE_APP_VOLUME = "mute_app",
+    UNMUTE_APP_VOLUME = "unmute_app",
 
     GET_PLAYBACK_DEVICES = "get_playback_devices",
     GET_CURRENT_PLAYBACK_DEVICE = "get_current_playback_device",

@@ -62,80 +62,80 @@ async fn handle_volume_command(
     let state = app_handle.state::<VolumeCommandSender>();
 
     match command {
-        VolumeCommand::GetAllDevices(_) => {
+        VolumeCommand::GetAllDevices { .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetAllDevices(tx),
+                VolumeCommand::GetAllDevices { sender: tx },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetDeviceVolume(x, _) => {
+        VolumeCommand::GetDeviceVolume { id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetDeviceVolume(x, tx),
+                VolumeCommand::GetDeviceVolume { sender: tx, id },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetApplicationIcon(app, _) => {
+        VolumeCommand::GetApplicationIcon { id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetApplicationIcon(app, tx),
+                VolumeCommand::GetApplicationIcon { id, sender: tx },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetApplication(app, _) => {
+        VolumeCommand::GetApplication { id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetApplication(app, tx),
+                VolumeCommand::GetApplication { id, sender: tx },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetAppVolume(x, _) => {
+        VolumeCommand::GetAppVolume { id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetAppVolume(x, tx),
+                VolumeCommand::GetAppVolume { id, sender: tx },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetCurrentPlaybackDevice(_) => {
+        VolumeCommand::GetCurrentPlaybackDevice { .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetCurrentPlaybackDevice(tx),
+                VolumeCommand::GetCurrentPlaybackDevice { sender: tx },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetPlaybackDevices(_) => {
+        VolumeCommand::GetPlaybackDevices { .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetPlaybackDevices(tx),
+                VolumeCommand::GetPlaybackDevices { sender: tx },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetDeviceApplications(device_id, _) => {
+        VolumeCommand::GetDeviceApplications { id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetDeviceApplications(device_id, tx),
+                VolumeCommand::GetDeviceApplications { id, sender: tx },
                 &client_sender,
                 &state,
                 rx,
@@ -169,16 +169,20 @@ async fn handle_command_with_response<T: serde::Serialize>(
 
     send_command(command, v_state)?;
 
-    match rx.recv().await {
-        Some(Ok(result)) => {
-            let respons = create_json_response(&command_name, &result);
-            client_sender
-                .send(respons.into())
-                .map_err(|e| e.to_string().into())
-        }
-        Some(Err(err)) => Err(err.into()),
-        None => Err("Response channel closed".into()),
-    }
+    let response = match rx.recv().await {
+        Some(result) => result,
+        None => return Err("Response channel closed".into()),
+    };
+
+    let result = match response {
+        Ok(result) => result,
+        Err(err) => return Err(err.into()),
+    };
+
+    let respons = create_json_response(&command_name, &result);
+    client_sender
+        .send(respons.into())
+        .map_err(|e| e.to_string().into())
 }
 
 fn create_json_response<T: serde::Serialize>(name: &str, data: &T) -> String {

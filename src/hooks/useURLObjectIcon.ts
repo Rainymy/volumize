@@ -10,7 +10,7 @@ export function useURLObjectIcon(id: number | undefined) {
 
     useAsyncSignalEffect(
         async (signal) => {
-            if (!id) {
+            if (id === undefined) {
                 return;
             }
 

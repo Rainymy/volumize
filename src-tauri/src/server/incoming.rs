@@ -62,87 +62,128 @@ async fn handle_volume_command(
     let state = app_handle.state::<VolumeCommandSender>();
 
     match command {
-        VolumeCommand::GetAllDevices { .. } => {
+        VolumeCommand::GetAllDevices { request_id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetAllDevices { sender: tx },
+                VolumeCommand::GetAllDevices {
+                    request_id,
+                    sender: tx,
+                },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetDeviceVolume { id, .. } => {
+        VolumeCommand::GetDeviceVolume { request_id, id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetDeviceVolume { sender: tx, id },
+                VolumeCommand::GetDeviceVolume {
+                    request_id,
+                    sender: tx,
+                    id,
+                },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetApplicationIcon { id, .. } => {
+        VolumeCommand::GetApplicationIcon { request_id, id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetApplicationIcon { id, sender: tx },
+                VolumeCommand::GetApplicationIcon {
+                    request_id,
+                    sender: tx,
+                    id,
+                },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetApplication { id, .. } => {
+        VolumeCommand::GetApplication { request_id, id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetApplication { id, sender: tx },
+                VolumeCommand::GetApplication {
+                    request_id,
+                    sender: tx,
+                    id,
+                },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetAppVolume { id, .. } => {
+        VolumeCommand::GetAppVolume { request_id, id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetAppVolume { id, sender: tx },
+                VolumeCommand::GetAppVolume {
+                    request_id,
+                    sender: tx,
+                    id,
+                },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetCurrentPlaybackDevice { .. } => {
+        VolumeCommand::GetCurrentPlaybackDevice { request_id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetCurrentPlaybackDevice { sender: tx },
+                VolumeCommand::GetCurrentPlaybackDevice {
+                    request_id,
+                    sender: tx,
+                },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetPlaybackDevices { .. } => {
+        VolumeCommand::GetPlaybackDevices { request_id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetPlaybackDevices { sender: tx },
+                VolumeCommand::GetPlaybackDevices {
+                    request_id,
+                    sender: tx,
+                },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        VolumeCommand::GetDeviceApplications { id, .. } => {
+        VolumeCommand::GetDeviceApplications { request_id, id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetDeviceApplications { id, sender: tx },
+                VolumeCommand::GetDeviceApplications {
+                    request_id,
+                    sender: tx,
+                    id,
+                },
                 &client_sender,
                 &state,
                 rx,
             )
             .await
         }
-        rest => send_command(rest, &state),
+        rest => {
+            let request_id = {
+                let id = rest.get_request_id();
+                match id.is_empty() {
+                    true => rest.get_name(),
+                    false => id,
+                }
+            };
+            let tt = create_json_response(&request_id, &"REQUEST ACCEPTED");
+            let _ = client_sender.send(tt.into());
+
+            send_command(rest, &state)
+        }
     }
 }
 
@@ -165,8 +206,13 @@ async fn handle_command_with_response<T: serde::Serialize>(
     v_state: &VolumeCommandSender,
     mut rx: UnboundedReceiver<VolumeResult<T>>,
 ) -> Result<(), Box<dyn Error>> {
-    let command_name = command.get_name();
-
+    let request_id = {
+        let id = command.get_request_id();
+        match id.is_empty() {
+            true => command.get_name(),
+            false => id,
+        }
+    };
     send_command(command, v_state)?;
 
     let response = match rx.recv().await {
@@ -179,7 +225,7 @@ async fn handle_command_with_response<T: serde::Serialize>(
         Err(err) => return Err(err.into()),
     };
 
-    let respons = create_json_response(&command_name, &result);
+    let respons = create_json_response(&request_id, &result);
     client_sender
         .send(respons.into())
         .map_err(|e| e.to_string().into())

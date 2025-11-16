@@ -1,13 +1,14 @@
 import { useMemo } from "react";
+import { uuid } from "$util/uuid";
 
-const uuid: Crypto = window.crypto;
-type UUID = ReturnType<typeof uuid.randomUUID>;
-
-type IDPair<T> = { id: UUID; element: T };
+type IDPair<T> = {
+    id: ReturnType<typeof window.crypto.randomUUID>;
+    element: T;
+};
 
 export function useGenerateID<T>(elements: T[]): IDPair<T>[] {
     return useMemo(
-        () => elements.map((t) => ({ id: uuid.randomUUID(), element: t }) as IDPair<T>),
+        () => elements.map((t) => ({ id: uuid(), element: t }) as IDPair<T>),
         [elements],
     );
 }

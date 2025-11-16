@@ -7,7 +7,8 @@ import type {
     VolumePercent,
 } from "$type/volume";
 import { debounce, debouncePerKey } from "$util/debounce";
-import { getNumber } from "$util/generic";
+import { tryParseURL } from "$util/temp";
+import { uuid } from "$util/uuid";
 import { isVolumePercent } from "$util/volume";
 import { ATauriVolumeController, type ITauriVolumeController } from "./type";
 import { BOUNCE_DELAY, RUST_INVOKE } from "./volumeManager";
@@ -19,6 +20,12 @@ type EventType = Event & CustomEventInit;
 type PARAM_ACTION = {
     id: DeviceIdentifier | AppIdentifier;
     volume?: VolumePercent;
+};
+
+type SEND_ACTION = {
+    action: T_RUST_INVOKE;
+    request_id: string;
+    data: string;
 };
 
 export class WebsocketTauriVolumeController
@@ -53,15 +60,14 @@ export class WebsocketTauriVolumeController
     }
 
     private async sendEvent<T>(
-        action: T_RUST_INVOKE,
-        data: string,
+        action: SEND_ACTION,
         timeoutMs: number = 2_500,
     ): Promise<T | null> {
         let listener: ((event: EventType) => void) | null = null;
 
         const cleanup = () => {
             if (listener) {
-                this.listener.removeEventListener(action, listener);
+                this.listener.removeEventListener(action.request_id, listener);
                 listener = null;
             }
         };
@@ -69,7 +75,7 @@ export class WebsocketTauriVolumeController
         const timer = new Promise<never>((_, reject) => {
             setTimeout(() => {
                 cleanup();
-                reject(new Error(`Event '${action}' timed out after ${timeoutMs}ms`));
+                reject(`Event '${action.action}' timed out after ${timeoutMs}ms`);
             }, timeoutMs);
         });
 
@@ -79,28 +85,36 @@ export class WebsocketTauriVolumeController
                 resolve(event.detail as T);
             };
 
-            this.listener.addEventListener(action, listener);
+            this.listener.addEventListener(action.request_id, listener);
         });
 
-        await this.connection.send(data);
+        await this.connection.send(action.data);
 
         try {
             return await Promise.race([waitFor, timer]);
         } catch (error) {
-            console.log(`[ ${this.sendEvent.name}/${action} ]:`, error);
+            console.warn(`[ ${this.sendEvent.name}/${action.action} ]:`, error);
             return null;
         }
     }
 
-    private parse_params(action: T_RUST_INVOKE, data?: PARAM_ACTION) {
-        return JSON.stringify({ [action]: data ?? {} });
+    private parse_params(action: T_RUST_INVOKE, data?: PARAM_ACTION): SEND_ACTION {
+        const unique_id = uuid();
+
+        return {
+            action: action,
+            request_id: unique_id,
+            data: JSON.stringify({
+                [action]: { ...(data ?? {}), request_id: unique_id },
+            }),
+        };
     }
 
     /* ============== DEVICES ============== */
     getAllDevices: ITauriVolumeController["getAllDevices"] = debouncePerKey(async () => {
         const invoke_action = RUST_INVOKE.GET_ALL_DEVICES;
         const data = this.parse_params(invoke_action);
-        const devices = await this.sendEvent<DeviceIdentifier[]>(invoke_action, data);
+        const devices = await this.sendEvent<DeviceIdentifier[]>(data);
         return devices ?? [];
     }, BOUNCE_DELAY.NORMAL);
 
@@ -108,7 +122,7 @@ export class WebsocketTauriVolumeController
         async (id: DeviceIdentifier) => {
             const invoke_action = RUST_INVOKE.GET_DEVICE_VOLUME;
             const data = this.parse_params(invoke_action, { id });
-            const volume = await this.sendEvent<VolumePercent>(invoke_action, data);
+            const volume = await this.sendEvent<VolumePercent>(data);
             return volume ?? (0.0 as VolumePercent);
         },
         BOUNCE_DELAY.NORMAL,
@@ -121,7 +135,7 @@ export class WebsocketTauriVolumeController
             }
             const invoke_action = RUST_INVOKE.SET_DEVICE_VOLUME;
             const data = this.parse_params(invoke_action, { id, volume });
-            return await this.sendEvent(invoke_action, data);
+            return await this.sendEvent(data);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -130,7 +144,7 @@ export class WebsocketTauriVolumeController
         async (id: DeviceIdentifier) => {
             const invoke_action = RUST_INVOKE.MUTE_DEVICE;
             const data = this.parse_params(invoke_action, { id });
-            return await this.sendEvent(invoke_action, data);
+            return await this.sendEvent(data);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -139,7 +153,7 @@ export class WebsocketTauriVolumeController
         async (id: DeviceIdentifier) => {
             const invoke_action = RUST_INVOKE.UNMUTE_DEVICE;
             const data = this.parse_params(invoke_action, { id });
-            return await this.sendEvent(invoke_action, data);
+            return await this.sendEvent(data);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -149,8 +163,7 @@ export class WebsocketTauriVolumeController
         async (id: AppIdentifier) => {
             const invoke_action = RUST_INVOKE.GET_APPLICATION_ICON;
             const data = this.parse_params(invoke_action, { id });
-
-            return await this.sendEvent<Uint8Array | null>(invoke_action, data);
+            return await this.sendEvent<Uint8Array | null>(data);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -159,10 +172,7 @@ export class WebsocketTauriVolumeController
         debouncePerKey(async (id: DeviceIdentifier) => {
             const invoke_action = RUST_INVOKE.GET_DEVICE_APPLICATIONS;
             const data = this.parse_params(invoke_action, { id });
-            const applications_ids = await this.sendEvent<AppIdentifier[]>(
-                invoke_action,
-                data,
-            );
+            const applications_ids = await this.sendEvent<AppIdentifier[]>(data);
             return applications_ids ?? [];
         }, BOUNCE_DELAY.NORMAL);
 
@@ -170,16 +180,16 @@ export class WebsocketTauriVolumeController
         async (id: AppIdentifier) => {
             const invoke_action = RUST_INVOKE.GET_APPLICATION;
             const data = this.parse_params(invoke_action, { id });
-            return await this.sendEvent<AudioApplication>(invoke_action, data);
+            return await this.sendEvent<AudioApplication>(data);
         },
-        BOUNCE_DELAY.SLOW,
+        BOUNCE_DELAY.NORMAL,
     );
 
     getApplicationDevice: ITauriVolumeController["getApplicationDevice"] = debouncePerKey(
         async (id: AppIdentifier) => {
             const invoke_action = RUST_INVOKE.GET_APPLICATION_DEVICE;
             const data = this.parse_params(invoke_action, { id });
-            return await this.sendEvent<AudioDevice>(invoke_action, data);
+            return await this.sendEvent<AudioDevice>(data);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -188,7 +198,7 @@ export class WebsocketTauriVolumeController
         async (id: AppIdentifier) => {
             const invoke_action = RUST_INVOKE.GET_APP_VOLUME;
             const data = this.parse_params(invoke_action, { id });
-            const volume = await this.sendEvent<VolumePercent>(invoke_action, data);
+            const volume = await this.sendEvent<VolumePercent>(data);
             return volume ?? (0.0 as VolumePercent);
         },
         BOUNCE_DELAY.NORMAL,
@@ -201,7 +211,7 @@ export class WebsocketTauriVolumeController
             }
             const invoke_action = RUST_INVOKE.SET_APP_VOLUME;
             const data = this.parse_params(invoke_action, { id, volume });
-            return await this.sendEvent(invoke_action, data);
+            return await this.sendEvent(data);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -210,7 +220,7 @@ export class WebsocketTauriVolumeController
         async (id: AppIdentifier) => {
             const invoke_action = RUST_INVOKE.MUTE_APP_VOLUME;
             const data = this.parse_params(invoke_action, { id });
-            return await this.sendEvent<VolumePercent>(invoke_action, data);
+            return await this.sendEvent<VolumePercent>(data);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -219,7 +229,7 @@ export class WebsocketTauriVolumeController
         async (id: AppIdentifier) => {
             const invoke_action = RUST_INVOKE.UNMUTE_APP_VOLUME;
             const data = this.parse_params(invoke_action, { id });
-            return await this.sendEvent<VolumePercent>(invoke_action, data);
+            return await this.sendEvent<VolumePercent>(data);
         },
         BOUNCE_DELAY.NORMAL,
     );
@@ -228,7 +238,7 @@ export class WebsocketTauriVolumeController
         async () => {
             const invoke_action = RUST_INVOKE.GET_PLAYBACK_DEVICES;
             const data = this.parse_params(invoke_action);
-            const devices = await this.sendEvent<AudioDevice[]>(invoke_action, data);
+            const devices = await this.sendEvent<AudioDevice[]>(data);
             return devices ?? [];
         },
         BOUNCE_DELAY.NORMAL,
@@ -238,38 +248,11 @@ export class WebsocketTauriVolumeController
         debouncePerKey(async () => {
             const invoke_action = RUST_INVOKE.GET_CURRENT_PLAYBACK_DEVICE;
             const data = this.parse_params(invoke_action);
-            return await this.sendEvent<AudioDevice | null>(invoke_action, data);
+            return await this.sendEvent<AudioDevice | null>(data);
         }, BOUNCE_DELAY.NORMAL);
 
     discoverServer: ITauriVolumeController["discoverServer"] = debounce(async () => {
         const invoke_action = RUST_INVOKE.DISCOVER_SERVER_ADDRESS;
-        const address = await invoke<string | null>(invoke_action);
-        return tryParseURL(address);
+        return tryParseURL(await invoke<string | null>(invoke_action));
     }, BOUNCE_DELAY.NORMAL);
-}
-
-/**
- * TEMP FIX:
- *  - find a way to handle parse IP or URL address without protocol.
- *
- * This function is implemented with:
- * ```js
- *  const url = new URL(`http://${urlString}`);
- * ```
- */
-function tryParseURL(urlString: string | null) {
-    if (urlString === null || urlString.length === 0) {
-        return null;
-    }
-    try {
-        const url = new URL(`http://${urlString}`);
-        const port = getNumber(url.port);
-        if (port === undefined) {
-            return null;
-        }
-        return { url: url.hostname, port: port };
-    } catch (error) {
-        console.log(`[ ${tryParseURL.name} ]: `, urlString, error);
-        return null;
-    }
 }

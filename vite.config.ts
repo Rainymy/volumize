@@ -26,6 +26,7 @@ export default defineConfig(async () => {
         // https://react.dev/learn/react-compiler
         plugins: [react()],
         css: cssOptions,
+        envPrefix: "VOLUMIZE_",
 
         resolve: {
             alias: {

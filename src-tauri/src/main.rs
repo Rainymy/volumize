@@ -187,7 +187,7 @@ fn setup_tray_system(app: &tauri::AppHandle) -> TauriResult<()> {
         .build(app)?;
 
     if let Ok(mut icon_id) = storage.tray_icon_id.lock() {
-        let current_tray_id = tray.id().clone();
+        let current_tray_id = tray.id().as_ref().to_string();
 
         if let Some(old_tray) = icon_id.replace(current_tray_id) {
             let _ = app.remove_tray_by_id(&old_tray);

@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
-use tauri::{tray::TrayIconId, AppHandle, Manager};
+use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Settings {
@@ -26,7 +26,7 @@ impl Default for Settings {
 #[derive(Default)]
 pub struct Storage {
     settings: Arc<Mutex<Settings>>,
-    pub tray_icon_id: Arc<Mutex<Option<TrayIconId>>>,
+    pub tray_icon_id: Arc<Mutex<Option<String>>>,
 }
 
 impl Storage {

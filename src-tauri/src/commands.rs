@@ -2,7 +2,7 @@ use tauri::State;
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::{
-    server::{VolumeCommand, VolumeCommandSender},
+    server::volume_control::{VolumeCommand, VolumeCommandSender},
     types::shared::{
         AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumePercent,
     },

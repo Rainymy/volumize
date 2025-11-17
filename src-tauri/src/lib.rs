@@ -1,12 +1,15 @@
 #![allow(dead_code)]
 mod server;
-mod storage;
+// mod storage;
+// mod tray;
 mod tray;
 mod types;
 
+pub use tray::*;
+
 #[tauri::command]
 async fn discover_server_address() -> Option<String> {
-    server::discover_server().await.ok()
+    server::service_discovery::discover_server().await.ok()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

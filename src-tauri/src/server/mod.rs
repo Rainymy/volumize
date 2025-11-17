@@ -14,17 +14,17 @@ use tokio::{net::TcpListener as TokioTcpListener, sync::mpsc::UnboundedSender, t
 use tokio_tungstenite::tungstenite::Message;
 use tokio_util::sync::CancellationToken;
 
-mod handle;
-mod incoming;
-mod service_discovery;
-mod service_register;
-mod volume_control;
+pub mod handle;
+pub mod incoming;
+pub mod service_discovery;
+pub mod service_register;
+pub mod volume_control;
 
-pub use service_discovery::discover_server;
-#[allow(unused_imports)]
-pub use service_register::start_service_register;
-#[allow(unused_imports)]
-pub use volume_control::*;
+// pub use service_discovery::discover_server;
+// #[allow(unused_imports)]
+// pub use service_register::start_service_register;
+// #[allow(unused_imports)]
+// pub use volume_control::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ClientInfo {

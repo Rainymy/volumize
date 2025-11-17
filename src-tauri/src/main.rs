@@ -10,17 +10,21 @@ use tauri::{
 
 mod commands;
 mod server;
-mod storage;
 mod tray;
 mod types;
 
-use server::{
-    start_service_register, start_websocket_server, ServiceDiscovery, VolumeCommandSender,
-    WebSocketServerState,
-};
+// pub use types::*;
 
-pub use storage::Storage;
-pub use tray::Discovery;
+use server::{start_websocket_server, ServiceDiscovery, WebSocketServerState};
+
+use crate::{
+    server::{
+        service_discovery::discover_server,
+        service_register::start_service_register,
+        volume_control::{spawn_volume_thread, VolumeCommandSender},
+    },
+    types::{click::ClickState, storage::Storage, tray::Discovery},
+};
 
 fn main() {
     if let Err(e) = start_application() {
@@ -55,7 +59,7 @@ pub fn start_application() -> TauriResult<()> {
 
 #[tauri::command]
 async fn discover_server_address() -> Option<String> {
-    server::discover_server().await.ok()
+    discover_server().await.ok()
 }
 
 fn create_tauri_app() -> TauriResult<tauri::App> {
@@ -63,16 +67,16 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
-        .manage(server::spawn_volume_thread())
+        .manage(spawn_volume_thread())
         .manage(WebSocketServerState::new())
         .manage(ServiceDiscovery::new())
-        .manage(tray::ClickState::new(None))
-        .manage(storage::Storage::default())
+        .manage(ClickState::new(None))
+        .manage(Storage::default())
         .setup(|app| {
             setup_dev_tools(app);
 
             let app_handle = app.handle();
-            let storage = app_handle.state::<storage::Storage>();
+            let storage = app_handle.state::<Storage>();
             storage.load(app_handle);
 
             let settings = storage.get();
@@ -101,7 +105,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
                     _ => true,
                 };
 
-                let storage = app.app_handle().state::<storage::Storage>();
+                let storage = app.app_handle().state::<Storage>();
                 let mut settings = storage.get();
 
                 settings.duration = discover;
@@ -121,7 +125,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
             }
         })
         .on_window_event(|_window, _event| {
-            let storage = _window.app_handle().state::<storage::Storage>();
+            let storage = _window.app_handle().state::<Storage>();
             let should_exit_to_tray = storage.get().exit_to_tray;
 
             if should_exit_to_tray {
@@ -150,7 +154,7 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
             // Device controls
             commands::get_current_playback_device,
             commands::get_playback_devices,
-            discover_server_address
+            crate::discover_server_address
         ])
         .build(tauri::generate_context!())
 }
@@ -170,7 +174,7 @@ fn setup_tray_system(app: &tauri::AppHandle) -> TauriResult<()> {
         .show_menu_on_left_click(false)
         .icon(icon)
         .on_tray_icon_event(|tray, event| {
-            let click_state = tray.app_handle().state::<tray::ClickState>();
+            let click_state = tray.app_handle().state::<ClickState>();
             match event {
                 TrayIconEvent::Click {
                     button: MouseButton::Left,

@@ -7,8 +7,7 @@ use tauri::{
 use tokio::{net::UdpSocket, sync::Mutex};
 use tokio_util::sync::CancellationToken;
 
-use super::{RunningServer, ServiceDiscovery};
-use crate::tray::Discovery;
+use super::{super::types::tray::Discovery, RunningServer, ServiceDiscovery};
 
 pub fn start_service_register(port: u16, app_handle: &AppHandle, policy: Discovery) {
     let state = app_handle.state::<ServiceDiscovery>();

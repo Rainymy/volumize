@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+// #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use thiserror::Error;
@@ -49,15 +49,6 @@ pub struct AudioDevice {
     pub is_default: bool,
     pub volume: AudioVolume,
 }
-
-/*
- * GetAllDevices
- * AudioSession[] ->
- *                            GetDeviceApplications
- *         AudioSession.id -> AudioApplication[]
- *                                    GetApplication
- *                                    AudioApplication.ProcessInfo
- */
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AudioVolume {

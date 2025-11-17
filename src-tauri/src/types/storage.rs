@@ -6,11 +6,9 @@ use std::{
 };
 use tauri::{tray::TrayIconId, AppHandle, Manager};
 
-use crate::tray::Discovery;
-
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Settings {
-    pub duration: Discovery,
+    pub duration: super::tray::Discovery,
     pub port_address: u16,
     pub exit_to_tray: bool,
 }

@@ -12,6 +12,7 @@ import { isVeritcalNavbar, NavbarState, navbar_state } from "$model/nav";
 import { connection_state } from "$model/volume";
 import { ConnectionState, NavigationType } from "$type/navigation";
 import { classnames } from "$util/react";
+
 import style from "./index.module.less";
 
 export function Navbar() {

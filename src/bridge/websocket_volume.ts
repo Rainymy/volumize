@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { DEBOUNCE_DELAY } from "$type/constant";
 import type {
     AppIdentifier,
     AudioApplication,
@@ -117,7 +118,7 @@ export class WebsocketTauriVolumeController
             const devices = await this.sendEvent<AudioDevice[]>(data);
             return devices ?? [];
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     deviceGetVolume: ITauriVolumeController["deviceGetVolume"] = debounce(
@@ -127,7 +128,7 @@ export class WebsocketTauriVolumeController
             const volume = await this.sendEvent<VolumePercent>(data);
             return volume ?? (0.0 as VolumePercent);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     deviceSetVolume: ITauriVolumeController["deviceSetVolume"] = debounce(
@@ -139,7 +140,7 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(invoke_action, { id, volume });
             return await this.sendEvent(data);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     deviceMute: ITauriVolumeController["deviceMute"] = debounce(
@@ -148,7 +149,7 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(invoke_action, { id });
             return await this.sendEvent(data);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     deviceUnmute: ITauriVolumeController["deviceUnmute"] = debounce(
@@ -157,7 +158,7 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(invoke_action, { id });
             return await this.sendEvent(data);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     /* ============== APPLICATIONS ============== */
@@ -167,7 +168,7 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(invoke_action, { id });
             return await this.sendEvent<AudioApplication>(data);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     applicationGetIcon: ITauriVolumeController["applicationGetIcon"] = debouncePerKey(
@@ -176,7 +177,7 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(invoke_action, { id });
             return await this.sendEvent<Uint8Array | null>(data);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     applicationGetVolume: ITauriVolumeController["applicationGetVolume"] = debounce(
@@ -186,7 +187,7 @@ export class WebsocketTauriVolumeController
             const volume = await this.sendEvent<VolumePercent>(data);
             return volume ?? (0.0 as VolumePercent);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     applicationSetVolume: ITauriVolumeController["applicationSetVolume"] = debounce(
@@ -198,7 +199,7 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(invoke_action, { id, volume });
             return await this.sendEvent(data);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     applicationMute: ITauriVolumeController["applicationMute"] = debounce(
@@ -207,7 +208,7 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(invoke_action, { id });
             return await this.sendEvent<VolumePercent>(data);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     applicationUnmute: ITauriVolumeController["applicationUnmute"] = debounce(
@@ -216,7 +217,7 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(invoke_action, { id });
             return await this.sendEvent<VolumePercent>(data);
         },
-        BOUNCE_DELAY.NORMAL,
+        DEBOUNCE_DELAY.NORMAL,
     );
 
     getDeviceApplications: ITauriVolumeController["getDeviceApplications"] =
@@ -225,10 +226,10 @@ export class WebsocketTauriVolumeController
             const data = this.parse_params(invoke_action, { id });
             const applications_ids = await this.sendEvent<AppIdentifier[]>(data);
             return applications_ids ?? [];
-        }, BOUNCE_DELAY.NORMAL);
+        }, DEBOUNCE_DELAY.NORMAL);
 
     discoverServer: ITauriVolumeController["discoverServer"] = debounce(async () => {
         const invoke_action = RUST_INVOKE.DISCOVER_SERVER_ADDRESS;
         return tryParseURL(await invoke<string | null>(invoke_action));
-    }, BOUNCE_DELAY.NORMAL);
+    }, DEBOUNCE_DELAY.NORMAL);
 }

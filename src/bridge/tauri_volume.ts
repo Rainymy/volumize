@@ -164,4 +164,8 @@ export class TauriVolumeController
         },
         DEBOUNCE_DELAY.NORMAL,
     );
+
+    discoverServer() {
+        return new Promise<null>((resolve) => resolve(null));
+    }
 }

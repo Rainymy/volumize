@@ -1,46 +1,47 @@
 {
-  "name": "volumize",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Cross-platform master & per-app volume controller for Node.js",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Rainymy/volumize.git"
-  },
-  "author": "Rainymy",
-  "license": "MIT",
-  "dependencies": {
-    "@tauri-apps/api": "^2.9.0",
-    "@tauri-apps/plugin-opener": "^2.5.0",
-    "@tauri-apps/plugin-os": "^2.3.1",
-    "@tauri-apps/plugin-websocket": "^2.4.0",
-    "jotai": "^2.15.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-icons": "^5.5.0",
-    "react-router-dom": "^7.9.5"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.3.5",
-    "@tauri-apps/cli": "^2",
-    "@types/node": "^24.0.3",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
-    "@vitejs/plugin-react": "^5.1.1",
-    "less": "^4.4.2",
-    "typescript": "^5.9.3",
-    "vite": "^7.1.12"
-  },
-  "engines": {
-    "node": ">=20"
-  }
+    "name": "volumize",
+    "version": "2.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Cross-platform master & per-app volume controller for Node.js",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "preview": "vite preview",
+        "tauri": "tauri",
+        "biome": "biome"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Rainymy/volumize.git"
+    },
+    "author": "Rainymy",
+    "license": "MIT",
+    "dependencies": {
+        "@tauri-apps/api": "^2.9.0",
+        "@tauri-apps/plugin-opener": "^2.5.0",
+        "@tauri-apps/plugin-os": "^2.3.1",
+        "@tauri-apps/plugin-websocket": "^2.4.0",
+        "jotai": "^2.15.0",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "react-icons": "^5.5.0",
+        "react-router-dom": "^7.9.5"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.3.5",
+        "@tauri-apps/cli": "^2",
+        "@types/node": "^24.0.3",
+        "@types/react": "^19.2.2",
+        "@types/react-dom": "^19.2.2",
+        "@vitejs/plugin-react": "^5.1.1",
+        "less": "^4.4.2",
+        "typescript": "^5.9.3",
+        "vite": "^7.1.12"
+    },
+    "engines": {
+        "node": ">=20"
+    }
 }

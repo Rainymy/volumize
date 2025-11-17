@@ -36,7 +36,7 @@ export type PARAM_ACTION = {
 };
 
 export interface ITauriVolumeController {
-    discoverServer?(): Promise<{ url: string; port: number } | null>;
+    discoverServer(): Promise<{ url: string; port: number } | null>;
 
     // ============= DEVICE =============
     deviceGetVolume(id: DeviceIdentifier): Promise<VolumePercent>;

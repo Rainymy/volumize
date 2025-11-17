@@ -1,4 +1,4 @@
-/src/main/java/com/volumize/app/generated
+/src/main/java/com/volumize/rainy/generated
 /src/main/jniLibs/**/*.so
 /src/main/assets/tauri.conf.json
 /tauri.build.gradle.kts

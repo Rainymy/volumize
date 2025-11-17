@@ -13,8 +13,6 @@ mod server;
 mod tray;
 mod types;
 
-// pub use types::*;
-
 use server::{start_websocket_server, ServiceDiscovery, WebSocketServerState};
 
 use crate::{
@@ -138,23 +136,21 @@ fn create_tauri_app() -> TauriResult<tauri::App> {
         })
         .invoke_handler(tauri::generate_handler![
             // Master volume controls
-            commands::get_all_devices,
-            commands::set_device_volume,
-            commands::get_device_volume,
-            commands::unmute_device,
-            commands::mute_device,
+            commands::device_set_volume,
+            commands::device_get_volume,
+            commands::device_unmute,
+            commands::device_mute,
             // Application volume controls
-            commands::get_application_icon,
+            commands::application_get_icon,
             commands::get_device_applications,
             commands::get_application,
-            commands::get_app_volume,
-            commands::set_app_volume,
-            commands::mute_app_volume,
-            commands::unmute_app_volume,
+            commands::application_get_volume,
+            commands::application_set_volume,
+            commands::application_mute,
+            commands::application_unmute,
             // Device controls
-            commands::get_current_playback_device,
             commands::get_playback_devices,
-            crate::discover_server_address
+            discover_server_address
         ])
         .build(tauri::generate_context!())
 }

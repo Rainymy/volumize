@@ -33,7 +33,7 @@ export function DeviceMaster() {
                 refreshable();
             }}
             onSlider={async (value) => {
-                await volumeController.setDeviceVolume(master.id, value);
+                await volumeController.deviceSetVolume(master.id, value);
             }}
         ></Card>
     );
@@ -74,7 +74,7 @@ export function DeviceApplications({ id }: { id: AppIdentifier }) {
                 refreshable();
             }}
             onSlider={async (value) => {
-                volumeController.setApplicationVolume(app.process.id, value);
+                volumeController.applicationSetVolume(app.process.id, value);
             }}
         ></Card>
     );

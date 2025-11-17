@@ -14,7 +14,7 @@ export function useURLObjectIcon(id: number | undefined) {
                 return;
             }
 
-            const data = await volumeController.getApplicationIcon(id);
+            const data = await volumeController.applicationGetIcon(id);
             if (signal.aborted || data === null) {
                 return;
             }

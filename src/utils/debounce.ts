@@ -5,7 +5,7 @@ export function debounce<TArgs extends readonly unknown[], TReturn>(
     delay: number,
 ): (...args: TArgs) => Promise<Awaited<TReturn>> {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let pendingResolvers: PendingResolvers<TReturn> = [];
+    const pendingResolvers: PendingResolvers<TReturn> = [];
 
     return (...args: TArgs): Promise<Awaited<TReturn>> => {
         if (timeoutId !== null) {
@@ -16,13 +16,14 @@ export function debounce<TArgs extends readonly unknown[], TReturn>(
             pendingResolvers.push(resolve);
 
             timeoutId = setTimeout(async () => {
-                const result = await func(...args);
+                timeoutId = null;
 
+                const result = await func(...args);
                 for (const resolver of pendingResolvers) {
                     resolver(result);
                 }
-                pendingResolvers = [];
-                timeoutId = null;
+
+                pendingResolvers.length = 0;
             }, delay);
         });
     };

@@ -58,8 +58,6 @@ pub struct AudioVolume {
 
 #[derive(Debug, Error)]
 pub enum VolumeControllerError {
-    #[error("NotImplemented")]
-    NotImplemented(),
     #[error("Device not found: {0}")]
     DeviceNotFound(String),
     #[error("Application not found: {0}")]
@@ -71,8 +69,6 @@ pub enum VolumeControllerError {
     #[cfg(target_os = "windows")]
     #[error("Windows API error: {0}")]
     WindowsApiError(#[from] windows::core::Error),
-    #[error("IPC communication error: {0}")]
-    IpcError(String),
     #[error("Serialization/deserialization error: {0}")]
     SerdeError(#[from] serde_json::Error),
     #[error("COM initialization error: {0}")]
@@ -82,11 +78,6 @@ pub enum VolumeControllerError {
 }
 
 pub trait DeviceVolumeControl {
-    fn get_all_devices(&self) -> VolumeResult<Vec<DeviceIdentifier>>;
-    fn get_device_applications(
-        &self,
-        device_id: DeviceIdentifier,
-    ) -> VolumeResult<Vec<AppIdentifier>>;
     fn get_device_volume(&self, device_id: DeviceIdentifier) -> VolumeResult<VolumePercent>;
     fn set_device_volume(
         &self,
@@ -98,7 +89,6 @@ pub trait DeviceVolumeControl {
 }
 
 pub trait ApplicationVolumeControl {
-    fn get_application_device(&self, app: AppIdentifier) -> VolumeResult<AudioDevice>;
     fn get_application(&self, id: AppIdentifier) -> VolumeResult<AudioApplication>;
     fn get_app_volume(&self, app: AppIdentifier) -> VolumeResult<AudioVolume>;
     fn set_app_volume(&self, app: AppIdentifier, percent: VolumePercent) -> VolumeResult<()>;
@@ -108,7 +98,10 @@ pub trait ApplicationVolumeControl {
 
 pub trait DeviceControl {
     fn get_playback_devices(&self) -> VolumeResult<Vec<AudioDevice>>;
-    fn get_current_playback_device(&self) -> VolumeResult<AudioDevice>;
+    fn get_device_applications(
+        &self,
+        device_id: DeviceIdentifier,
+    ) -> VolumeResult<Vec<AppIdentifier>>;
 }
 
 pub trait VolumeControllerTrait:
@@ -119,6 +112,7 @@ pub trait VolumeControllerTrait:
 pub trait VolumeValidation {
     const MIN_VOLUME: VolumePercent = 0.0;
     const MAX_VOLUME: VolumePercent = 1.0;
+    #[allow(dead_code)]
     const DEFAULT_VOLUME: VolumePercent = 1.0;
     fn validate_volume(volume: VolumePercent) -> VolumeResult<AudioVolume>;
 }

@@ -84,14 +84,6 @@ impl ComManager {
         &self.event_context
     }
 
-    pub fn get_default_device(&self) -> VolumeResult<IMMDevice> {
-        unsafe {
-            self.device_enumerator
-                .GetDefaultAudioEndpoint(eRender, Self::E_ROLE)
-                .map_err(VolumeControllerError::WindowsApiError)
-        }
-    }
-
     pub fn with_application_session_control(
         &self,
         target_pid: u32,

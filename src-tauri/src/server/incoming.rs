@@ -62,23 +62,11 @@ async fn handle_volume_command(
     let state = app_handle.state::<VolumeCommandSender>();
 
     match command {
-        VolumeCommand::GetAllDevices { request_id, .. } => {
+        // ==================== DEVICE ====================
+        VolumeCommand::DeviceGetVolume { request_id, id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetAllDevices {
-                    request_id,
-                    sender: tx,
-                },
-                &client_sender,
-                &state,
-                rx,
-            )
-            .await
-        }
-        VolumeCommand::GetDeviceVolume { request_id, id, .. } => {
-            let (tx, rx) = unbounded_channel();
-            handle_command_with_response(
-                VolumeCommand::GetDeviceVolume {
+                VolumeCommand::DeviceGetVolume {
                     request_id,
                     sender: tx,
                     id,
@@ -89,20 +77,7 @@ async fn handle_volume_command(
             )
             .await
         }
-        VolumeCommand::GetApplicationIcon { request_id, id, .. } => {
-            let (tx, rx) = unbounded_channel();
-            handle_command_with_response(
-                VolumeCommand::GetApplicationIcon {
-                    request_id,
-                    sender: tx,
-                    id,
-                },
-                &client_sender,
-                &state,
-                rx,
-            )
-            .await
-        }
+        // ================== APPLICATION =================
         VolumeCommand::GetApplication { request_id, id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
@@ -117,10 +92,10 @@ async fn handle_volume_command(
             )
             .await
         }
-        VolumeCommand::GetAppVolume { request_id, id, .. } => {
+        VolumeCommand::ApplicationGetVolume { request_id, id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetAppVolume {
+                VolumeCommand::ApplicationGetVolume {
                     request_id,
                     sender: tx,
                     id,
@@ -131,12 +106,28 @@ async fn handle_volume_command(
             )
             .await
         }
-        VolumeCommand::GetCurrentPlaybackDevice { request_id, .. } => {
+        VolumeCommand::ApplicationGetIcon { request_id, id, .. } => {
             let (tx, rx) = unbounded_channel();
             handle_command_with_response(
-                VolumeCommand::GetCurrentPlaybackDevice {
+                VolumeCommand::ApplicationGetIcon {
                     request_id,
                     sender: tx,
+                    id,
+                },
+                &client_sender,
+                &state,
+                rx,
+            )
+            .await
+        }
+        // ==================== MANAGER ===================
+        VolumeCommand::GetDeviceApplications { request_id, id, .. } => {
+            let (tx, rx) = unbounded_channel();
+            handle_command_with_response(
+                VolumeCommand::GetDeviceApplications {
+                    request_id,
+                    sender: tx,
+                    id,
                 },
                 &client_sender,
                 &state,
@@ -150,20 +141,6 @@ async fn handle_volume_command(
                 VolumeCommand::GetPlaybackDevices {
                     request_id,
                     sender: tx,
-                },
-                &client_sender,
-                &state,
-                rx,
-            )
-            .await
-        }
-        VolumeCommand::GetDeviceApplications { request_id, id, .. } => {
-            let (tx, rx) = unbounded_channel();
-            handle_command_with_response(
-                VolumeCommand::GetDeviceApplications {
-                    request_id,
-                    sender: tx,
-                    id,
                 },
                 &client_sender,
                 &state,

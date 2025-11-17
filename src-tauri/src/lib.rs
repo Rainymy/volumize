@@ -1,11 +1,6 @@
 #![allow(dead_code)]
 mod server;
-// mod storage;
-// mod tray;
-mod tray;
 mod types;
-
-pub use tray::*;
 
 #[tauri::command]
 async fn discover_server_address() -> Option<String> {

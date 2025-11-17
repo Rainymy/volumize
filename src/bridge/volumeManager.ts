@@ -1,41 +1,7 @@
-// import { invoke } from "@tauri-apps/api/core";
-import { isSocketController } from "$util/generic";
 import { is_desktop } from "./generic";
 import { TauriVolumeController } from "./tauri_volume";
 import { WebsocketTauriVolumeController } from "./websocket_volume";
 
-export enum RUST_INVOKE {
-    GET_ALL_DEVICES = "get_all_devices",
-
-    SET_DEVICE_VOLUME = "set_device_volume",
-    GET_DEVICE_VOLUME = "get_device_volume",
-    MUTE_DEVICE = "mute_device",
-    UNMUTE_DEVICE = "unmute_device",
-
-    GET_APPLICATION = "get_application",
-    GET_APPLICATION_ICON = "get_application_icon",
-    GET_APPLICATION_DEVICE = "get_application_device",
-    GET_DEVICE_APPLICATIONS = "get_device_applications",
-
-    GET_APP_VOLUME = "get_app_volume",
-    SET_APP_VOLUME = "set_app_volume",
-    MUTE_APP_VOLUME = "mute_app",
-    UNMUTE_APP_VOLUME = "unmute_app",
-
-    GET_PLAYBACK_DEVICES = "get_playback_devices",
-    GET_CURRENT_PLAYBACK_DEVICE = "get_current_playback_device",
-    DISCOVER_SERVER_ADDRESS = "discover_server_address",
-}
-
-// In milliseconds
-export enum BOUNCE_DELAY {
-    NORMAL = 100,
-    SLOW = 200,
-    FAST = 70,
-    SUPER_FAST = 50,
-}
-
 export const volumeController = is_desktop()
     ? new TauriVolumeController()
     : new WebsocketTauriVolumeController();
-

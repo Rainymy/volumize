@@ -23,74 +23,66 @@ mod platform;
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum VolumeCommand {
-    // Device
-    GetAllDevices {
-        request_id: String,
-        #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<Vec<DeviceIdentifier>>>,
-    },
-    SetDeviceVolume {
-        request_id: String,
-        id: DeviceIdentifier,
-        volume: VolumePercent,
-    },
-    GetDeviceVolume {
+    // ===================== DEVICE ======================
+    DeviceGetVolume {
         request_id: String,
         id: DeviceIdentifier,
         #[serde(skip, default = "default_sender")]
         sender: UnboundedSender<VolumeResult<VolumePercent>>,
     },
-    MuteDevice {
+    DeviceSetVolume {
+        request_id: String,
+        id: DeviceIdentifier,
+        volume: VolumePercent,
+    },
+    DeviceMute {
         request_id: String,
         id: DeviceIdentifier,
     },
-    UnmuteDevice {
+    DeviceUnmute {
         request_id: String,
         id: DeviceIdentifier,
     },
-    // Application
-    GetApplicationIcon {
-        request_id: String,
-        id: AppIdentifier,
-        #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<Vec<u8>>>,
-    },
-    GetDeviceApplications {
-        request_id: String,
-        id: DeviceIdentifier,
-        #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<Vec<AppIdentifier>>>,
-    },
+
+    // =================== Application ===================
     GetApplication {
         request_id: String,
         id: AppIdentifier,
         #[serde(skip, default = "default_sender")]
         sender: UnboundedSender<VolumeResult<AudioApplication>>,
     },
-    GetAppVolume {
+    ApplicationGetIcon {
+        request_id: String,
+        id: AppIdentifier,
+        #[serde(skip, default = "default_sender")]
+        sender: UnboundedSender<VolumeResult<Vec<u8>>>,
+    },
+    ApplicationGetVolume {
         request_id: String,
         id: AppIdentifier,
         #[serde(skip, default = "default_sender")]
         sender: UnboundedSender<VolumeResult<VolumePercent>>,
     },
-    SetAppVolume {
+    ApplicationSetVolume {
         request_id: String,
         id: AppIdentifier,
         volume: VolumePercent,
     },
-    MuteApp {
+    ApplicationMute {
         request_id: String,
         id: AppIdentifier,
     },
-    UnmuteApp {
+    ApplicationUnmute {
         request_id: String,
         id: AppIdentifier,
     },
-    // DeviceControl
-    GetCurrentPlaybackDevice {
+
+    // ===================== MANAGER =====================
+    GetDeviceApplications {
         request_id: String,
+        id: DeviceIdentifier,
         #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<AudioDevice>>,
+        sender: UnboundedSender<VolumeResult<Vec<AppIdentifier>>>,
     },
     GetPlaybackDevices {
         request_id: String,
@@ -235,23 +227,23 @@ pub fn spawn_volume_thread() -> VolumeCommandSender {
 fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeControllerTrait>) {
     match command {
         // Master Controll
-        VolumeCommand::GetAllDevices { sender, .. } => {
-            let _ = sender.send(controller.get_all_devices());
+        VolumeCommand::GetPlaybackDevices { sender, .. } => {
+            let _ = sender.send(controller.get_playback_devices());
         }
-        VolumeCommand::SetDeviceVolume { id, volume, .. } => {
+        VolumeCommand::DeviceSetVolume { id, volume, .. } => {
             let _ = controller.set_device_volume(id, volume);
         }
-        VolumeCommand::GetDeviceVolume { id, sender, .. } => {
+        VolumeCommand::DeviceGetVolume { id, sender, .. } => {
             let _ = sender.send(controller.get_device_volume(id));
         }
-        VolumeCommand::MuteDevice { id, .. } => {
+        VolumeCommand::DeviceMute { id, .. } => {
             let _ = controller.mute_device(id);
         }
-        VolumeCommand::UnmuteDevice { id, .. } => {
+        VolumeCommand::DeviceUnmute { id, .. } => {
             let _ = controller.unmute_device(id);
         }
         // Application Controll
-        VolumeCommand::GetApplicationIcon { id, sender, .. } => {
+        VolumeCommand::ApplicationGetIcon { id, sender, .. } => {
             let error = VolumeControllerError::ApplicationNotFound("Application not found".into());
 
             let get_app = match controller.get_application(id) {
@@ -277,25 +269,18 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
         VolumeCommand::GetDeviceApplications { id, sender, .. } => {
             let _ = sender.send(controller.get_device_applications(id));
         }
-        VolumeCommand::SetAppVolume { id, volume, .. } => {
+        VolumeCommand::ApplicationSetVolume { id, volume, .. } => {
             let _ = controller.set_app_volume(id, volume);
         }
-        VolumeCommand::GetAppVolume { id, sender, .. } => {
+        VolumeCommand::ApplicationGetVolume { id, sender, .. } => {
             let result = controller.get_app_volume(id).unwrap_or_default();
             let _ = sender.send(Ok(result.current));
         }
-        VolumeCommand::UnmuteApp { id, .. } => {
+        VolumeCommand::ApplicationUnmute { id, .. } => {
             let _ = controller.unmute_app(id);
         }
-        VolumeCommand::MuteApp { id, .. } => {
+        VolumeCommand::ApplicationMute { id, .. } => {
             let _ = controller.mute_app(id);
-        }
-        // Deevice Controll
-        VolumeCommand::GetPlaybackDevices { sender, .. } => {
-            let _ = sender.send(controller.get_playback_devices());
-        }
-        VolumeCommand::GetCurrentPlaybackDevice { sender, .. } => {
-            let _ = sender.send(controller.get_current_playback_device());
         }
     }
 }

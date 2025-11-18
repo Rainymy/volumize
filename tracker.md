@@ -2,9 +2,6 @@
 
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
-- [ ] Update README.md
-    - Add instructions for installation and usage.
-    - Project logo
 
 ## Todo
 
@@ -18,6 +15,8 @@
 
 <!--### v2.0 Improvements-->
 
+- [x] Update README.md
+    - Add instructions for installation and usage.
 - [x] Send application icon via API.
     - send icon as PNG.
 - [x] Redesign the Rust backend architect.

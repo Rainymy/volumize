@@ -11,15 +11,12 @@ use windows::{
     },
 };
 
-use crate::{
-    server::volume_control::platform::com_scope::ComManager,
-    types::shared::{
-        AudioApplication, AudioDevice, AudioVolume, DeviceIdentifier, ProcessInfo,
-        SessionDirection, SessionType, VolumeResult,
-    },
+use crate::types::shared::{
+    AudioApplication, AudioDevice, AudioVolume, DeviceIdentifier, ProcessInfo, SessionDirection,
+    SessionType, VolumeResult,
 };
 
-use super::util;
+use super::{com_scope::ComManager, util};
 
 pub struct IDirection {
     pub edataflow: EDataFlow,

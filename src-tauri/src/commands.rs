@@ -2,9 +2,10 @@ use tauri::State;
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::{
-    server::volume_control::{VolumeCommand, VolumeCommandSender},
-    types::shared::{
-        AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumePercent,
+    server::service_discovery,
+    types::{
+        shared::{AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumePercent},
+        volume::{VolumeCommand, VolumeCommandSender},
     },
 };
 
@@ -194,4 +195,10 @@ pub async fn get_device_applications(
     }
 
     Err(())
+}
+
+// ========================= Miscellaneous =========================
+#[tauri::command]
+pub async fn discover_server_address() -> Option<String> {
+    service_discovery::discover_server().await.ok()
 }

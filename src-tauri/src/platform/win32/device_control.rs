@@ -1,13 +1,11 @@
 use windows::Win32::Media::Audio::IAudioSessionManager2;
 
+use super::com_scope::ComManager;
 use super::{convert, util, VolumeController};
 
-use crate::{
-    server::volume_control::platform::com_scope::ComManager,
-    types::shared::{
-        AppIdentifier, AudioDevice, DeviceControl, DeviceIdentifier, VolumeControllerError,
-        VolumeResult,
-    },
+use crate::types::shared::{
+    AppIdentifier, AudioDevice, DeviceControl, DeviceIdentifier, VolumeControllerError,
+    VolumeResult,
 };
 
 impl DeviceControl for VolumeController {

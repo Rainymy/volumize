@@ -1,0 +1,137 @@
+use std::error::Error;
+
+use crate::{
+    server::{service_register::start_service_register, start_websocket_server},
+    types::storage::Storage,
+};
+
+use tauri::{App, Manager, Result as TauriResult};
+
+pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
+    setup_dev_tools(app);
+
+    let app_handle = app.handle();
+    let storage = app_handle.state::<Storage>();
+    storage.load(app_handle);
+
+    let settings = storage.get();
+
+    match start_websocket_server(settings.port_address, app_handle) {
+        Ok(addr) => println!("WebSocket server listening on {}", addr),
+        Err(e) => eprintln!("\nWebSocket server failed to start: \n\t{}\n", e),
+    }
+
+    start_service_register(settings.port_address, app_handle, settings.duration);
+    setup_tray_system(app.app_handle())?;
+
+    Ok(())
+}
+
+pub fn setup_tray_system(_app: &tauri::AppHandle) -> TauriResult<()> {
+    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+
+    let storage = _app.state::<Storage>();
+
+    let icon = _app
+        .default_window_icon()
+        .expect("Application should have a default window icon configured")
+        .clone();
+
+    let tray_menu = super::system_tray::create_tray(_app)?;
+    let tray = TrayIconBuilder::new()
+        .menu(&tray_menu)
+        .tooltip("Volumize")
+        .show_menu_on_left_click(false)
+        .icon(icon)
+        // .on_menu_event(f)
+        .on_tray_icon_event(|tray, event| {
+            use crate::types::click::ClickState;
+
+            let click_state = tray.app_handle().state::<ClickState>();
+            match event {
+                TrayIconEvent::Click {
+                    button: MouseButton::Left,
+                    button_state: MouseButtonState::Up,
+                    ..
+                } => {
+                    if click_state.is_double_click() {
+                        show_window_visibility(tray.app_handle());
+                    }
+                }
+                _ => {}
+            }
+        })
+        .build(_app)?;
+
+    if let Ok(mut icon_id) = storage.tray_icon_id.lock() {
+        let current_tray_id = tray.id().as_ref().to_string();
+
+        if let Some(old_tray) = icon_id.replace(current_tray_id) {
+            let _ = _app.remove_tray_by_id(&old_tray);
+        }
+    }
+
+    Ok(())
+}
+
+fn setup_dev_tools(_app: &mut tauri::App) {
+    #[cfg(debug_assertions)]
+    {
+        for window_config in &_app.config().app.windows {
+            if window_config.devtools.unwrap_or(false) {
+                use tauri::Manager;
+
+                if let Some(window) = _app.get_webview_window(&window_config.label) {
+                    window.open_devtools();
+                }
+            }
+        }
+    }
+}
+
+pub fn show_window_visibility(_app: &tauri::AppHandle) {
+    #[cfg(desktop)]
+    {
+        let window = match _app.get_webview_window("main") {
+            Some(window) => window,
+            None => return,
+        };
+        let is_visible = window.is_visible().unwrap_or(false);
+        let is_minimized = window.is_minimized().unwrap_or(false);
+
+        match (is_visible, is_minimized) {
+            (true, true) => {
+                // Window is minimized, restore it
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+            (true, false) => {}
+            (false, _) => {
+                // Window is hidden, show it
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }
+    }
+}
+
+fn _hide_window_visibility(_app: &tauri::AppHandle) {
+    #[cfg(desktop)]
+    {
+        let window = match _app.get_webview_window("main") {
+            Some(window) => window,
+            None => return,
+        };
+        let is_visible = window.is_visible().unwrap_or(false);
+        let is_minimized = window.is_minimized().unwrap_or(false);
+
+        match (is_visible, is_minimized) {
+            (true, true) => {}
+            (true, false) => {
+                // Window is visible and not minimized, hide it
+                let _ = window.hide();
+            }
+            (false, _) => {}
+        }
+    }
+}

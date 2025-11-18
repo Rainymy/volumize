@@ -1,14 +1,14 @@
 use std::time::Duration;
 
-use tauri::menu::{
-    CheckMenuItemBuilder, Menu, MenuItem, PredefinedMenuItem, Submenu, SubmenuBuilder,
+use tauri::{
+    menu::{CheckMenuItemBuilder, Menu, MenuItem, PredefinedMenuItem, Submenu, SubmenuBuilder},
+    {Manager, Result as TauriResult, Wry},
 };
-use tauri::{Manager, Wry};
 
 use crate::types::storage::Storage;
 use crate::types::tray::Discovery;
 
-pub fn create_tray(handle: &tauri::AppHandle) -> tauri::Result<Menu<Wry>> {
+pub fn create_tray(handle: &tauri::AppHandle) -> TauriResult<Menu<Wry>> {
     let show = MenuItem::with_id(handle, "show", "Show", true, None::<&str>)?;
     let refresh_token = MenuItem::with_id(handle, "refresh", "Refresh menu", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(handle)?;
@@ -30,8 +30,6 @@ fn create_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> {
 
     let info_text = format!("Status: {}", settings.duration.display());
     let status_info = MenuItem::with_id(handle, "show", info_text, false, None::<&str>)?;
-
-    // dbg!(&settings.dutaion);
 
     let always_off = checked_menu_item(Discovery::TurnOff, settings.duration).build(handle)?;
     let always_on = checked_menu_item(Discovery::AlwaysOn, settings.duration).build(handle)?;

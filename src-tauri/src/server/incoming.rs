@@ -10,11 +10,9 @@ use tokio::{
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
 use crate::types::shared::VolumeResult;
+use crate::types::volume::{VolumeCommand, VolumeCommandSender};
 
-use super::{
-    volume_control::{VolumeCommand, VolumeCommandSender},
-    ClientMap,
-};
+use super::ClientMap;
 
 pub async fn handle_incoming_messages(
     mut read: SplitStream<WebSocketStream<TcpStream>>,

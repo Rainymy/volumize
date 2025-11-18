@@ -1,4 +1,4 @@
-// #![allow(dead_code)]
+#![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use thiserror::Error;

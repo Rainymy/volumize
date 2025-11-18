@@ -31,8 +31,14 @@ pub struct Storage {
 
 impl Storage {
     fn settings_path(&self, app: &AppHandle) -> PathBuf {
-        // Find a better place to save user configs. it's saving in ROAMING folder.
-        let mut dir = app.path().app_data_dir().expect("app data dir");
+        #[cfg(not(target_os = "ios"))]
+        let os_save_path = app.path().home_dir();
+        #[cfg(target_os = "ios")]
+        let os_save_path = app.path().app_config_dir();
+
+        let mut dir = os_save_path.expect("Expected app save directory");
+        dir.push(".volumize");
+
         fs::create_dir_all(&dir).ok();
         dir.push("settings.json");
         dir
@@ -58,7 +64,7 @@ impl Storage {
 
     pub fn update(&self, value: Settings) {
         if let Ok(mut item) = self.settings.lock() {
-            *item = value.clone();
+            *item = value;
         }
     }
 

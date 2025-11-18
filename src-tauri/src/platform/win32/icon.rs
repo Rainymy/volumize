@@ -21,7 +21,6 @@ impl Drop for AutoHDC {
     fn drop(&mut self) {
         unsafe {
             let _ = ReleaseDC(None, self.0);
-            // let _ = DeleteDC(self.0);
         }
     }
 }
@@ -168,7 +167,7 @@ fn bitmap_to_image(data: IconData) -> Option<Vec<u8>> {
         std::mem::swap(b, r);
     }
 
-    // Raw RBGA data.
+    // Raw RGBA data.
     let img = image::RgbaImage::from_vec(width, height, data)?;
 
     // Encode the image as PNG. (buffer is smaller than the original)

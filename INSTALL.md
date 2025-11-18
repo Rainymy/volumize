@@ -197,6 +197,32 @@ The built executable will be in `src-tauri/target/release/`.
 
 ### Android
 
+Before building for Android, you need to sign the APK, else you can't install it on your device.
+
+1. Use the following command to generate a keystore:
+
+For Windows:
+
+```bash
+keytool -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+For macOS/Linux:
+
+```bash
+keytool -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+2. Create a file named `/src-tauri/gen/android/keystore.properties` and add the following, also fill in the missing information: `password` & `storeFile`.
+
+```bash
+password=<password defined when keytool was executed>
+keyAlias=upload
+storeFile=<location of the key store file, such as /Users/<user name>/upload-keystore.jks or C:\\Users\\<user name>\\upload-keystore.jks>
+```
+
+3. Generate the APK:
+
 ```bash
 npm run tauri android build
 ```

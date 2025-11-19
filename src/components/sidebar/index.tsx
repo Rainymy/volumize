@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from "jotai";
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import { CiSpeaker } from "react-icons/ci";
 
 import { AppButton } from "$base/button";
@@ -30,18 +30,21 @@ export function SidebarDevices() {
     }, [selected_device, audio_devices, set_device_id]);
 
     return (
-        <div className={style.navbar_devices}>
-            {collapsed ? <h4>Devices</h4> : <h3>Devices</h3>}
-            {audio_devices_ids.map((audio_device) => {
+        <div className={style.navbar}>
+            {audio_devices_ids.map((audio_device, index) => {
                 const device = audio_device.element;
                 return (
-                    <div key={audio_device.id}>
+                    <Fragment key={audio_device.id}>
                         <AppButton
                             is_active={device.id === selected_device}
                             className={nav_item}
                             onClick={() => set_device_id(() => device.id)}
                         >
-                            {collapsed && <CiSpeaker />}
+                            {collapsed && (
+                                <>
+                                    {index + 1}. <CiSpeaker />
+                                </>
+                            )}
                             {/*
                                 FIX: friendly_name mostly likely to overflow.
                                  - add animation that bounces from right to left.
@@ -50,7 +53,7 @@ export function SidebarDevices() {
                             <span>{device.friendly_name}</span>
                         </AppButton>
                         {/*{collapsed && <span>{device.friendly_name}</span>}*/}
-                    </div>
+                    </Fragment>
                 );
             })}
         </div>

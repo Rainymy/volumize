@@ -1,32 +1,22 @@
 @import "$core_css/core.less";
 
-.container {
-    /* flex-basis: 200px; */
-    width: 200px;
-
-    margin: 0.5rem 1rem;
-}
-
 .navbar {
     display: flex;
     justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    padding: 0.25rem 0.5rem;
-    /* position: relative; */
+    margin: 0.5rem 0;
+    margin-top: 0.75rem;
 
     text-align: center;
 
     width: 100%;
+    gap: clamp(0.75rem, 2.5dvh, 1.25rem);
     transition: width 0.5s ease;
-
-    & > div {
-        width: 100%;
-    }
 
     &.vertical {
         flex-direction: column;
         padding: 0.5rem 0.6rem;
-        /* box-shadow: 20px 0px 2px 20px rgba(0,0,0,1); */
     }
 
     &.collapsed {

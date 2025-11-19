@@ -1,10 +1,10 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useMemo } from "react";
-import { FaAngleRight, FaArrowLeft, FaHamburger } from "react-icons/fa";
+import { FaArrowLeft, FaHamburger } from "react-icons/fa";
+import { FaAngleRight } from "react-icons/fa6";
 import { FiArrowLeft } from "react-icons/fi";
 import { IoSettingsOutline } from "react-icons/io5";
 import { useLocation, useNavigate } from "react-router-dom";
-
 import { AppButton, NavButton } from "$base/button";
 import { SidebarDevices } from "$component/sidebar";
 import { useLogout } from "$hook/useLogout";
@@ -12,7 +12,6 @@ import { isVeritcalNavbar, NavbarState, navbar_state } from "$model/nav";
 import { connection_state } from "$model/volume";
 import { ConnectionState, NavigationType } from "$type/navigation";
 import { classnames } from "$util/react";
-
 import style from "./index.module.less";
 
 export function Navbar() {
@@ -39,6 +38,8 @@ export function VNavbar() {
     const navigate = useNavigate();
     const [navbarState, setNavbarState] = useAtom(navbar_state);
 
+    const collapsed = navbarState !== NavbarState.EXPANDED;
+
     const classname = classnames([
         style.navbar,
         style.vertical,
@@ -50,6 +51,10 @@ export function VNavbar() {
         style.navbar_title,
         navbarState !== NavbarState.EXPANDED ? style.collapsed : undefined,
     ]);
+    const pop_show_nav = classnames([
+        style.hidden_navbar_button,
+        navbarState !== NavbarState.HIDDEN ? style.hide : undefined,
+    ]);
 
     function toggleExpanded() {
         if (NavbarState.COLLAPSED === navbarState) {
@@ -59,44 +64,44 @@ export function VNavbar() {
         setNavbarState(NavbarState.COLLAPSED);
     }
 
-    function detectClick() {
-        if (navbarState === NavbarState.HIDDEN) {
-            toggleExpanded();
-        }
-    }
-
-    const pop_show_nav = classnames([
-        style.hidden_navbar_button,
-        navbarState !== NavbarState.HIDDEN ? style.hide : undefined,
-    ]);
-
     return (
-        <aside className={classname}>
-            <AppButton className={pop_show_nav} onClick={detectClick}>
+        <>
+            <AppButton
+                className={pop_show_nav}
+                onClick={() => {
+                    if (navbarState === NavbarState.HIDDEN) toggleExpanded();
+                }}
+            >
                 <FaAngleRight />
             </AppButton>
+            <aside className={classname}>
+                <div className={style.navbar_entry}>
+                    <AppButton className={item_class} onClick={() => toggleExpanded()}>
+                        <FaHamburger />
+                        <span>Menu</span>
+                    </AppButton>
+                    <AppButton
+                        className={item_class}
+                        onClick={() => setNavbarState(NavbarState.HIDDEN)}
+                    >
+                        <FiArrowLeft />
+                        <span>Hide</span>
+                    </AppButton>
+                </div>
 
-            <div>
-                <AppButton className={item_class} onClick={() => toggleExpanded()}>
-                    <FaHamburger />
-                    <span>Menu</span>
-                </AppButton>
-                <AppButton
-                    className={item_class}
-                    onClick={() => setNavbarState(NavbarState.HIDDEN)}
-                >
-                    <FiArrowLeft />
-                    <span>Hide</span>
-                </AppButton>
-            </div>
+                <div className={style.navbar_entry}>
+                    {collapsed ? <h4>Devices</h4> : <h3>Devices</h3>}
+                    <SidebarDevices />
+                </div>
 
-            <SidebarDevices />
-
-            <NavButton onClick={() => navigate(NavigationType.SETTINGS)}>
-                <IoSettingsOutline />
-                {navbarState === NavbarState.EXPANDED && <span>Settings</span>}
-            </NavButton>
-        </aside>
+                <div className={style.navbar_entry}>
+                    <NavButton onClick={() => navigate(NavigationType.SETTINGS)}>
+                        <IoSettingsOutline />
+                        {navbarState === NavbarState.EXPANDED && <span>Settings</span>}
+                    </NavButton>
+                </div>
+            </aside>
+        </>
     );
 }
 

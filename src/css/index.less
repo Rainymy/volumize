@@ -25,19 +25,25 @@ body {
     flex-direction: column;
     background-color: #color_palett[secondary];
 
-    height: 100vh;
+    height: 100dvh;
     overflow: auto;
 }
 
 #root {
-    width: 100%;
-    height: 100%;
+    @safe-area-height: calc(#safe-area[top] + #safe-area[bottom]);
+    @safe-area-width: calc(#safe-area[left] + #safe-area[right]);
+
+    width: calc(100% - @safe-area-width);
+    height: calc(100% - @safe-area-height);
+
+    margin: auto;
 }
 
 .container {
-    /* used as "margin" */
-    padding: 0.5rem 0.5rem;
-    /* padding-right: 0.75rem; */
+    text-align: center;
+
+    padding: 0.5rem 0.5rem; /* used as "margin" */
+    margin: auto;
 
     display: flex;
     flex-direction: column;
@@ -46,12 +52,12 @@ body {
     width: 100%;
     height: 100%;
 
-    text-align: center;
-    margin: auto;
-
+    border-radius: #element_style[radius];
     background-color: #color_palett[primary];
 
-    transition: width 0.5s ease;
+    transition:
+        width 0.5s ease,
+        padding-left 0.5s ease;
 
     /* collapsed-width: 100px; */
     /* expand-width: clamp(100px, 200px, 50%); */

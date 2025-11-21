@@ -2,11 +2,13 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
+
 import { AppLogo } from "$base/appLogo";
 import { AppButton } from "$base/button";
 import { ServerURLComponent } from "$component/serverInput";
 import { connection_state } from "$model/volume";
 import { ConnectionState, NavigationType } from "$type/navigation";
+
 import style from "./index.module.less";
 
 export function Entry() {
@@ -25,7 +27,7 @@ export function Entry() {
     }, [connect_state, navigate]);
 
     return (
-        <div className={style.box}>
+        <div className={style.home_container}>
             <AppLogo />
             {isLoading ? <ServerDiscoveryLoading /> : <ServerURLComponent />}
         </div>

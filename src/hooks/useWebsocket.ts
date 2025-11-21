@@ -15,6 +15,7 @@ export function useStartConnection() {
         async (manual_mode: boolean) => {
             const url = await getServerURL(manual_mode);
             if (!url) {
+                console.error("Failed to get server URL");
                 return;
             }
 

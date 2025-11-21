@@ -27,6 +27,7 @@
     }
 
     &.hidden {
+        overflow: hidden;
         transform-origin: left;
         transform: translateX(-150%);
         width: 0%;
@@ -36,7 +37,6 @@
 
 .navbar_entry {
     width: 100%;
-    overflow: auto;
 
     & > button {
         width: 100%;
@@ -45,7 +45,7 @@
     &:not(:first-child):not(:last-child) {
         overflow-y: auto;
         overflow-x: hidden;
-        margin: clamp(0.5rem, 5dvh, 100%) 0;
+        margin: clamp(4px, 2dvh, 0.75rem) 0;
         flex-grow: 1;
     }
 }
@@ -116,7 +116,6 @@
 
 .navbar_title {
     font-size: 1.2rem;
-    /* font-weight: bold; */
 
     width: 100%;
 

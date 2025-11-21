@@ -8,8 +8,13 @@
     gap: 4px;
 
     width: 125px;
-    padding: 0.25rem 0.25rem;
+    min-width: 125px;
+    max-width: 200px;
+
     height: 100%;
+    padding: 0.5rem 0.25rem;
+
+    overflow: auto;
 
     background-color: cadetblue;
     border-radius: #element_style[radius];
@@ -18,9 +23,44 @@
 
 .title {
     white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
+    text-overflow: clip;
+    overflow: clip;
 
-    padding: 0.5rem 0.25rem;
+    padding: 0.5rem 0rem;
     width: 100%;
+}
+
+.text_content {
+    display: inline-block;
+
+    will-change: transform;
+    backface-visibility: hidden;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
+
+    &.bounce {
+        --speed-animation: 6s;
+        @media (prefers-reduced-motion: no-preference) {
+            /* Animation: Some reason alternate does not work.  */
+            animation: text-scroll calc(var(--speed-animation) * 2) linear infinite;
+        }
+    }
+
+    &.high_speed {
+        --speed-animation: 0.5s;
+    }
+}
+
+@keyframes text-scroll {
+    0% {
+        transform: translateX(0px);
+    }
+    50% {
+        transform: translateX(calc(attr(data-overflow px, 0px) - 0.25rem));
+    }
+    100% {
+        transform: translateX(0px);
+    }
 }

@@ -1,17 +1,23 @@
-import { isValidElement, type ReactNode, useState } from "react";
+import { type HTMLAttributes, isValidElement, type ReactNode, useState } from "react";
 import { FiXOctagon } from "react-icons/fi";
 
+import { classnames } from "$util/react";
 import style from "./index.module.less";
 
-export function CardIcon(props: { icon?: string | ReactNode }) {
+type HTMLDivAttributes = HTMLAttributes<HTMLDivElement> | null;
+
+export function CardIcon(props: HTMLDivAttributes & { icon: string | ReactNode }) {
     const [isIconValid, setIsIconValid] = useState(true);
+    const classname = classnames([style.card_icon, props?.className]);
+
+    const { icon, ...rest } = props;
 
     return (
-        <div className={style.card_icon}>
+        <div {...rest} className={classname}>
             <InnerCardIcon
                 isIconValid={isIconValid}
                 setIconState={() => setIsIconValid(false)}
-                icon={props.icon}
+                icon={icon}
             />
         </div>
     );

@@ -11,7 +11,7 @@
     text-align: center;
 
     width: 100%;
-    gap: clamp(0.75rem, 2.5dvh, 1.25rem);
+    gap: clamp(4px, 2dvh, 0.75rem);
     transition: width 0.5s ease;
 
     &.vertical {
@@ -86,8 +86,7 @@
 }
 
 .navbar_title {
-    /* font-size: 1.2rem; */
-
+    font-size: 1rem;
     width: 100%;
 
     align-items: center;
@@ -101,6 +100,9 @@
 
     & > span {
 
+    }
+    &.collapsed {
+        font-size: 1.2rem;
     }
     &.collapsed > span {
         visibility: hidden;

@@ -1,3 +1,3 @@
-export function classnames(args: (string | undefined)[]) {
-    return args.filter(v => typeof v === "string").join(" ");
+export function classnames(args: (string | undefined | null)[]) {
+    return args.filter((v) => typeof v === "string").join(" ");
 }

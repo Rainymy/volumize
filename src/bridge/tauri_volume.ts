@@ -166,6 +166,7 @@ export class TauriVolumeController
     );
 
     discoverServer() {
+        console.warn("You are using Tauri Volume Controller.");
         return new Promise<null>((resolve) => resolve(null));
     }
 }

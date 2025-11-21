@@ -42,8 +42,8 @@ export function Slider(props: SliderType) {
                     props.onChange?.(event);
                 }}
                 className={classnames(combineClass)}
-            ></input>
-            {parseFloat(currentValue.toFixed(2))}
+            />
+            <span>{parseFloat(currentValue.toFixed(2))}</span>
         </div>
     );
 }

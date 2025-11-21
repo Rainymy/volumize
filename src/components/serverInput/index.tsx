@@ -9,15 +9,17 @@ import { server_port, server_url } from "$model/server_url";
 import { PORT } from "$type/constant";
 import { getNumber } from "$util/generic";
 
+import { classnames } from "$util/react";
+import { tryParseURL } from "$util/temp";
 import style from "./index.module.less";
 
 export function ServerURLComponent() {
     const start = useStartConnection();
 
     return (
-        <div className={style.box}>
+        <div className={style.input_container}>
             <ServerInput start={() => start(true)} />
-            <hr />
+            <hr className={style.divider} />
             <div className={style.discover_server}>
                 <AppButton onClick={() => start(false)}>Discover Servers</AppButton>
             </div>
@@ -56,6 +58,8 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
                     name="url"
                     placeholder="Enter server address"
                     defaultValue={connect_url}
+                    className={classnames([style.form_input, "flex-grow-4"])}
+                    onClick={() => setErrorText("")}
                 />
                 <AppInput
                     type="number"
@@ -64,8 +68,10 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
                     name="port"
                     placeholder="9002"
                     defaultValue={connect_port}
+                    className={classnames([style.form_input, "flex-grow-2"])}
+                    onClick={() => setErrorText("")}
                 />
-                <AppButton type="submit">
+                <AppButton className={classnames([style.search_button, "flex-grow-1"])}>
                     <FaSearch />
                 </AppButton>
             </form>
@@ -75,10 +81,12 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
 }
 
 function parseForm(form: FormData) {
-    const url = form.get("url")?.toString();
+    const form_url = form.get("url")?.toString();
     const port_number = getNumber(form.get("port")?.toString());
 
-    if (!url) {
+    const data = tryParseURL(form_url ?? null);
+
+    if (!data) {
         return { data: null, error: "Invalid. URL address!" };
     }
 
@@ -94,5 +102,5 @@ function parseForm(form: FormData) {
         };
     }
 
-    return { data: { url, port: port_number }, error: null };
+    return { data: { url: data.url, port: port_number }, error: null };
 }

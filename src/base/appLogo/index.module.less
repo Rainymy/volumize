@@ -1,10 +1,28 @@
 .box {
-    width: 200px;
-    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-grow: 2;
+
+    width: clamp(150px, 40dvh, 250px);
+    height: 100%;
+
+    @media (max-height: 767px) {
+        max-height: clamp(90px, 40dvw, 205px);
+    }
+    @media (min-height: 768px) {
+        max-height: clamp(150px, 50dvw, 200px);
+    }
+    @media (min-height: 769px) {
+        max-height: clamp(150px, 40dvw, 500px);
+    }
 }
 
 .logo {
-    width: 100%;
-    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+
     aspect-ratio: 1 / 1;
+    object-fit: cover;
 };

@@ -16,7 +16,7 @@ export function AppButton(props: AppButtonProps) {
     ]);
 
     return (
-        <button type="button" className={combineclass} {...rest}>
+        <button type="button" {...rest} className={combineclass}>
             {children}
         </button>
     );

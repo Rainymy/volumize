@@ -1,10 +1,12 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { CardIcon } from "$base/cardIcon";
 import { VSlider } from "$base/slider";
 import { ToggleableMuteIcon } from "$base/toggleMuteIcon";
+import { useDetectOverflowX } from "$hook/useDetectOverflowX";
+import { useOverflowAmountX } from "$hook/useOverflowAmount";
 import type { MaybeAsync } from "$type/generic";
-
+import { classnames } from "$util/react";
 import style from "./index.module.less";
 
 type CardProps = {
@@ -19,7 +21,7 @@ type CardProps = {
 /**
  * The `onButtonClick` function is called when the user clicks on the toggle mute icon.
  *
- * The `onSlider` function is called when the slider value changes. May return `NaN`.
+ * The `onSlider` function is called when the slider value changes. `NaN` value is ignored.
  *
  * The `volume` prop must be a number between 0 and 1.
  * @param props
@@ -28,12 +30,35 @@ type CardProps = {
 export function Card(props: CardProps) {
     const { title, volume, isMuted, onButtonClick, onSlider, icon } = props;
 
+    const ref = useRef<HTMLDivElement>(null);
+    const [isParentFocused, setIsFocused] = useState(false);
+
+    useEffect(() => {
+        const element = ref.current;
+
+        function handleFocusOut(event: PointerEvent) {
+            const isInside = element?.contains(event.target as Node) ?? false;
+            setIsFocused(isInside);
+        }
+
+        document.addEventListener("click", handleFocusOut);
+
+        return () => {
+            document.removeEventListener("click", handleFocusOut);
+        };
+    }, []);
+
     return (
-        <div className={style.container}>
-            <CardTitle title={title} />
-            <CardIcon icon={icon} />
+        <div className={style.container} ref={ref}>
+            <CardBouncyTitle
+                isParentFocused={isParentFocused}
+                className={classnames([style.title, "flex-grow-1"])}
+                title={title}
+            />
+            <CardIcon className={"flex-grow-1"} icon={icon} />
 
             <VSlider
+                className={"flex-grow-10"}
                 value={volume * 100}
                 max={100}
                 min={0}
@@ -47,15 +72,40 @@ export function Card(props: CardProps) {
                 }}
             />
 
-            <ToggleableMuteIcon is_mute={isMuted} onClick={onButtonClick} />
+            <ToggleableMuteIcon
+                className={"flex-grow-1"}
+                is_mute={isMuted}
+                onClick={onButtonClick}
+            />
         </div>
     );
 }
 
-export function CardTitle({ title }: { title: string }) {
+type TitleProps = {
+    title: string;
+    className?: string;
+    isParentFocused?: boolean;
+};
+
+export function CardBouncyTitle({ title, className, isParentFocused }: TitleProps) {
+    const ref = useRef<HTMLDivElement>(null);
+
+    const isOverflowing = useDetectOverflowX(ref);
+    const overFlowAmount = useOverflowAmountX(ref);
+
+    const animate = isOverflowing && isParentFocused;
+
+    const textclass = classnames([
+        style.text_content,
+        animate ? style.bounce : null,
+        animate && Math.abs(overFlowAmount) < 50 ? style.high_speed : null,
+    ]);
+
     return (
-        <span title={title} className={style.title}>
-            {title}
-        </span>
+        <div ref={ref} title={title} className={className}>
+            <span className={textclass} data-overflow={overFlowAmount}>
+                {title}
+            </span>
+        </div>
     );
 }

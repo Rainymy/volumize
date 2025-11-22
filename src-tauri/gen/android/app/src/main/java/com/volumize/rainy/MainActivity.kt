@@ -16,12 +16,12 @@ class MainActivity : TauriActivity() {
     // Enable Edge-to-Edge first (makes bars transparent)
     enableEdgeToEdge()
 
-    // Set the layout params for the notch (Display Cutout)
-    // This needs to happen on the window attributes directly.
-    val attrib = window.attributes
-    attrib.layoutInDisplayCutoutMode =
-      WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-    window.attributes = attrib
+    // Force Setting device Orientation to Landscape.
+    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+    // Request to keep the screen on.
+    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+    setContentView(R.layout.activity_main)
 
     // Use WindowInsetsController to HIDE the bars
     // We wrap this in a post call or listener to ensure the decorView is ready
@@ -39,12 +39,5 @@ class MainActivity : TauriActivity() {
       windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
       view.onApplyWindowInsets(insets)
     }
-
-    // Force Setting device Orientation to Landscape.
-    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-    // Request to keep the screen on.
-    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    
-    setContentView(R.layout.activity_main)
   }
 }

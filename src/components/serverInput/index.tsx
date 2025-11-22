@@ -71,7 +71,10 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
                     className={classnames([style.form_input, "flex-grow-2"])}
                     onClick={() => setErrorText("")}
                 />
-                <AppButton className={classnames([style.search_button, "flex-grow-1"])}>
+                <AppButton
+                    type="submit"
+                    className={classnames([style.search_button, "flex-grow-1"])}
+                >
                     <FaSearch />
                 </AppButton>
             </form>
@@ -81,10 +84,10 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
 }
 
 function parseForm(form: FormData) {
-    const form_url = form.get("url")?.toString();
+    const form_url = form.get("url")?.toString() ?? "";
     const port_number = getNumber(form.get("port")?.toString());
 
-    const data = tryParseURL(form_url ?? null);
+    const data = tryParseURL(`${form_url}:1000`);
 
     if (!data) {
         return { data: null, error: "Invalid. URL address!" };

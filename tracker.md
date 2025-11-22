@@ -2,10 +2,17 @@
 
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
+- [ ] Implement a heart beat functionality.
+    - Client may disconnect (device sleep).
+- [ ] Detect changes in volume.
+    - Implement volume detection functionality.
+    - Send updates to all clients.
 
 ## Todo
 
-- [ ] Detect changes in volume.
+- [ ] Implement a authentication system.
+    - Easies should be generate Random String.
+    - Scan QR code.
 - [ ] System tray menu update on timer.
     - tray menu is not reflected when choosing timer option.
 - [ ] Improved UI design.
@@ -13,7 +20,7 @@
 
 ## Done
 
-<!--### v2.0 Improvements-->
+### v2.0 Demo
 
 - [x] Update README.md
     - Add instructions for installation and usage.

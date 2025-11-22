@@ -1,5 +1,6 @@
 package com.volumize.rainy
 
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.enableEdgeToEdge
@@ -38,5 +39,12 @@ class MainActivity : TauriActivity() {
       windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
       view.onApplyWindowInsets(insets)
     }
+
+    // Force Setting device Orientation to Landscape.
+    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+    // Request to keep the screen on.
+    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    
+    setContentView(R.layout.activity_main)
   }
 }

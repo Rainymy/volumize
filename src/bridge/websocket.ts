@@ -1,4 +1,7 @@
 import WebSocket, { type Message } from "@tauri-apps/plugin-websocket";
+import { DEBOUNCE_DELAY } from "$type/constant";
+import { debounce } from "$util/debounce";
+import { sleep } from "$util/generic";
 
 type AddListener = ReturnType<WebSocket["addListener"]>;
 
@@ -14,6 +17,25 @@ export class ConnectSocket {
     async send(data: string) {
         await this.socket?.send({ type: "Text", data: data });
     }
+
+    heartbeat = debounce(async () => {
+        await this.socket?.send({ type: "Ping", data: [] });
+
+        let cleanup_handler: AddListener | undefined;
+
+        const waitForPong = new Promise<boolean>((resolve, _) => {
+            cleanup_handler = this.socket?.addListener((message) => {
+                if (message.type === "Pong") {
+                    resolve(true);
+                }
+            });
+        });
+
+        const result = await Promise.race([sleep(2000), waitForPong]);
+        cleanup_handler?.();
+
+        return result ?? false;
+    }, DEBOUNCE_DELAY.FAST);
 
     addListener(cb: (arg: Message) => void) {
         const removeListener = this.socket?.addListener(cb);

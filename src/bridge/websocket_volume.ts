@@ -41,6 +41,9 @@ export class WebsocketTauriVolumeController
         console.log("We have a connection!");
 
         this.connection.addListener((event) => {
+            if (event.type === "Pong") {
+                return;
+            }
             const data = this.connection.parse_data(event);
             if (data === null) {
                 console.log("Encountered parse error: ", event);
@@ -57,6 +60,10 @@ export class WebsocketTauriVolumeController
 
     async close() {
         await this.connection?.close();
+    }
+
+    async heartbeat() {
+        return await this.connection.heartbeat();
     }
 
     private async sendEvent<T>(

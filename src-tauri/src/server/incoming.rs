@@ -36,6 +36,12 @@ pub async fn handle_incoming_messages(
                 println!("Client {} closed connection", client_id);
                 break;
             }
+            Ok(Message::Ping(_)) => {
+                let client_lock = clients.lock().await;
+                if let Some((_, client_sender)) = client_lock.get(&client_id) {
+                    let _ = client_sender.send(Message::Pong(Vec::new().into()));
+                }
+            }
             Ok(data) => {
                 eprintln!("Unexpected message type from {}: {:?}", client_id, data);
                 break;

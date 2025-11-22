@@ -2,8 +2,6 @@
 
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
-- [ ] Implement a heart beat functionality.
-    - Client may disconnect (device sleep).
 - [ ] Detect changes in volume.
     - Implement volume detection functionality.
     - Send updates to all clients.
@@ -19,6 +17,9 @@
     - The new design is better than the old one.
 
 ## Done
+
+- [x] Implement a heart beat functionality.
+    - Client may disconnect (device sleep).
 
 ### v2.0 Demo
 

@@ -3,6 +3,11 @@ export enum PORT {
     MIN = 2 ** 10, // 1024
 }
 
+export enum HEARTBEAT {
+    CHECK_DELAY_MS = 1000,
+    MAX_RETRY_COUNT = 3,
+}
+
 // In milliseconds
 export enum DEBOUNCE_DELAY {
     NORMAL = 100,

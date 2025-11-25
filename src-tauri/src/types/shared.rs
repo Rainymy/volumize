@@ -107,6 +107,7 @@ pub trait DeviceControl {
 pub trait VolumeControllerTrait:
     DeviceVolumeControl + ApplicationVolumeControl + DeviceControl
 {
+    fn cleanup(&self);
 }
 
 pub trait VolumeValidation {

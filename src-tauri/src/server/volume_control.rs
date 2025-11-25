@@ -1,31 +1,25 @@
-use std::{
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::path::PathBuf;
+use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::{
     platform,
     types::{
         shared::{VolumeControllerError, VolumeControllerTrait},
-        volume::{VolumeCommand, VolumeCommandSender},
+        volume::{VolumeCommand, VolumeCommandSender, VolumeServer},
     },
 };
 
-pub fn spawn_volume_thread() -> VolumeCommandSender {
+pub fn spawn_volume_thread(app_handle: &AppHandle) {
     let (tx, mut rx) = unbounded_channel::<VolumeCommand>();
 
+    let state = app_handle.state::<VolumeCommandSender>();
+
     let thread_handle = std::thread::spawn(move || {
-        let controller = match platform::make_controller() {
-            Ok(c) => c,
-            Err(err) => {
-                eprintln!("Failed to initialize, {}", err);
-                return;
-            }
-        };
+        let controller = platform::make_controller();
 
         let rt = match tokio::runtime::Builder::new_current_thread()
-            .thread_name("tokie_spawn_volume_thread")
+            .thread_name("tokio_spawn_volume_thread")
             .build()
         {
             Ok(rt) => rt,
@@ -35,16 +29,32 @@ pub fn spawn_volume_thread() -> VolumeCommandSender {
             }
         };
 
+        // tauri::async_runtime::block_on(task)
         rt.block_on(async move {
             while let Some(command) = rx.recv().await {
                 execute_command(command, &controller);
             }
+            controller.cleanup();
         });
     });
 
-    VolumeCommandSender {
-        tx: Arc::new(Mutex::new(tx)),
-        thread_handle: Arc::new(Mutex::new(Some(thread_handle))),
+    let new_server = VolumeServer {
+        tx: tx,
+        thread_handle: Some(thread_handle),
+    };
+
+    let current_server = match state.server.lock() {
+        Ok(mut current) => current.replace(new_server),
+        Err(e) => {
+            eprintln!("Failed to lock server: {:?}", e);
+            return;
+        }
+    };
+
+    if let Some(mut old) = current_server {
+        let _ = old
+            .shutdown()
+            .inspect_err(|e| eprintln!("Shutdown error: {}", e));
     }
 }
 

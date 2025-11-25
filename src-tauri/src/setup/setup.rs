@@ -1,49 +1,51 @@
 use std::error::Error;
 
 use crate::{
-    server::{service_register::start_service_register, start_websocket_server},
+    server::{
+        service_register::start_service_register, start_websocket_server,
+        volume_control::spawn_volume_thread,
+    },
     types::storage::Storage,
 };
 
-use tauri::{App, Manager, Result as TauriResult};
+use tauri::{App, Manager};
 
 pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
-    setup_dev_tools(app);
-
     let app_handle = app.handle();
+
+    setup_dev_tools(app_handle);
+    setup_tray_system(app_handle)?;
+
     let storage = app_handle.state::<Storage>();
     storage.load(app_handle);
-
     let settings = storage.get();
 
-    match start_websocket_server(settings.port_address, app_handle) {
-        Ok(addr) => println!("WebSocket server listening on {}", addr),
-        Err(e) => eprintln!("\nWebSocket server failed to start: \n\t{}\n", e),
-    }
+    spawn_volume_thread(app_handle); // Thread for volume control
+
+    let addr = start_websocket_server(settings.port_address, app_handle);
+    println!("WebSocket server listening on {}", addr);
 
     start_service_register(settings.port_address, app_handle, settings.duration);
-    setup_tray_system(app.app_handle())?;
 
     Ok(())
 }
 
-pub fn setup_tray_system(_app: &tauri::AppHandle) -> TauriResult<()> {
+pub fn setup_tray_system(app: &tauri::AppHandle) -> Result<(), Box<dyn Error>> {
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
-    let storage = _app.state::<Storage>();
+    let storage = app.state::<Storage>();
 
-    let icon = _app
+    let icon = app
         .default_window_icon()
         .expect("Application should have a default window icon configured")
         .clone();
 
-    let tray_menu = super::system_tray::create_tray(_app)?;
+    let tray_menu = super::system_tray::create_tray(app)?;
     let tray = TrayIconBuilder::new()
         .menu(&tray_menu)
         .tooltip("Volumize")
         .show_menu_on_left_click(false)
         .icon(icon)
-        // .on_menu_event(f)
         .on_tray_icon_event(|tray, event| {
             use crate::types::click::ClickState;
 
@@ -61,20 +63,22 @@ pub fn setup_tray_system(_app: &tauri::AppHandle) -> TauriResult<()> {
                 _ => {}
             }
         })
-        .build(_app)?;
+        .build(app)?;
 
-    if let Ok(mut icon_id) = storage.tray_icon_id.lock() {
-        let current_tray_id = tray.id().as_ref().to_string();
+    let mut icon_id = match storage.tray_icon_id.lock() {
+        Ok(icon_id) => icon_id,
+        Err(e) => Err(format!("Failed to lock tray icon ID: {}", e))?,
+    };
 
-        if let Some(old_tray) = icon_id.replace(current_tray_id) {
-            let _ = _app.remove_tray_by_id(&old_tray);
-        }
-    }
+    match icon_id.replace(tray.id().as_ref().to_string()) {
+        Some(old_id) => app.remove_tray_by_id(&old_id),
+        None => None,
+    };
 
     Ok(())
 }
 
-fn setup_dev_tools(_app: &mut tauri::App) {
+fn setup_dev_tools(_app: &tauri::AppHandle) {
     #[cfg(debug_assertions)]
     {
         for window_config in &_app.config().app.windows {

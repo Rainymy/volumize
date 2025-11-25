@@ -1,8 +1,8 @@
 use tauri::{Manager, Result as TauriResult};
 
 use crate::{
-    server::{volume_control::spawn_volume_thread, ServiceDiscovery, WebSocketServerState},
-    types::{click::ClickState, storage::Storage},
+    server::{ServiceDiscovery, WebSocketServerState},
+    types::{click::ClickState, storage::Storage, volume::VolumeCommandSender},
 };
 
 use crate::commands;
@@ -12,7 +12,7 @@ pub fn create_tauri_app() -> TauriResult<tauri::App> {
         .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
-        .manage(spawn_volume_thread())
+        .manage(VolumeCommandSender::new())
         .manage(WebSocketServerState::new())
         .manage(ServiceDiscovery::new())
         .manage(ClickState::new(None))

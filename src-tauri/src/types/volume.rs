@@ -136,43 +136,66 @@ impl VolumeCommand {
 }
 
 pub struct VolumeCommandSender {
-    pub tx: Arc<Mutex<UnboundedSender<VolumeCommand>>>,
-    pub thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
+    pub server: Arc<Mutex<Option<VolumeServer>>>,
 }
 
 impl VolumeCommandSender {
-    pub fn send(&self, cmd: VolumeCommand) -> Result<(), String> {
-        match self.tx.lock() {
-            Ok(tx_guard) => tx_guard
-                .send(cmd)
-                .map_err(|e| format!("Send failed: {}", e)),
-            Err(err) => Err(format!("Failed to lock sender: {}", err)),
+    pub fn new() -> Self {
+        Self {
+            server: Default::default(),
         }
     }
 
-    pub fn close_channel(&self) {
-        if let Ok(mut tx_guard) = self.tx.lock() {
-            // Replace the sender with a new one and drop the original
-            let (new_tx, _) = unbounded_channel::<VolumeCommand>();
-            let old_tx = std::mem::replace(&mut *tx_guard, new_tx);
-            drop(old_tx); // Explicitly drop the sender
+    pub fn send(&self, cmd: VolumeCommand) -> Result<(), String> {
+        let server = match self.server.lock() {
+            Ok(server) => server,
+            Err(err) => return Err(format!("Failed to lock server: {}", err)),
+        };
+
+        match &*server {
+            Some(server) => server.send(cmd),
+            None => Err("No server".to_string()),
         }
     }
 
     pub fn shutdown(&self) -> Result<(), String> {
+        let server_guard = match self.server.lock() {
+            Ok(mut server) => server.take(),
+            Err(err) => return Err(format!("Failed to lock server: {}", err)),
+        };
+
+        match server_guard {
+            Some(mut server) => server.shutdown(),
+            None => Ok(()),
+        }
+    }
+}
+
+pub struct VolumeServer {
+    pub tx: UnboundedSender<VolumeCommand>,
+    pub thread_handle: Option<JoinHandle<()>>,
+}
+
+impl VolumeServer {
+    fn send(&self, cmd: VolumeCommand) -> Result<(), String> {
+        self.tx.send(cmd).map_err(|e| format!("Send failed: {}", e))
+    }
+
+    fn close_channel(&mut self) {
+        let (new_tx, _) = unbounded_channel::<VolumeCommand>();
+        // Replace the sender with a new one and drop the original
+        let old_tx = std::mem::replace(&mut self.tx, new_tx);
+        drop(old_tx); // Explicitly drop the sender
+    }
+
+    pub fn shutdown(&mut self) -> Result<(), String> {
         self.close_channel();
 
-        let mut handle = self
-            .thread_handle
-            .lock()
-            .map_err(|e| format!("Failed to lock thread handle: {}", e))?;
+        let thread = match self.thread_handle.take() {
+            Some(handle) => handle.join(),
+            None => return Ok(()),
+        };
 
-        if let Some(join_handle) = handle.take() {
-            join_handle
-                .join()
-                .map_err(|e| format!("Volume thread panicked during shutdown: {:?}", e))?;
-        }
-
-        Ok(())
+        thread.map_err(|e| format!("Volume thread panicked during shutdown: {:?}", e))
     }
 }

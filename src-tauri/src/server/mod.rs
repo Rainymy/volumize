@@ -66,7 +66,7 @@ impl ServiceDiscovery {
 
     pub fn new() -> Self {
         Self {
-            server: Arc::new(rt::Mutex::new(None)),
+            server: Default::default(),
         }
     }
 
@@ -82,8 +82,8 @@ impl ServiceDiscovery {
 impl WebSocketServerState {
     pub fn new() -> Self {
         Self {
-            clients: Arc::new(rt::Mutex::new(HashMap::new())),
-            server: Arc::new(rt::Mutex::new(None)),
+            clients: Default::default(),
+            server: Default::default(),
         }
     }
 
@@ -98,10 +98,7 @@ impl WebSocketServerState {
     }
 }
 
-pub fn start_websocket_server(
-    port: u16,
-    app_handle: &AppHandle,
-) -> Result<String, Box<dyn std::error::Error>> {
+pub fn start_websocket_server(port: u16, app_handle: &AppHandle) -> String {
     let addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
 
     let state = app_handle.state::<WebSocketServerState>();
@@ -111,12 +108,14 @@ pub fn start_websocket_server(
     let cancel = CancellationToken::new();
     let cancel_clone = cancel.clone();
 
-    let std_listener = std::net::TcpListener::bind(addr)?;
-    std_listener.set_nonblocking(true)?;
+    let std_listener = std::net::TcpListener::bind(addr).unwrap();
+    std_listener
+        .set_nonblocking(true)
+        .expect("Cannot set non-blocking");
 
     let new_handle = rt::spawn(async move {
         let async_listener = TokioTcpListener::from_std(std_listener)
-            .expect("failed to convert std listener to tokio");
+            .expect("Failed to convert tokio listener into std");
         let mut conns = JoinSet::new();
 
         loop {
@@ -154,5 +153,5 @@ pub fn start_websocket_server(
         }
     });
 
-    Ok(addr.to_string())
+    addr.to_string()
 }

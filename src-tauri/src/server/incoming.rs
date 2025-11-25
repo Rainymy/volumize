@@ -172,12 +172,8 @@ fn send_command(
     command: VolumeCommand,
     v_state: &VolumeCommandSender,
 ) -> Result<(), Box<dyn Error>> {
-    let tx = v_state
-        .tx
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-
-    tx.send(command)
+    v_state
+        .send(command)
         .map_err(|e| format!("Send error: {}", e).into())
 }
 

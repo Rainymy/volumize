@@ -4,8 +4,8 @@ use windows::{
     core::{Interface, GUID},
     Win32::{
         Media::Audio::{
-            eConsole, eRender, ERole, IAudioSessionControl2, IAudioSessionManager2, IMMDevice,
-            IMMDeviceEnumerator, ISimpleAudioVolume, MMDeviceEnumerator, DEVICE_STATE,
+            eConsole, eRender, EDataFlow, ERole, IAudioSessionControl2, IAudioSessionManager2,
+            IMMDevice, IMMDeviceEnumerator, ISimpleAudioVolume, MMDeviceEnumerator, DEVICE_STATE,
             DEVICE_STATE_ACTIVE,
         },
         System::Com::{
@@ -45,6 +45,7 @@ impl ComManager {
     pub const CLS_CONTEXT: CLSCTX = CLSCTX_ALL;
     pub const DEVICE_STATE_CONTEXT: DEVICE_STATE = DEVICE_STATE_ACTIVE;
     pub const E_ROLE: ERole = eConsole;
+    pub const E_DATAFLOW: EDataFlow = eRender;
 
     pub fn try_new() -> VolumeResult<Self> {
         if INITIALIZED.swap(true, Ordering::SeqCst) {
@@ -65,7 +66,7 @@ impl ComManager {
         };
 
         let device_enumerator = unsafe {
-            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(|e| {
+            CoCreateInstance(&MMDeviceEnumerator, None, Self::CLS_CONTEXT).map_err(|e| {
                 VolumeControllerError::ComError(format!("Failed to create instance COM: {}", e))
             })?
         };
@@ -140,7 +141,7 @@ impl ComManager {
         unsafe {
             let device_collection = self
                 .device_enumerator
-                .EnumAudioEndpoints(eRender, Self::DEVICE_STATE_CONTEXT)?;
+                .EnumAudioEndpoints(Self::E_DATAFLOW, Self::DEVICE_STATE_CONTEXT)?;
 
             let count = device_collection.GetCount()?;
             let mut ids: Vec<DeviceIdentifier> = Vec::with_capacity(count as usize);

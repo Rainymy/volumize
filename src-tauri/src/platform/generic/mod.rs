@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::types::shared::{DeviceVolumeControl, VolumeControllerTrait, VolumeResult};
+use crate::types::shared::{DeviceVolumeControl, VolumeControllerTrait};
 
 pub struct VolumeController;
 
@@ -8,13 +8,13 @@ mod application_volume;
 mod device_control;
 mod master_volume;
 
-pub fn make_controller() -> VolumeResult<Box<dyn VolumeControllerTrait>> {
-    return Ok(Box::new(VolumeController::try_new()?));
+pub fn make_controller() -> Box<dyn VolumeControllerTrait> {
+    Box::new(VolumeController::new())
 }
 
 impl VolumeController {
-    pub fn try_new() -> VolumeResult<Self> {
-        Ok(Self)
+    pub fn new() -> Self {
+        Self
     }
 }
 

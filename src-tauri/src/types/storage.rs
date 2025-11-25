@@ -18,7 +18,7 @@ impl Default for Settings {
         Self {
             duration: Default::default(),
             port_address: 9002,
-            exit_to_tray: Default::default(),
+            exit_to_tray: true,
         }
     }
 }

@@ -117,21 +117,8 @@ impl ComManager {
     where
         T: Interface,
     {
-        let device = self.get_device_with_id(id)?;
-
         unsafe {
-            device
-                .Activate::<T>(Self::CLS_CONTEXT, None)
-                .map_err(VolumeControllerError::WindowsApiError)
-        }
-    }
-
-    pub fn with_device_id_activate<T>(&self, device_id: &str) -> VolumeResult<T>
-    where
-        T: Interface,
-    {
-        unsafe {
-            self.get_device_with_id(device_id)?
+            self.get_device_with_id(id)?
                 .Activate::<T>(Self::CLS_CONTEXT, None)
                 .map_err(VolumeControllerError::WindowsApiError)
         }

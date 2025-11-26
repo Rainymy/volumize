@@ -135,7 +135,7 @@ fn determine_session_type(session_control: &IAudioSessionControl2) -> SessionTyp
     }
 }
 
-fn get_display_name(session_control: &IAudioSessionControl2, pid: u32) -> String {
+pub fn get_display_name(session_control: &IAudioSessionControl2, pid: u32) -> String {
     let display_name = get_session_display_name(&session_control);
 
     if !display_name.is_empty() {

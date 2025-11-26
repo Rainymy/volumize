@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+// #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use thiserror::Error;
@@ -79,29 +79,22 @@ pub enum VolumeControllerError {
 
 pub trait DeviceVolumeControl {
     fn get_device_volume(&self, device_id: DeviceIdentifier) -> VolumeResult<VolumePercent>;
-    fn set_device_volume(
-        &self,
-        device_id: DeviceIdentifier,
-        percent: VolumePercent,
-    ) -> VolumeResult<()>;
-    fn mute_device(&self, device_id: DeviceIdentifier) -> VolumeResult<()>;
-    fn unmute_device(&self, device_id: DeviceIdentifier) -> VolumeResult<()>;
+    fn set_device_volume(&self, id: DeviceIdentifier, volume: VolumePercent) -> VolumeResult<()>;
+    fn mute_device(&self, id: DeviceIdentifier) -> VolumeResult<()>;
+    fn unmute_device(&self, id: DeviceIdentifier) -> VolumeResult<()>;
 }
 
 pub trait ApplicationVolumeControl {
     fn get_application(&self, id: AppIdentifier) -> VolumeResult<AudioApplication>;
-    fn get_app_volume(&self, app: AppIdentifier) -> VolumeResult<AudioVolume>;
-    fn set_app_volume(&self, app: AppIdentifier, percent: VolumePercent) -> VolumeResult<()>;
-    fn mute_app(&self, app: AppIdentifier) -> VolumeResult<()>;
-    fn unmute_app(&self, app: AppIdentifier) -> VolumeResult<()>;
+    fn get_app_volume(&self, id: AppIdentifier) -> VolumeResult<AudioVolume>;
+    fn set_app_volume(&self, id: AppIdentifier, volume: VolumePercent) -> VolumeResult<()>;
+    fn mute_app(&self, id: AppIdentifier) -> VolumeResult<()>;
+    fn unmute_app(&self, id: AppIdentifier) -> VolumeResult<()>;
 }
 
 pub trait DeviceControl {
     fn get_playback_devices(&self) -> VolumeResult<Vec<AudioDevice>>;
-    fn get_device_applications(
-        &self,
-        device_id: DeviceIdentifier,
-    ) -> VolumeResult<Vec<AppIdentifier>>;
+    fn get_device_applications(&self, id: DeviceIdentifier) -> VolumeResult<Vec<AppIdentifier>>;
 }
 
 pub trait VolumeControllerTrait:

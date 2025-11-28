@@ -3,8 +3,11 @@
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
 - [ ] Detect changes in volume.
-    - Implement volume detection functionality.
-    - Send updates to all clients.
+    - [ ] Implement volume detection functionality.
+        - [ ] Detect system audio changes.
+        - [ ] Detect application audio changes.
+        - [ ] Setup functionality to propagate changes.
+    - [ ] Send updates to all clients.
 
 ## Todo
 

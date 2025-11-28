@@ -1,8 +1,9 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use windows::{
-    core::{Interface, GUID},
+    core::{Error, Interface, Result as WinResult, GUID},
     Win32::{
+        Foundation::E_FAIL,
         Media::Audio::{
             eConsole, eRender, EDataFlow, ERole, IAudioSessionControl2, IAudioSessionManager2,
             IMMDevice, IMMDeviceEnumerator, ISimpleAudioVolume, MMDeviceEnumerator, DEVICE_STATE,
@@ -16,7 +17,7 @@ use windows::{
 };
 
 use super::util;
-use crate::types::shared::{DeviceIdentifier, VolumeControllerError, VolumeResult};
+use crate::types::shared::DeviceIdentifier;
 
 static INITIALIZED: AtomicBool = AtomicBool::new(false);
 
@@ -47,37 +48,21 @@ impl ComManager {
     pub const E_ROLE: ERole = eConsole;
     pub const E_DATAFLOW: EDataFlow = eRender;
 
-    pub fn try_new() -> VolumeResult<Self> {
+    pub fn try_new() -> WinResult<Self> {
         if INITIALIZED.swap(true, Ordering::SeqCst) {
-            return Err(VolumeControllerError::ComError(
-                "COM is already initialized.".to_string(),
-            ));
+            return Err(Error::new(E_FAIL, "COM is already initialized."));
         }
 
         #[cfg(debug_assertions)]
         dbg!("ComScope initialized!");
 
-        unsafe {
-            CoInitializeEx(None, COINIT_MULTITHREADED)
-                .ok()
-                .map_err(|e| {
-                    VolumeControllerError::ComError(format!("Failed to initialize COM: {}", e))
-                })?
-        };
-
-        let device_enumerator = unsafe {
-            CoCreateInstance(&MMDeviceEnumerator, None, Self::CLS_CONTEXT).map_err(|e| {
-                VolumeControllerError::ComError(format!("Failed to create instance COM: {}", e))
-            })?
-        };
-
-        let event_context = GUID::new().map_err(|e| {
-            VolumeControllerError::ComError(format!("Failed to create new GUID COM: {}", e))
-        })?;
+        unsafe { CoInitializeEx(None, COINIT_MULTITHREADED).ok()? };
 
         Ok(Self {
-            event_context,
-            device_enumerator,
+            event_context: GUID::new()?,
+            device_enumerator: unsafe {
+                CoCreateInstance(&MMDeviceEnumerator, None, Self::CLS_CONTEXT)?
+            },
         })
     }
 
@@ -89,42 +74,41 @@ impl ComManager {
         &self,
         target_pid: u32,
         device_id: &str,
-    ) -> VolumeResult<ISimpleAudioVolume> {
+    ) -> WinResult<ISimpleAudioVolume> {
         let endpoint: IAudioSessionManager2 = self.with_generic_device_activate(&device_id)?;
 
-        unsafe {
-            let session_enum = endpoint.GetSessionEnumerator()?;
+        let session_enum = unsafe { endpoint.GetSessionEnumerator() }?;
+        let count = unsafe { session_enum.GetCount() }?;
 
-            for i in 0..session_enum.GetCount()? {
-                let session_control = session_enum.GetSession(i)?;
-                let pid = session_control
-                    .cast::<IAudioSessionControl2>()?
-                    .GetProcessId()?;
+        for i in 0..count {
+            let session_control = unsafe { session_enum.GetSession(i) }?;
 
-                if pid == target_pid {
-                    return Ok(session_control.cast::<ISimpleAudioVolume>()?);
-                }
+            let session_control2 = session_control.cast::<IAudioSessionControl2>()?;
+            let pid = unsafe { session_control2.GetProcessId()? };
+
+            if pid == target_pid {
+                return Ok(session_control.cast::<ISimpleAudioVolume>()?);
             }
         }
 
-        Err(VolumeControllerError::ApplicationNotFound(format!(
+        let error_msg = format!(
             "Could not find any application with: {} - device: {}",
             target_pid, device_id
-        )))
+        );
+        Err(Error::new(E_FAIL, error_msg))
     }
 
-    pub fn with_generic_device_activate<T>(&self, id: &str) -> VolumeResult<T>
+    pub fn with_generic_device_activate<T>(&self, id: &str) -> WinResult<T>
     where
         T: Interface,
     {
         unsafe {
             self.get_device_with_id(id)?
                 .Activate::<T>(Self::CLS_CONTEXT, None)
-                .map_err(VolumeControllerError::WindowsApiError)
         }
     }
 
-    pub fn get_all_device_id(&self) -> VolumeResult<Vec<DeviceIdentifier>> {
+    pub fn get_all_device_id(&self) -> WinResult<Vec<DeviceIdentifier>> {
         unsafe {
             let device_collection = self
                 .device_enumerator
@@ -147,13 +131,9 @@ impl ComManager {
         }
     }
 
-    pub fn get_device_with_id(&self, id: &str) -> VolumeResult<IMMDevice> {
+    pub fn get_device_with_id(&self, id: &str) -> WinResult<IMMDevice> {
         let (_buffer_pcw, pcw_str) = util::string_to_pcwstr(&id);
 
-        unsafe {
-            self.device_enumerator
-                .GetDevice(pcw_str)
-                .map_err(VolumeControllerError::WindowsApiError)
-        }
+        unsafe { self.device_enumerator.GetDevice(pcw_str) }
     }
 }

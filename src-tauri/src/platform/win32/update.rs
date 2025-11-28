@@ -1,7 +1,13 @@
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
+
 use windows::{
-    core::{Interface, Ref, Result, BOOL, GUID, PCWSTR},
+    core::{implement, Interface, Ref, Result as WinResult, BOOL, GUID, PCWSTR},
     Win32::Media::Audio::{
-        AudioSessionDisconnectReason, AudioSessionState,
+        AudioSessionDisconnectReason, AudioSessionState, AudioSessionStateActive,
+        AudioSessionStateExpired, AudioSessionStateInactive,
         Endpoints::{
             IAudioEndpointVolume, IAudioEndpointVolumeCallback, IAudioEndpointVolumeCallback_Impl,
         },
@@ -10,13 +16,21 @@ use windows::{
         AUDIO_VOLUME_NOTIFICATION_DATA,
     },
 };
-use windows_core::implement;
+// use windows_core::implement;
+
+#[derive(Clone)]
+struct AudioInfo {
+    name: String,
+    sessions: Vec<IAudioSessionControl>,
+}
+
+type AppMap = HashMap<u32, AudioInfo>;
 
 #[implement(IAudioEndpointVolumeCallback)]
 struct VolumeCallback;
 
 impl IAudioEndpointVolumeCallback_Impl for VolumeCallback_Impl {
-    fn OnNotify(&self, pnotify: *mut AUDIO_VOLUME_NOTIFICATION_DATA) -> Result<()> {
+    fn OnNotify(&self, pnotify: *mut AUDIO_VOLUME_NOTIFICATION_DATA) -> WinResult<()> {
         let data = unsafe { &*pnotify };
 
         println!("Device volume changed to {}", data.fMasterVolume);
@@ -28,12 +42,46 @@ impl IAudioEndpointVolumeCallback_Impl for VolumeCallback_Impl {
 
 #[implement(IAudioSessionEvents)]
 struct SessionEvents {
-    app_name: String,
+    name: String,
+    pid: u32,
+    session: IAudioSessionControl,
+    apps: Arc<Mutex<AppMap>>,
 }
 
 impl SessionEvents {
-    fn new(app_name: String) -> Self {
-        Self { app_name }
+    fn is_expire_state(&self, newstate: AudioSessionState) -> bool {
+        #[allow(nonstandard_style)]
+        match newstate {
+            AudioSessionStateActive | AudioSessionStateInactive => false,
+            AudioSessionStateExpired | _ => true,
+        }
+    }
+
+    fn cleanup_session(&self) {
+        let mut app_map = match self.apps.lock() {
+            Ok(map) => map,
+            Err(_) => return (),
+        };
+
+        let entry = match app_map.get_mut(&self.pid) {
+            Some(entry) => entry,
+            None => return (),
+        };
+
+        // Erase current session entry in-place - using built-in equality check:
+        // - NOTE: Need to check COM *value* not Rust address.
+        entry.sessions.retain(|s| s.ne(&self.session));
+
+        println!(
+            "[{}] Removed session. Remaining: {}",
+            entry.name,
+            entry.sessions.len()
+        );
+
+        if entry.sessions.is_empty() {
+            println!("[{}] All sessions closed: pid = {}", entry.name, self.pid);
+            let _ = app_map.remove(&self.pid);
+        }
     }
 }
 
@@ -42,13 +90,17 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
         &self,
         _newdisplayname: &PCWSTR,
         _eventcontext: *const GUID,
-    ) -> Result<()> {
-        println!("[APP: {}] Display name changed", self.app_name);
+    ) -> WinResult<()> {
+        println!("[{}] Display name changed", self.name);
         Ok(())
     }
 
-    fn OnIconPathChanged(&self, _newiconpath: &PCWSTR, _eventcontext: *const GUID) -> Result<()> {
-        println!("[APP: {}] Icon path changed", self.app_name);
+    fn OnIconPathChanged(
+        &self,
+        _newiconpath: &PCWSTR,
+        _eventcontext: *const GUID,
+    ) -> WinResult<()> {
+        println!("[{}] Icon path changed", self.name);
         Ok(())
     }
 
@@ -57,10 +109,10 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
         newvolume: f32,
         newmute: BOOL,
         _eventcontext: *const GUID,
-    ) -> Result<()> {
+    ) -> WinResult<()> {
         println!(
-            "[APP: {}] Volume: {:.0}%, Muted: {}",
-            self.app_name,
+            "[{}] Volume: {:.0}%, Muted: {}",
+            self.name,
             newvolume * 100.0,
             newmute.as_bool()
         );
@@ -73,8 +125,8 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
         _newchannelvolumearray: *const f32,
         _changedchannel: u32,
         _eventcontext: *const GUID,
-    ) -> Result<()> {
-        println!("[APP: {}] Channel volume changed", self.app_name);
+    ) -> WinResult<()> {
+        println!("[{}] Channel volume changed", self.name);
         Ok(())
     }
 
@@ -82,46 +134,96 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
         &self,
         _newgroupingparam: *const GUID,
         _eventcontext: *const GUID,
-    ) -> Result<()> {
-        println!("[APP: {}] Grouping param changed", self.app_name);
+    ) -> WinResult<()> {
+        println!("[{}] Grouping param changed", self.name);
         Ok(())
     }
 
-    fn OnStateChanged(&self, newstate: AudioSessionState) -> Result<()> {
-        println!("[APP: {}] State changed: {:?}", self.app_name, newstate);
+    fn OnStateChanged(&self, newstate: AudioSessionState) -> WinResult<()> {
+        println!("OnStateChanges fired: {} | {:?}", self.name, newstate);
+        if self.is_expire_state(newstate) {
+            self.cleanup_session();
+        }
         Ok(())
     }
 
-    fn OnSessionDisconnected(&self, disconnectreason: AudioSessionDisconnectReason) -> Result<()> {
-        println!(
-            "[APP: {}] Disconnected: {:?}",
-            self.app_name, disconnectreason
-        );
+    fn OnSessionDisconnected(
+        &self,
+        disconnectreason: AudioSessionDisconnectReason,
+    ) -> WinResult<()> {
+        use windows::Win32::Media::Audio::{
+            DisconnectReasonDeviceRemoval, DisconnectReasonExclusiveModeOverride,
+            DisconnectReasonFormatChanged, DisconnectReasonServerShutdown,
+            DisconnectReasonSessionDisconnected, DisconnectReasonSessionLogoff,
+        };
+
+        #[allow(nonstandard_style)]
+        let reason = match disconnectreason {
+            DisconnectReasonDeviceRemoval => "Device removed",
+            DisconnectReasonServerShutdown => "Service stopped",
+            DisconnectReasonFormatChanged => "Format changed",
+            DisconnectReasonSessionLogoff => "User logged off",
+            DisconnectReasonSessionDisconnected => "RDP disconnected",
+            DisconnectReasonExclusiveModeOverride => "Exclusive mode",
+            _ => "Unknown",
+        };
+
+        self.cleanup_session();
+
+        println!("[{}] Disconnected: {:?}", self.name, reason);
         Ok(())
     }
 }
 
 #[implement(IAudioSessionNotification)]
-struct SessionNotification;
+struct SessionNotification {
+    apps: Arc<Mutex<AppMap>>,
+    callbacks: Arc<Mutex<RAEvents>>,
+}
 
 impl IAudioSessionNotification_Impl for SessionNotification_Impl {
-    fn OnSessionCreated(&self, newsession: Ref<IAudioSessionControl>) -> Result<()> {
-        let session = match &*newsession {
-            Some(session) => session,
-            None => return Ok(()),
-        };
+    fn OnSessionCreated(&self, newsession: Ref<IAudioSessionControl>) -> WinResult<()> {
+        let session = newsession.ok()?;
         let session2 = session.cast::<IAudioSessionControl2>()?;
-        let pid = unsafe { session2.GetProcessId() }?;
 
+        let pid = unsafe { session2.GetProcessId() }?;
         let display_name = super::convert::get_display_name(&session2, pid);
 
-        unsafe {
-            println!("[NEW SESSION] {}: {}", display_name, pid);
-            let events: IAudioSessionEvents = SessionEvents::new(display_name).into();
-            session
-                .RegisterAudioSessionNotification(&events)
-                .inspect_err(|e| eprintln!("ERROR: {e}"))?;
+        let mut app_map = match self.apps.lock() {
+            Ok(map) => map,
+            Err(_) => return Ok(()),
+        };
+
+        let entry = app_map.entry(pid).or_insert_with(|| {
+            println!("[NEW APP] {} (PID: {})", display_name, pid);
+            AudioInfo {
+                name: display_name.clone(),
+                sessions: vec![],
+            }
+        });
+
+        entry.sessions.push(session.clone());
+
+        println!(
+            " - {} now has {} sessions",
+            entry.name,
+            entry.sessions.len(),
+        );
+
+        let events: IAudioSessionEvents = SessionEvents {
+            name: display_name,
+            pid: pid,
+            session: session.clone(),
+            apps: self.apps.clone(),
         }
+        .into();
+
+        unsafe { session.RegisterAudioSessionNotification(&events)? };
+
+        if let Ok(mut callbacks) = self.callbacks.lock() {
+            callbacks.push((session.clone(), events));
+        }
+
         Ok(())
     }
 }
@@ -130,13 +232,8 @@ use super::com_scope::ComManager;
 
 type RDevice = (IAudioEndpointVolume, IAudioEndpointVolumeCallback);
 
-fn register_device(manager: &ComManager, device_id: &str) -> Result<RDevice> {
-    let endpoint_volume: IAudioEndpointVolume =
-        match manager.with_generic_device_activate(&device_id) {
-            Ok(device) => device,
-            Err(_err) => return Err(windows::core::Error::from_win32()),
-        };
-
+fn register_device(manager: &ComManager, device_id: &str) -> WinResult<RDevice> {
+    let endpoint_volume: IAudioEndpointVolume = manager.with_generic_device_activate(&device_id)?;
     let callback: IAudioEndpointVolumeCallback = VolumeCallback.into();
 
     match unsafe { endpoint_volume.RegisterControlChangeNotify(&callback) } {
@@ -147,16 +244,25 @@ fn register_device(manager: &ComManager, device_id: &str) -> Result<RDevice> {
 
 type RSNotice = (IAudioSessionManager2, IAudioSessionNotification);
 
-fn register_session_notification(manager: &IAudioSessionManager2) -> Result<RSNotice> {
-    let session_notification: IAudioSessionNotification = SessionNotification.into();
+fn register_session_notification(
+    manager: &IAudioSessionManager2,
+    apps: Arc<Mutex<AppMap>>,
+    callbacks: Arc<Mutex<RAEvents>>,
+) -> WinResult<RSNotice> {
+    let event = SessionNotification { apps, callbacks };
+    let session_notification: IAudioSessionNotification = event.into();
+
     unsafe { manager.RegisterSessionNotification(&session_notification) }?;
 
     Ok((manager.clone(), session_notification))
 }
 
-type RAEvents = (IAudioSessionControl, IAudioSessionEvents);
+type RAEvents = Vec<(IAudioSessionControl, IAudioSessionEvents)>;
 
-fn register_application_notification(manager: &IAudioSessionManager2) -> Result<Vec<RAEvents>> {
+fn register_application_notification(
+    manager: &IAudioSessionManager2,
+    apps: Arc<Mutex<AppMap>>,
+) -> WinResult<RAEvents> {
     let mut callbacks = vec![];
 
     let session_enum = unsafe { manager.GetSessionEnumerator()? };
@@ -165,21 +271,30 @@ fn register_application_notification(manager: &IAudioSessionManager2) -> Result<
     println!("Found {} existing audio sessions", count);
     for i in 0..count {
         let session = unsafe { session_enum.GetSession(i)? };
+        let session2: IAudioSessionControl2 = session.cast()?;
 
-        let session_control: IAudioSessionControl2 = session.cast()?;
-        let pid = unsafe { session_control.GetProcessId()? };
+        let pid = unsafe { session2.GetProcessId()? };
+        let display_name = super::convert::get_display_name(&session2, pid);
+        println!(" - [EXISTING] {} (pid: {}):", display_name, pid);
 
-        let display_name = super::convert::get_display_name(&session_control, pid);
-        println!(" - [EXISTING SESSION] {}", display_name);
-
-        let events: IAudioSessionEvents = SessionEvents::new(display_name).into();
-
-        unsafe {
-            match session.RegisterAudioSessionNotification(&events) {
-                Ok(_) => callbacks.push((session, events)),
-                Err(e) => eprintln!("Error register audio session notification: {}", e),
-            }
+        let events: IAudioSessionEvents = SessionEvents {
+            name: display_name.clone(),
+            pid: pid,
+            apps: apps.clone(),
+            session: session.clone(),
         }
+        .into();
+
+        if let Ok(mut apps) = apps.lock() {
+            let entry = apps.entry(pid).or_insert_with(|| AudioInfo {
+                name: display_name.clone(),
+                sessions: vec![session.clone()],
+            });
+            entry.sessions.push(session.clone());
+        };
+
+        unsafe { session.RegisterAudioSessionNotification(&events)? };
+        callbacks.push((session.clone(), events));
     }
 
     Ok(callbacks)
@@ -188,53 +303,57 @@ fn register_application_notification(manager: &IAudioSessionManager2) -> Result<
 pub struct AudioMonitor {
     device_callback: Vec<RDevice>,
     session_notification: Vec<RSNotice>,
-    sessions_application: Vec<RAEvents>,
+    sessions_application: Arc<Mutex<RAEvents>>,
+    apps: Arc<Mutex<AppMap>>,
 }
 
 impl AudioMonitor {
     pub fn new() -> Self {
         Self {
-            device_callback: Vec::new(),
-            session_notification: Vec::new(),
-            sessions_application: Vec::new(),
+            device_callback: Default::default(),
+            session_notification: Default::default(),
+            sessions_application: Default::default(),
+            apps: Default::default(),
         }
     }
     pub fn register_callbacks(&mut self, manager: &ComManager) {
-        let mut callbacks = vec![];
-        let mut callbacks_session = vec![];
         let mut callbacks_application = vec![];
 
         println!("\nMonitoring device volume changes...\n");
 
         for device_id in manager.get_all_device_id().unwrap_or_default() {
             match register_device(&manager, &device_id) {
-                Ok(callback) => callbacks.push(callback),
+                Ok(callback) => self.device_callback.push(callback),
                 Err(_) => {
                     eprintln!("Error registering device: {}", device_id);
                     continue;
                 }
             };
 
-            let session_manager: IAudioSessionManager2 = match manager
-                .with_generic_device_activate(&device_id)
-                .map_err(|_| windows::core::Error::from_win32())
-            {
-                Ok(manager) => manager,
-                Err(e) => {
-                    eprintln!("Error activating generic device: {}", e);
-                    continue;
-                }
-            };
+            let session_manager: IAudioSessionManager2 =
+                match manager.with_generic_device_activate(&device_id) {
+                    Ok(manager) => manager,
+                    Err(e) => {
+                        eprintln!("Error activating generic device: {}", e);
+                        continue;
+                    }
+                };
 
-            match register_session_notification(&session_manager) {
-                Ok(session_notification) => callbacks_session.push(session_notification),
+            // Register session creation notifications.
+            match register_session_notification(
+                &session_manager,
+                self.apps.clone(),
+                self.sessions_application.clone(),
+            ) {
+                Ok(session) => self.session_notification.push(session),
                 Err(e) => {
                     eprintln!("Error session notification for device: {}", e);
                     continue;
                 }
             };
 
-            match register_application_notification(&session_manager) {
+            // Register existing applications to receive notifications.
+            match register_application_notification(&session_manager, self.apps.clone()) {
                 Ok(events) => callbacks_application.extend(events),
                 Err(e) => {
                     eprintln!("Error register application notification: {}", e);
@@ -243,26 +362,38 @@ impl AudioMonitor {
             };
         }
 
-        self.device_callback.extend(callbacks);
-        self.session_notification.extend(callbacks_session);
-        self.sessions_application.extend(callbacks_application);
+        if let Ok(mut sessions_application) = self.sessions_application.lock() {
+            sessions_application.extend(callbacks_application);
+        }
     }
 
     pub fn unregister_callbacks(&mut self) {
-        for (endpoint, sessions) in &self.device_callback {
+        // Remove while iterating.
+        self.device_callback.retain(|(endpoint, sessions)| {
             let _ = unsafe { endpoint.UnregisterControlChangeNotify(sessions) };
+            false
+        });
+
+        self.session_notification.retain(|(manager, notice)| {
+            let _ = unsafe { manager.UnregisterSessionNotification(notice) };
+            false
+        });
+
+        // Safe to remove: `self.sessions_application` holds the application notifications.
+        if let Ok(mut apps) = self.apps.lock() {
+            apps.clear();
         }
 
-        for (manager, sessions) in &self.session_notification {
-            let _ = unsafe { manager.UnregisterSessionNotification(sessions) };
+        match self.sessions_application.lock() {
+            Ok(mut sessions_application) => {
+                sessions_application.retain(|(control, sessions)| {
+                    let _ = unsafe { control.UnregisterAudioSessionNotification(sessions) };
+                    false
+                });
+            }
+            Err(e) => {
+                eprintln!("Error unregister application notification: {}", e);
+            }
         }
-
-        for (control, sessions) in &self.sessions_application {
-            let _ = unsafe { control.UnregisterAudioSessionNotification(sessions) };
-        }
-
-        self.device_callback.clear();
-        self.session_notification.clear();
-        self.sessions_application.clear();
     }
 }

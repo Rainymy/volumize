@@ -20,14 +20,14 @@ pub struct VolumeController {
 }
 
 pub fn make_controller() -> Box<dyn VolumeControllerTrait> {
-    return Box::new(VolumeController::new());
+    Box::new(VolumeController::new())
 }
 
 impl VolumeController {
     pub fn new() -> Self {
         let com = com_scope::ComManager::try_new().expect("Failed to initialize COM manager");
 
-        let mut audio_monitor = update::AudioMonitor::new();
+        let mut audio_monitor = update::AudioMonitor::default();
         audio_monitor.register_callbacks(&com);
 
         Self {
@@ -41,6 +41,14 @@ impl VolumeControllerTrait for VolumeController {
     fn cleanup(&self) {
         if let Ok(mut audio) = self.audio_monitor.lock() {
             audio.unregister_callbacks();
+        }
+    }
+
+    fn check_and_reinit(&self) {
+        if let Ok(mut audio) = self.audio_monitor.lock() {
+            if audio._check_and_reinit(&self.com) {
+                println!("Re-initialization complete!");
+            }
         }
     }
 }

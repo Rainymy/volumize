@@ -1,6 +1,9 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
 };
 
 use windows::{
@@ -46,6 +49,7 @@ struct SessionEvents {
     pid: u32,
     session: IAudioSessionControl,
     apps: Arc<Mutex<AppMap>>,
+    needs_reinit: Arc<AtomicBool>,
 }
 
 impl SessionEvents {
@@ -160,7 +164,10 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
         #[allow(nonstandard_style)]
         let reason = match disconnectreason {
             DisconnectReasonDeviceRemoval => "Device removed",
-            DisconnectReasonServerShutdown => "Service stopped",
+            DisconnectReasonServerShutdown => {
+                self.needs_reinit.store(true, Ordering::SeqCst);
+                "Service stopped"
+            }
             DisconnectReasonFormatChanged => "Format changed",
             DisconnectReasonSessionLogoff => "User logged off",
             DisconnectReasonSessionDisconnected => "RDP disconnected",
@@ -179,6 +186,7 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
 struct SessionNotification {
     apps: Arc<Mutex<AppMap>>,
     callbacks: Arc<Mutex<RAEvents>>,
+    needs_reinit: Arc<AtomicBool>,
 }
 
 impl IAudioSessionNotification_Impl for SessionNotification_Impl {
@@ -215,6 +223,7 @@ impl IAudioSessionNotification_Impl for SessionNotification_Impl {
             pid: pid,
             session: session.clone(),
             apps: self.apps.clone(),
+            needs_reinit: self.needs_reinit.clone(),
         }
         .into();
 
@@ -248,8 +257,13 @@ fn register_session_notification(
     manager: &IAudioSessionManager2,
     apps: Arc<Mutex<AppMap>>,
     callbacks: Arc<Mutex<RAEvents>>,
+    needs_reinit: Arc<AtomicBool>,
 ) -> WinResult<RSNotice> {
-    let event = SessionNotification { apps, callbacks };
+    let event = SessionNotification {
+        apps,
+        callbacks,
+        needs_reinit,
+    };
     let session_notification: IAudioSessionNotification = event.into();
 
     unsafe { manager.RegisterSessionNotification(&session_notification) }?;
@@ -262,6 +276,7 @@ type RAEvents = Vec<(IAudioSessionControl, IAudioSessionEvents)>;
 fn register_application_notification(
     manager: &IAudioSessionManager2,
     apps: Arc<Mutex<AppMap>>,
+    needs_reinit: Arc<AtomicBool>,
 ) -> WinResult<RAEvents> {
     let mut callbacks = vec![];
 
@@ -282,6 +297,7 @@ fn register_application_notification(
             pid: pid,
             apps: apps.clone(),
             session: session.clone(),
+            needs_reinit: needs_reinit.clone(),
         }
         .into();
 
@@ -300,23 +316,20 @@ fn register_application_notification(
     Ok(callbacks)
 }
 
+#[derive(Default)]
 pub struct AudioMonitor {
     device_callback: Vec<RDevice>,
     session_notification: Vec<RSNotice>,
     sessions_application: Arc<Mutex<RAEvents>>,
     apps: Arc<Mutex<AppMap>>,
+    needs_reinit: Arc<AtomicBool>,
 }
 
 impl AudioMonitor {
-    pub fn new() -> Self {
-        Self {
-            device_callback: Default::default(),
-            session_notification: Default::default(),
-            sessions_application: Default::default(),
-            apps: Default::default(),
-        }
-    }
     pub fn register_callbacks(&mut self, manager: &ComManager) {
+        self.unregister_callbacks();
+        self.needs_reinit.store(false, Ordering::SeqCst);
+
         let mut callbacks_application = vec![];
 
         println!("\nMonitoring device volume changes...\n");
@@ -344,6 +357,7 @@ impl AudioMonitor {
                 &session_manager,
                 self.apps.clone(),
                 self.sessions_application.clone(),
+                self.needs_reinit.clone(),
             ) {
                 Ok(session) => self.session_notification.push(session),
                 Err(e) => {
@@ -353,7 +367,11 @@ impl AudioMonitor {
             };
 
             // Register existing applications to receive notifications.
-            match register_application_notification(&session_manager, self.apps.clone()) {
+            match register_application_notification(
+                &session_manager,
+                self.apps.clone(),
+                self.needs_reinit.clone(),
+            ) {
                 Ok(events) => callbacks_application.extend(events),
                 Err(e) => {
                     eprintln!("Error register application notification: {}", e);
@@ -365,6 +383,19 @@ impl AudioMonitor {
         if let Ok(mut sessions_application) = self.sessions_application.lock() {
             sessions_application.extend(callbacks_application);
         }
+    }
+
+    pub fn _check_and_reinit(&mut self, manager: &ComManager) -> bool {
+        let need_reinit = self.needs_reinit.load(Ordering::SeqCst);
+
+        if need_reinit {
+            println!("\n!!! Audio service restarted, re-initializing... !!!\n");
+            // Small delay to let service stabilize
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            self.register_callbacks(manager);
+        };
+
+        need_reinit
     }
 
     pub fn unregister_callbacks(&mut self) {

@@ -1,6 +1,8 @@
-use std::path::PathBuf;
+use futures_util::future::{select, Either};
+use std::{path::PathBuf, time::Duration};
 use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
+use tokio::time::interval;
 
 use crate::{
     platform,
@@ -17,25 +19,44 @@ pub fn spawn_volume_thread(app_handle: &AppHandle) {
 
     let thread_handle = std::thread::spawn(move || {
         let controller = platform::make_controller();
+        let mut count = 0;
 
-        let rt = match tokio::runtime::Builder::new_current_thread()
-            .thread_name("tokio_spawn_volume_thread")
-            .build()
-        {
-            Ok(rt) => rt,
-            Err(e) => {
-                eprintln!("Failed to create tokio runtime: {:?}", e);
-                return;
-            }
-        };
+        tauri::async_runtime::block_on(async move {
+            let mut interval = interval(Duration::from_millis(3000));
+            interval.tick().await; // Skip the first immediate tick.
 
-        // tauri::async_runtime::block_on(task)
-        rt.block_on(async move {
-            while let Some(command) = rx.recv().await {
-                execute_command(command, &controller);
+            println!("Main loop starting");
+
+            loop {
+                let interval = interval.tick();
+                let recv = rx.recv();
+
+                match select(Box::pin(interval), Box::pin(recv)).await {
+                    Either::Left(_) => {
+                        count += 1;
+                        println!("Periodic check: {}", count);
+
+                        if count >= 20 {
+                            println!("Limit reached, breaking");
+                            break;
+                        }
+
+                        controller.check_and_reinit();
+                    }
+                    Either::Right((command_result, _)) => match command_result {
+                        Some(command) => execute_command(command, &controller),
+                        None => {
+                            println!("Channel closed, exiting");
+                            break;
+                        }
+                    },
+                }
             }
+
             controller.cleanup();
         });
+
+        println!("Thread ended")
     });
 
     let new_server = VolumeServer {

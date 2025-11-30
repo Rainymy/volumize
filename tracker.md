@@ -3,11 +3,14 @@
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
 - [ ] Detect changes in volume.
-    - [ ] Implement volume detection functionality.
-        - [ ] Detect system audio changes.
-        - [ ] Detect application audio changes.
-        - [ ] Setup functionality to propagate changes.
-    - [ ] Send updates to all clients.
+    - [x] Implement volume detection functionality.
+        - [x] Detect system audio changes.
+        - [x] Detect application audio changes.
+        - [x] Setup functionality to propagate changes to UI.
+    - [ ] Update Changes at UI.
+        - [x] Send updates to all clients.
+        - [ ] Sync backend type with UI.
+        - [ ] Functionality to handle UI updates.
 
 ## Todo
 

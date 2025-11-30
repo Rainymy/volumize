@@ -2,6 +2,11 @@ use windows::core::{PCWSTR, PWSTR};
 
 use std::{ffi::OsStr, os::windows::ffi::OsStrExt};
 
+pub fn pcwstr_to_string(pwcstr: &PCWSTR) -> String {
+    let pwstr = PWSTR::from_raw(pwcstr.as_ptr() as *mut u16);
+    pwstr_to_string(pwstr)
+}
+
 pub fn pwstr_to_string(pwstr: PWSTR) -> String {
     if pwstr.is_null() {
         return "Unknown".to_string();

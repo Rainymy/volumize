@@ -49,9 +49,12 @@ export class ConnectSocket {
             return null;
         }
         try {
-            const data2: { type: string; data: string } = JSON.parse(data.data);
+            type UpdateEvent = { event: string; payload: object };
+            type DataEvent = { type: string; data: string };
+
+            const data2: DataEvent | UpdateEvent = JSON.parse(data.data) as DataEvent;
+            // console.log("parse_data:", data2);
             return {
-                // you may get a double stringified JSON object
                 channel: data2.type,
                 data: data2.data,
             };

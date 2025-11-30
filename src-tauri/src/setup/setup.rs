@@ -2,10 +2,11 @@ use std::error::Error;
 
 use crate::{
     server::{
-        service_register::start_service_register, start_websocket_server,
-        volume_control::spawn_volume_thread,
+        service_register::start_service_register,
+        start_websocket_server,
+        volume_control::{spawn_update_thread, spawn_volume_thread},
     },
-    types::storage::Storage,
+    types::{shared::UpdateChange, storage::Storage},
 };
 
 use tauri::{App, Manager};
@@ -20,7 +21,10 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     storage.load(app_handle);
     let settings = storage.get();
 
-    spawn_volume_thread(app_handle); // Thread for volume control
+    // let (tx, mut rx) = unbounded_channel();
+    let (tx, rx) = std::sync::mpsc::channel::<UpdateChange>();
+    spawn_volume_thread(app_handle, tx); // Thread for volume control
+    spawn_update_thread(app_handle, rx); // Thread for propagate updates to the UI
 
     let addr = start_websocket_server(settings.port_address, app_handle);
     println!("WebSocket server listening on {}", addr);

@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicBool, Ordering},
+        mpsc::Sender,
         Arc, Mutex,
     },
 };
@@ -21,6 +22,8 @@ use windows::{
 };
 // use windows_core::implement;
 
+use crate::types::shared::{DeviceIdentifier, EntityState, Identifier, UpdateChange};
+
 #[derive(Clone)]
 struct AudioInfo {
     name: String,
@@ -28,9 +31,19 @@ struct AudioInfo {
 }
 
 type AppMap = HashMap<u32, AudioInfo>;
+type VolumeSender = Sender<UpdateChange>;
 
 #[implement(IAudioEndpointVolumeCallback)]
-struct VolumeCallback;
+struct VolumeCallback {
+    sender: VolumeSender,
+    id: DeviceIdentifier,
+}
+
+impl VolumeCallback {
+    fn new(id: DeviceIdentifier, sender: VolumeSender) -> Self {
+        Self { sender, id }
+    }
+}
 
 impl IAudioEndpointVolumeCallback_Impl for VolumeCallback_Impl {
     fn OnNotify(&self, pnotify: *mut AUDIO_VOLUME_NOTIFICATION_DATA) -> WinResult<()> {
@@ -38,6 +51,13 @@ impl IAudioEndpointVolumeCallback_Impl for VolumeCallback_Impl {
 
         println!("Device volume changed to {}", data.fMasterVolume);
         println!("Muted: {}", data.bMuted.as_bool());
+
+        let update = UpdateChange::volume_change(
+            Identifier::Device(self.id.clone()),
+            data.fMasterVolume,
+            data.bMuted.as_bool(),
+        );
+        let _ = self.sender.send(update);
 
         Ok(())
     }
@@ -50,6 +70,7 @@ struct SessionEvents {
     session: IAudioSessionControl,
     apps: Arc<Mutex<AppMap>>,
     needs_reinit: Arc<AtomicBool>,
+    sender: VolumeSender,
 }
 
 impl SessionEvents {
@@ -95,6 +116,9 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
         _newdisplayname: &PCWSTR,
         _eventcontext: *const GUID,
     ) -> WinResult<()> {
+        let new_name = super::util::pcwstr_to_string(_newdisplayname);
+        let update = UpdateChange::app_name_change(Identifier::App(self.pid), new_name);
+        let _ = self.sender.send(update);
         println!("[{}] Display name changed", self.name);
         Ok(())
     }
@@ -104,6 +128,9 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
         _newiconpath: &PCWSTR,
         _eventcontext: *const GUID,
     ) -> WinResult<()> {
+        let new_icon_path = super::util::pcwstr_to_string(_newiconpath);
+        let update = UpdateChange::app_icon_change(Identifier::App(self.pid), new_icon_path);
+        let _ = self.sender.send(update);
         println!("[{}] Icon path changed", self.name);
         Ok(())
     }
@@ -114,6 +141,9 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
         newmute: BOOL,
         _eventcontext: *const GUID,
     ) -> WinResult<()> {
+        let update =
+            UpdateChange::volume_change(Identifier::App(self.pid), newvolume, newmute.as_bool());
+        let _ = self.sender.send(update);
         println!(
             "[{}] Volume: {:.0}%, Muted: {}",
             self.name,
@@ -147,6 +177,10 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
         println!("OnStateChanges fired: {} | {:?}", self.name, newstate);
         if self.is_expire_state(newstate) {
             self.cleanup_session();
+
+            let update =
+                UpdateChange::app_state_change(Identifier::App(self.pid), EntityState::Disconnect);
+            let _ = self.sender.send(update);
         }
         Ok(())
     }
@@ -177,6 +211,10 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
 
         self.cleanup_session();
 
+        let update =
+            UpdateChange::app_state_change(Identifier::App(self.pid), EntityState::Disconnect);
+        let _ = self.sender.send(update);
+
         println!("[{}] Disconnected: {:?}", self.name, reason);
         Ok(())
     }
@@ -187,6 +225,7 @@ struct SessionNotification {
     apps: Arc<Mutex<AppMap>>,
     callbacks: Arc<Mutex<RAEvents>>,
     needs_reinit: Arc<AtomicBool>,
+    sender: VolumeSender,
 }
 
 impl IAudioSessionNotification_Impl for SessionNotification_Impl {
@@ -224,6 +263,7 @@ impl IAudioSessionNotification_Impl for SessionNotification_Impl {
             session: session.clone(),
             apps: self.apps.clone(),
             needs_reinit: self.needs_reinit.clone(),
+            sender: self.sender.clone(),
         }
         .into();
 
@@ -233,6 +273,11 @@ impl IAudioSessionNotification_Impl for SessionNotification_Impl {
             callbacks.push((session.clone(), events));
         }
 
+        let _ = self.sender.send(UpdateChange::app_state_change(
+            Identifier::App(pid),
+            EntityState::Created,
+        ));
+
         Ok(())
     }
 }
@@ -241,10 +286,15 @@ use super::com_scope::ComManager;
 
 type RDevice = (IAudioEndpointVolume, IAudioEndpointVolumeCallback);
 
-fn register_device(manager: &ComManager, device_id: &str) -> WinResult<RDevice> {
-    let endpoint_volume: IAudioEndpointVolume = manager.with_generic_device_activate(&device_id)?;
-    let callback: IAudioEndpointVolumeCallback = VolumeCallback.into();
+fn register_device(
+    manager: &ComManager,
+    device_id: &str,
+    sender: VolumeSender,
+) -> WinResult<RDevice> {
+    let dstring = device_id.to_string();
+    let callback: IAudioEndpointVolumeCallback = VolumeCallback::new(dstring, sender).into();
 
+    let endpoint_volume: IAudioEndpointVolume = manager.with_generic_device_activate(&device_id)?;
     match unsafe { endpoint_volume.RegisterControlChangeNotify(&callback) } {
         Ok(_) => Ok((endpoint_volume, callback)),
         Err(err) => Err(err),
@@ -258,13 +308,15 @@ fn register_session_notification(
     apps: Arc<Mutex<AppMap>>,
     callbacks: Arc<Mutex<RAEvents>>,
     needs_reinit: Arc<AtomicBool>,
+    sender: VolumeSender,
 ) -> WinResult<RSNotice> {
-    let event = SessionNotification {
+    let session_notification: IAudioSessionNotification = SessionNotification {
         apps,
         callbacks,
         needs_reinit,
-    };
-    let session_notification: IAudioSessionNotification = event.into();
+        sender: sender.clone(),
+    }
+    .into();
 
     unsafe { manager.RegisterSessionNotification(&session_notification) }?;
 
@@ -277,6 +329,7 @@ fn register_application_notification(
     manager: &IAudioSessionManager2,
     apps: Arc<Mutex<AppMap>>,
     needs_reinit: Arc<AtomicBool>,
+    sender: VolumeSender,
 ) -> WinResult<RAEvents> {
     let mut callbacks = vec![];
 
@@ -298,6 +351,7 @@ fn register_application_notification(
             apps: apps.clone(),
             session: session.clone(),
             needs_reinit: needs_reinit.clone(),
+            sender: sender.clone(),
         }
         .into();
 
@@ -316,16 +370,27 @@ fn register_application_notification(
     Ok(callbacks)
 }
 
-#[derive(Default)]
 pub struct AudioMonitor {
     device_callback: Vec<RDevice>,
     session_notification: Vec<RSNotice>,
     sessions_application: Arc<Mutex<RAEvents>>,
     apps: Arc<Mutex<AppMap>>,
     needs_reinit: Arc<AtomicBool>,
+    sender: VolumeSender,
 }
 
 impl AudioMonitor {
+    pub fn new(sender: VolumeSender) -> Self {
+        Self {
+            device_callback: Default::default(),
+            session_notification: Default::default(),
+            sessions_application: Default::default(),
+            apps: Default::default(),
+            needs_reinit: Default::default(),
+            sender: sender,
+        }
+    }
+
     pub fn register_callbacks(&mut self, manager: &ComManager) {
         self.unregister_callbacks();
         self.needs_reinit.store(false, Ordering::SeqCst);
@@ -335,7 +400,7 @@ impl AudioMonitor {
         println!("\nMonitoring device volume changes...\n");
 
         for device_id in manager.get_all_device_id().unwrap_or_default() {
-            match register_device(&manager, &device_id) {
+            match register_device(&manager, &device_id, self.sender.clone()) {
                 Ok(callback) => self.device_callback.push(callback),
                 Err(_) => {
                     eprintln!("Error registering device: {}", device_id);
@@ -358,6 +423,7 @@ impl AudioMonitor {
                 self.apps.clone(),
                 self.sessions_application.clone(),
                 self.needs_reinit.clone(),
+                self.sender.clone(),
             ) {
                 Ok(session) => self.session_notification.push(session),
                 Err(e) => {
@@ -371,6 +437,7 @@ impl AudioMonitor {
                 &session_manager,
                 self.apps.clone(),
                 self.needs_reinit.clone(),
+                self.sender.clone(),
             ) {
                 Ok(events) => callbacks_application.extend(events),
                 Err(e) => {
@@ -385,7 +452,7 @@ impl AudioMonitor {
         }
     }
 
-    pub fn _check_and_reinit(&mut self, manager: &ComManager) -> bool {
+    pub fn check_and_reinit(&mut self, manager: &ComManager) -> bool {
         let need_reinit = self.needs_reinit.load(Ordering::SeqCst);
 
         if need_reinit {

@@ -52,7 +52,7 @@ pub async fn handle_client(
 
     let _ = tokio::select! {
         _ = &mut write_task => { read_task.abort();  read_task.await },
-        _ = &mut read_task =>  { write_task.abort(); write_task.await },
+        _ = &mut read_task  => { write_task.abort(); write_task.await },
     };
 
     // Cleanup: remove client from map

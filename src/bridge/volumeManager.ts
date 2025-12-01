@@ -44,5 +44,5 @@ const close_tauri_listener = await tauri_window
         listener();
         close_tauri_listener();
         document.body.removeEventListener(UPDATE_CENTER_EVENT, central_update_handler);
-        tauri_window.getCurrentWindow().destroy();
+        tauri_window.getCurrentWindow().close();
     });

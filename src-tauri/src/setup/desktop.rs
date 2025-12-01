@@ -24,11 +24,14 @@ pub fn create_tauri_app() -> TauriResult<tauri::App> {
             let should_exit_to_tray = storage.get().exit_to_tray;
 
             if should_exit_to_tray {
-                // // Turn off exit to tray functionality to test other features.
-                // if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
-                //     let _ = _window.hide();
-                //     api.prevent_close();
-                // }
+                // Turn off exit to tray functionality to test other features.
+                #[cfg(not(debug_assertions))]
+                {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
+                        let _ = _window.hide();
+                        api.prevent_close();
+                    }
+                }
             }
         })
         .invoke_handler(tauri::generate_handler![

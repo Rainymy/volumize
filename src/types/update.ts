@@ -103,7 +103,7 @@ export function isUpdatePayload(payload: unknown): payload is UpdatePayload {
 }
 export function isIdentifier(data: unknown): data is Identifier {
     const data2 = data as Identifier;
-    if (typeof data2.type !== "string" || typeof data2.content?.name !== "string") {
+    if (typeof data2.type !== "string" || typeof data2.content !== "string") {
         return false;
     }
     return true;

@@ -22,7 +22,6 @@ export class ConnectSocket {
         await this.socket?.send({ type: "Ping", data: [] });
 
         let cleanup_handler: AddListener | undefined;
-
         const waitForPong = new Promise<boolean>((resolve, _) => {
             cleanup_handler = this.socket?.addListener((message) => {
                 if (message.type === "Pong") {
@@ -44,24 +43,15 @@ export class ConnectSocket {
         }
     }
 
-    parse_data(data: Message): { channel: string; data: string } | null {
+    parse_data(data: Message): object | null {
         if (data.type !== "Text") {
             return null;
         }
         try {
-            type UpdateEvent = { event: string; payload: object };
-            type DataEvent = { type: string; data: string };
-
-            const data2: DataEvent | UpdateEvent = JSON.parse(data.data) as DataEvent;
-            // console.log("parse_data:", data2);
-            return {
-                channel: data2.type,
-                data: data2.data,
-            };
+            return JSON.parse(data.data);
         } catch (err) {
             console.log(err);
         }
-
         return null;
     }
 

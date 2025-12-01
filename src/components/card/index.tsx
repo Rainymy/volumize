@@ -1,12 +1,14 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useRef } from "react";
 
 import { CardIcon } from "$base/cardIcon";
 import { VSlider } from "$base/slider";
 import { ToggleableMuteIcon } from "$base/toggleMuteIcon";
 import { useDetectOverflowX } from "$hook/useDetectOverflowX";
+import { useElementFocusedWithin } from "$hook/useElementFocusedWithin";
 import { useOverflowAmountX } from "$hook/useOverflowAmount";
 import type { MaybeAsync } from "$type/generic";
 import { classnames } from "$util/react";
+
 import style from "./index.module.less";
 
 type CardProps = {
@@ -31,22 +33,7 @@ export function Card(props: CardProps) {
     const { title, volume, isMuted, onButtonClick, onSlider, icon } = props;
 
     const ref = useRef<HTMLDivElement>(null);
-    const [isParentFocused, setIsFocused] = useState(false);
-
-    useEffect(() => {
-        const element = ref.current;
-
-        function handleFocusOut(event: PointerEvent) {
-            const isInside = element?.contains(event.target as Node) ?? false;
-            setIsFocused(isInside);
-        }
-
-        document.addEventListener("click", handleFocusOut);
-
-        return () => {
-            document.removeEventListener("click", handleFocusOut);
-        };
-    }, []);
+    const isParentFocused = useElementFocusedWithin(ref);
 
     return (
         <div className={style.container} ref={ref}>

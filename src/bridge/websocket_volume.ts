@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
-import { DEBOUNCE_DELAY } from "$type/constant";
+import { DEBOUNCE_DELAY, UPDATE_CENTER_EVENT } from "$type/constant";
+import type { EventType } from "$type/generic";
+import { isDataEvent, isUpdateEvent } from "$type/update";
 import type {
     AppIdentifier,
     AudioApplication,
@@ -19,8 +21,6 @@ import {
     type T_RUST_INVOKE,
 } from "./type";
 import { ConnectSocket } from "./websocket";
-
-type EventType = Event & CustomEventInit;
 
 type SEND_ACTION = {
     action: T_RUST_INVOKE;
@@ -50,10 +50,19 @@ export class WebsocketTauriVolumeController
                 return;
             }
 
-            const custom_event = new CustomEvent(data.channel, {
-                detail: data.data,
-            });
-            this.listener.dispatchEvent(custom_event);
+            if (isDataEvent(data)) {
+                const data2 = { channel: data.type, data: data.data };
+                const payload = { detail: data2.data };
+                this.listener.dispatchEvent(new CustomEvent(data2.channel, payload));
+            }
+
+            if (isUpdateEvent(data)) {
+                const payload = { detail: data.payload };
+                this.listener.dispatchEvent(
+                    new CustomEvent(UPDATE_CENTER_EVENT, payload),
+                );
+                return;
+            }
         });
         return this;
     }
@@ -70,7 +79,7 @@ export class WebsocketTauriVolumeController
         action: SEND_ACTION,
         timeoutMs: number = 2_500,
     ): Promise<T | null> {
-        let listener: ((event: EventType) => void) | null = null;
+        let listener: ((event: EventType<T>) => void) | null = null;
 
         const cleanup = () => {
             if (listener) {
@@ -86,10 +95,10 @@ export class WebsocketTauriVolumeController
             }, timeoutMs);
         });
 
-        const waitFor = new Promise<T>((resolve) => {
-            listener = (event: EventType) => {
+        const waitFor = new Promise<T | null>((resolve) => {
+            listener = (event: EventType<T>) => {
                 cleanup();
-                resolve(event.detail as T);
+                resolve(event.detail ?? null);
             };
 
             this.listener.addEventListener(action.request_id, listener);
@@ -100,7 +109,7 @@ export class WebsocketTauriVolumeController
         try {
             return await Promise.race([waitFor, timer]);
         } catch (error) {
-            console.warn(`[ ${this.sendEvent.name}/${action.action} ]:`, error);
+            console.warn(`[ ${this.sendEvent.name} / ${action.action} ]:`, error);
             return null;
         }
     }
@@ -150,7 +159,7 @@ export class WebsocketTauriVolumeController
         DEBOUNCE_DELAY.NORMAL,
     );
 
-    deviceMute: ITauriVolumeController["deviceMute"] = debounce(
+    deviceMute: ITauriVolumeController["deviceMute"] = debouncePerKey(
         async (id: DeviceIdentifier) => {
             const invoke_action = RUST_INVOKE.DEVICE_MUTE;
             const data = this.parse_params(invoke_action, { id });
@@ -209,7 +218,7 @@ export class WebsocketTauriVolumeController
         DEBOUNCE_DELAY.NORMAL,
     );
 
-    applicationMute: ITauriVolumeController["applicationMute"] = debounce(
+    applicationMute: ITauriVolumeController["applicationMute"] = debouncePerKey(
         async (id: AppIdentifier) => {
             const invoke_action = RUST_INVOKE.APPLICATION_MUTE;
             const data = this.parse_params(invoke_action, { id });
@@ -218,7 +227,7 @@ export class WebsocketTauriVolumeController
         DEBOUNCE_DELAY.NORMAL,
     );
 
-    applicationUnmute: ITauriVolumeController["applicationUnmute"] = debounce(
+    applicationUnmute: ITauriVolumeController["applicationUnmute"] = debouncePerKey(
         async (id: AppIdentifier) => {
             const invoke_action = RUST_INVOKE.APPLICATION_UNMUTE;
             const data = this.parse_params(invoke_action, { id });

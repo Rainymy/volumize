@@ -3,6 +3,7 @@ export type MaybeAsync<T extends (...args: never[]) => unknown> =
     | ((...args: Parameters<T>) => Promise<ReturnType<T>>);
 
 export type SimplePrimitives = string | number | boolean | null | undefined;
+export type EventType<T = unknown> = Event & CustomEventInit<T>;
 
 export type EnumKeyFromValue<
     E extends Record<string, string | number>,

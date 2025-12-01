@@ -453,7 +453,7 @@ impl AudioMonitor {
     }
 
     pub fn check_and_reinit(&mut self, manager: &ComManager) -> bool {
-        let need_reinit = self.needs_reinit.load(Ordering::SeqCst);
+        let need_reinit = self.needs_reinit.load(Ordering::Relaxed);
 
         if need_reinit {
             println!("\n!!! Audio service restarted, re-initializing... !!!\n");

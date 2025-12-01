@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { volumeController } from "$bridge/volumeManager";
 import { bufferToBlob } from "$util/generic";
@@ -6,7 +6,6 @@ import { useAsyncSignalEffect } from "./useAsyncSignalEffect";
 
 export function useURLObjectIcon(id: number | undefined) {
     const [urlObject, setUrlObject] = useState<string | null>(null);
-    const ref = useRef<string | null>(null);
 
     useAsyncSignalEffect(
         async (signal) => {
@@ -18,14 +17,13 @@ export function useURLObjectIcon(id: number | undefined) {
             if (signal.aborted || data === null) {
                 return;
             }
-            ref.current = URL.createObjectURL(await bufferToBlob(new Uint8Array(data)));
-            setUrlObject(ref.current);
+            const objectURL = URL.createObjectURL(
+                await bufferToBlob(new Uint8Array(data)),
+            );
+            setUrlObject(objectURL);
 
             return () => {
-                if (ref.current !== null) {
-                    URL.revokeObjectURL(ref.current);
-                }
-                ref.current = null;
+                URL.revokeObjectURL(objectURL);
             };
         },
         [id],

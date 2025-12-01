@@ -7,6 +7,7 @@ use tokio::sync::mpsc::unbounded_channel;
 use tokio::time::interval;
 
 use crate::server::WebSocketServerState;
+use crate::types::shared::UPDATE_EVENT_NAME;
 use crate::{
     platform,
     types::{
@@ -20,32 +21,26 @@ pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>)
 
     let thread_handle = std::thread::spawn(move || {
         let controller = platform::make_controller(sender);
-        let mut count = 1;
 
         rt::block_on(async move {
             let mut interval = interval(Duration::from_millis(3000));
             interval.tick().await; // Skip the first immediate tick.
             println!("Main loop starting");
 
+            let mut count = 1;
             loop {
-                let interval = interval.tick();
-                let recv = rx.recv();
-
-                match select(Box::pin(interval), Box::pin(recv)).await {
+                match select(Box::pin(interval.tick()), Box::pin(rx.recv())).await {
                     Either::Left(_) => {
                         println!("Periodic check: {}", count);
-                        if count >= 20 {
-                            break; // Temp: Exit after 20 checks
-                        };
+                        // if count >= 20 {
+                        //     break; // Temp: Exit after 20 checks
+                        // };
                         count += 1;
                         controller.check_and_reinit();
                     }
                     Either::Right((command_result, _)) => match command_result {
                         Some(command) => execute_command(command, &controller),
-                        None => {
-                            println!("Channel closed, exiting");
-                            break;
-                        }
+                        None => break,
                     },
                 }
             }
@@ -78,28 +73,25 @@ pub fn spawn_update_thread(app_handle: &AppHandle, sender: Receiver<UpdateChange
     let app_handle = app_handle.clone();
 
     std::thread::spawn(move || {
-        let websocket_server = app_handle.state::<WebSocketServerState>();
         while let Ok(msg) = sender.recv() {
-            println!("{:?}", msg);
+            println!("sending: {:?}", msg);
 
-            let event_name = "update";
             // ==================== SEND TO WEBVIEW ====================
-            let result = app_handle.emit_to(EventTarget::App, event_name, &msg);
+            let result = app_handle.emit_to(EventTarget::App, UPDATE_EVENT_NAME, &msg);
             if let Err(err) = result {
                 eprintln!("Error emitting update event: {}", err);
             }
             // =============== SEND TO WEBSOCKET CLIENTS ===============
-            rt::block_on(async {
-                let event_str = json! ({
-                    "event": event_name,
-                    "payload": &msg
-                })
-                .to_string();
-                let clients = websocket_server.clients.lock();
-                for (_id, client) in clients.await.iter() {
-                    let _ = client.1.send(event_str.clone().into());
-                }
-            });
+            let event_str = json! ({
+                "event": UPDATE_EVENT_NAME,
+                "payload": &msg
+            })
+            .to_string();
+            let websocket_server = app_handle.state::<WebSocketServerState>();
+            let clients = websocket_server.clients.blocking_lock();
+            for (_id, client) in clients.iter() {
+                let _ = client.1.send(event_str.clone().into());
+            }
             // ====================== RECEIVE END ======================
         }
         println!("Closing update thread");

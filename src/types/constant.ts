@@ -1,3 +1,7 @@
+export const UPDATE_CENTER_EVENT = "update_center";
+export const UPDATE_EVENT = "update";
+export const TAURI_UPDATE_EVENT = "update";
+
 export enum PORT {
     MAX = 2 ** 16, // 65 536
     MIN = 2 ** 10, // 1024

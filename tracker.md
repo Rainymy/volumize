@@ -1,18 +1,9 @@
-## Priority
+## ============== Priority ==============
 
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
-- [ ] Detect changes in volume.
-    - [x] Implement volume detection functionality.
-        - [x] Detect system audio changes.
-        - [x] Detect application audio changes.
-        - [x] Setup functionality to propagate changes to UI.
-    - [ ] Update Changes at UI.
-        - [x] Send updates to all clients.
-        - [ ] Sync backend type with UI.
-        - [ ] Functionality to handle UI updates.
 
-## Todo
+## ================ Todo ================
 
 - [ ] Implement a authentication system.
     - Easies should be generate Random String.
@@ -21,9 +12,21 @@
     - tray menu is not reflected when choosing timer option.
 - [ ] Improved UI design.
     - The new design is better than the old one.
+- [ ] Refactor rust codebase.
+    - Unify async and sync usages.
+        - Async and sync code are a mess. Especially the thread management.
 
-## Done
+## ================ Done ================
 
+- [x] Detect changes in volume.
+    - [x] Implement volume detection functionality.
+        - [x] Detect system audio changes.
+        - [x] Detect application audio changes.
+        - [x] Setup functionality to propagate changes to UI.
+    - [x] Update Changes at UI.
+        - [x] Send updates to all clients.
+        - [x] Sync backend type with UI.
+        - [x] Functionality to handle UI updates.
 - [x] Implement a heart beat functionality.
     - Client may disconnect (device sleep).
 

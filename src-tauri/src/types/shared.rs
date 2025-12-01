@@ -6,6 +6,7 @@ use thiserror::Error;
 pub type VolumePercent = f32;
 pub type AppIdentifier = u32;
 pub type DeviceIdentifier = String;
+pub const UPDATE_EVENT_NAME: &str = "update";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "content", rename_all = "lowercase")]
@@ -37,10 +38,6 @@ pub struct UpdateChange {
 }
 
 impl UpdateChange {
-    // pub fn to_string(&self) -> Result<String, Box<dyn std::error::Error>> {
-    //     serde_json::to_string(self).map_err(|e| e.into())
-    // }
-
     pub fn volume_change(id: Identifier, volume: f32, mute: bool) -> Self {
         Self {
             id: id,

@@ -1,10 +1,14 @@
 use futures_util::future::{select, Either};
-use std::{net::SocketAddr, sync::Arc, time::Duration};
+use std::{
+    net::SocketAddr,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 use tauri::{
     async_runtime::{self as rt},
     AppHandle, Manager,
 };
-use tokio::{net::UdpSocket, sync::Mutex};
+use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
 
 use super::{super::types::tray::Discovery, RunningServer, ServiceDiscovery};
@@ -66,18 +70,21 @@ fn replace_server_state(
     current: &Arc<Mutex<Option<RunningServer>>>,
     new_server: Option<RunningServer>,
 ) {
-    rt::block_on(async move {
-        let mut current_server = current.lock().await;
-
-        let old_server = match new_server {
-            Some(value) => current_server.replace(value),
-            None => current_server.take(),
-        };
-
-        if let Some(old) = old_server {
-            let _ = old.shutdown().await;
+    let mut current_server = match current.lock() {
+        Ok(lock) => lock,
+        Err(e) => {
+            println!("[replace_server_state] Failed to aquire lock: {e}");
+            return;
         }
-    });
+    };
+
+    let old_server = match new_server {
+        Some(value) => current_server.replace(value),
+        None => current_server.take(),
+    };
+    if let Some(old) = old_server {
+        let _ = rt::block_on(old.shutdown());
+    }
 }
 
 async fn register_service(

@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     net::{Ipv4Addr, SocketAddrV4},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 use futures_util::future::{select, Either};
@@ -50,8 +50,9 @@ impl RunningServer {
     }
 }
 
+#[derive(Default)]
 pub struct ServiceDiscovery {
-    server: Arc<rt::Mutex<Option<RunningServer>>>,
+    server: Arc<Mutex<Option<RunningServer>>>,
 }
 
 impl ServiceDiscovery {
@@ -64,14 +65,11 @@ impl ServiceDiscovery {
     pub const LISTEN_ADDRESS: SocketAddrV4 =
         SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, Self::LISTEN_PORT);
 
-    pub fn new() -> Self {
-        Self {
-            server: Default::default(),
-        }
-    }
-
     pub async fn shutdown(&self) -> Result<(), String> {
-        let mut server = self.server.lock().await;
+        let mut server = match self.server.lock() {
+            Ok(server) => server,
+            Err(e) => return Err(format!("Failed to lock server: {}", e)),
+        };
         match server.take() {
             Some(server) => server.shutdown().await,
             None => Ok(()),
@@ -80,13 +78,6 @@ impl ServiceDiscovery {
 }
 
 impl WebSocketServerState {
-    pub fn new() -> Self {
-        Self {
-            clients: Default::default(),
-            server: Default::default(),
-        }
-    }
-
     pub async fn shutdown(&self) -> Result<(), String> {
         let mut server = self.server.lock().await;
         if let Some(server) = server.take() {
@@ -140,18 +131,15 @@ pub fn start_websocket_server(port: u16, app_handle: &AppHandle) -> String {
     });
 
     // Store the server handle
-    rt::block_on(async {
-        let new_server = RunningServer {
-            name: "Websocket".into(),
-            handle: new_handle,
-            cancel,
-        };
-
-        let mut current_server = state.server.lock().await;
-        if let Some(old) = current_server.replace(new_server) {
-            let _ = old.shutdown().await;
-        }
-    });
+    let new_server = RunningServer {
+        name: "Websocket".into(),
+        handle: new_handle,
+        cancel,
+    };
+    let mut current_server = state.server.blocking_lock();
+    if let Some(old) = current_server.replace(new_server) {
+        rt::spawn(old.shutdown());
+    }
 
     addr.to_string()
 }

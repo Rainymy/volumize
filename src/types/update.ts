@@ -66,7 +66,7 @@ export function isStateChange(change: ChangeType): change is isStateChange {
 }
 
 export type UpdatePayload = { id: Identifier; change: ChangeType };
-export type UpdateEvent = { event: string; payload: UpdatePayload };
+export type UpdateEvent = { event: "update"; payload: UpdatePayload };
 
 export type DataEvent = { type: string; data: object };
 export type ResponseEvent = { channel: string; data: object };
@@ -81,10 +81,7 @@ export function isDataEvent(event: unknown): event is DataEvent {
 
 export function isUpdateEvent(event: unknown): event is UpdateEvent {
     const data = event as UpdateEvent;
-    if (typeof data.event !== "string" || !isUpdatePayload(data.payload)) {
-        return false;
-    }
-    return true;
+    return data.event === "update" && isUpdatePayload(data.payload);
 }
 
 export function isUpdatePayload(payload: unknown): payload is UpdatePayload {
@@ -96,15 +93,9 @@ export function isUpdatePayload(payload: unknown): payload is UpdatePayload {
         isStateChange(data.change),
     ];
 
-    if (!isIdentifier(data.id) || !isUpdateChange.some((a) => a === true)) {
-        return false;
-    }
-    return true;
+    return isIdentifier(data.id) && isUpdateChange.some((a) => a === true);
 }
 export function isIdentifier(data: unknown): data is Identifier {
     const data2 = data as Identifier;
-    if (typeof data2.type !== "string" || typeof data2.content !== "string") {
-        return false;
-    }
-    return true;
+    return isAppIdentifier(data2) || isDeviceIdentifier(data2);
 }

@@ -77,7 +77,10 @@ pub fn spawn_update_thread(app_handle: &AppHandle, sender: Receiver<UpdateChange
             println!("sending: {:?}", msg);
 
             // ==================== SEND TO WEBVIEW ====================
-            let result = app_handle.emit_to(EventTarget::App, UPDATE_EVENT_NAME, &msg);
+            let target_event = EventTarget::WebviewWindow {
+                label: "main".into(),
+            };
+            let result = app_handle.emit_to(target_event, UPDATE_EVENT_NAME, &msg);
             if let Err(err) = result {
                 eprintln!("Error emitting update event: {}", err);
             }

@@ -19,6 +19,12 @@ export async function bufferToBlob(buffer: BufferSource) {
     return new Blob([base64url], { type: "image/png" });
 }
 
+export function isReloaded(): boolean {
+    type T = PerformanceNavigationTiming[];
+    const entries = performance.getEntriesByType("navigation") as T;
+    return entries.some((entry) => entry.type === "reload");
+}
+
 type TController = typeof volumeController;
 export function isSocketController(t: TController): t is WebsocketTauriVolumeController {
     return t instanceof WebsocketTauriVolumeController;
@@ -46,8 +52,8 @@ export function getNumber(value: unknown): number | undefined {
     return number;
 }
 
-export async function sleep(timeMs: number) {
-    return new Promise<void>((resolve) => setTimeout(resolve, timeMs));
+export async function sleep<T = void>(timeMs: number, return_value?: T) {
+    return new Promise<T>((resolve) => setTimeout(resolve, timeMs, return_value));
 }
 
 export function centerText(text: string, width: number) {

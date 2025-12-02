@@ -57,8 +57,8 @@ export class WebsocketTauriVolumeController
             }
 
             if (isUpdateEvent(data)) {
-                const payload = { detail: data.payload };
-                this.listener.dispatchEvent(
+                const payload = { detail: data };
+                document.body.dispatchEvent(
                     new CustomEvent(UPDATE_CENTER_EVENT, payload),
                 );
                 return;

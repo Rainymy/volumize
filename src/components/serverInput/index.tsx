@@ -14,18 +14,23 @@ import { tryParseURL } from "$util/temp";
 import style from "./index.module.less";
 
 export function ServerURLComponent() {
-    const start = useStartConnection();
+    const initiateConnection = useStartConnection();
 
     return (
         <div className={style.input_container}>
-            <ServerInput start={() => start(true)} />
+            <ServerInput start={() => initiateConnection(true)} />
             <hr className={style.divider} />
             <div className={style.discover_server}>
-                <AppButton onClick={() => start(false)}>Discover Servers</AppButton>
+                <AppButton onClick={() => initiateConnection(false)}>
+                    Discover Servers
+                </AppButton>
             </div>
         </div>
     );
 }
+
+const FORM_NAME_URL = "url";
+const FORM_NAME_PORT = "port";
 
 function ServerInput({ start }: { start: () => Promise<void> }) {
     const [connect_url, set_connect_url] = useAtom(server_url);
@@ -35,19 +40,15 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        const formData = new FormData(event.currentTarget);
+        const form = parseForm(new FormData(event.currentTarget));
 
-        const { error, data } = parseForm(formData);
-
-        if (error || !data) {
-            setErrorText(error);
+        if (form.error || !form.data) {
+            setErrorText(form.error);
             return;
         }
 
-        const { url, port } = data;
-
-        set_connect_url(url);
-        set_connect_port(port);
+        set_connect_url(form.data.url);
+        set_connect_port(form.data.port);
         await start();
     }
 
@@ -55,7 +56,7 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
         <div className={style.server_input}>
             <form className={style.form} onSubmit={handleSubmit}>
                 <AppInput
-                    name="url"
+                    name={FORM_NAME_URL}
                     placeholder="Enter server address"
                     defaultValue={connect_url}
                     className={classnames([style.form_input, "flex-grow-4"])}
@@ -65,8 +66,8 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
                     type="number"
                     min={PORT.MIN}
                     max={PORT.MAX}
-                    name="port"
-                    placeholder="9002"
+                    name={FORM_NAME_PORT}
+                    placeholder={PORT.DEFAULT.toString()}
                     defaultValue={connect_port}
                     className={classnames([style.form_input, "flex-grow-2"])}
                     onClick={() => setErrorText("")}
@@ -84,26 +85,25 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
 }
 
 function parseForm(form: FormData) {
-    const form_url = form.get("url")?.toString() ?? "";
-    const port_number = getNumber(form.get("port")?.toString());
+    const form_url = form.get(FORM_NAME_URL)?.toString() ?? "";
+    const port_number = getNumber(form.get(FORM_NAME_PORT)?.toString());
 
     const data = tryParseURL(`${form_url}:1000`);
 
     if (!data) {
-        return { data: null, error: "Invalid. URL address!" };
+        return { error: "Invalid. URL address!" };
     }
 
     if (port_number === undefined) {
-        return { data: null, error: "Invalid. PORT address!" };
+        return { error: "Invalid. PORT address!" };
     }
 
     // Check if port is within valid range; PORT.MIN < port < PORT.MAX.
     if (PORT.MIN >= port_number || port_number >= PORT.MAX) {
         return {
-            data: null,
             error: `Invalid. PORT address range! ${PORT.MIN}-${PORT.MAX}`,
         };
     }
 
-    return { data: { url: data.url, port: port_number }, error: null };
+    return { data: { url: data.url, port: port_number } };
 }

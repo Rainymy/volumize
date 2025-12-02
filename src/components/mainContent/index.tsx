@@ -34,19 +34,19 @@ export function MainContent() {
 
         const interval_id = setInterval(async () => {
             if (isSocketController(volumeController)) {
-                const hasHeartbeat = await volumeController.heartbeat();
+                const heartbeat = await volumeController.heartbeat();
                 // const hasHeartbeat = Math.random() < 0.1;
 
-                console.log("Received heartbeat:", hasHeartbeat);
-                retryCount = hasHeartbeat ? 0 : retryCount + 1;
+                console.log("Received heartbeat:", heartbeat);
+                retryCount = heartbeat ? 0 : retryCount + 1;
 
-                if (!hasHeartbeat) {
+                if (!heartbeat) {
                     console.log(
                         "Heartbeat failure, retries left:",
                         HEARTBEAT.MAX_RETRY_COUNT - retryCount,
                     );
                 }
-                if (retryCount > HEARTBEAT.MAX_RETRY_COUNT) {
+                if (retryCount >= HEARTBEAT.MAX_RETRY_COUNT) {
                     await logout();
                 }
             }

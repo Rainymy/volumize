@@ -28,9 +28,7 @@ export function DeviceMaster() {
     useEffect(() => {
         function updateHandle(event: EventType<UpdateChange>) {
             const data = event.detail;
-            if (data === undefined) return;
-
-            if (isDeviceIdentifier(data.id) && isAudioVolumeChange(data.change)) {
+            if (data && isDeviceIdentifier(data.id) && isAudioVolumeChange(data.change)) {
                 const id = data.id.content;
                 const volume = {
                     current: data.change.volume,

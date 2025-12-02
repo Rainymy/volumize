@@ -50,19 +50,23 @@ export class WebsocketTauriVolumeController
                 return;
             }
 
+            // console.log("Received data:", isDataEvent(data), data);
             if (isDataEvent(data)) {
                 const data2 = { channel: data.type, data: data.data };
                 const payload = { detail: data2.data };
                 this.listener.dispatchEvent(new CustomEvent(data2.channel, payload));
-            }
-
-            if (isUpdateEvent(data)) {
-                const payload = { detail: data };
-                document.body.dispatchEvent(
-                    new CustomEvent(UPDATE_CENTER_EVENT, payload),
-                );
                 return;
             }
+
+            // console.log("Received update:", isUpdateEvent(data), data);
+            if (isUpdateEvent(data)) {
+                const payload = { detail: data };
+                const __evt__ = new CustomEvent(UPDATE_CENTER_EVENT, payload);
+                document.body.dispatchEvent(__evt__);
+                return;
+            }
+
+            console.log("Received unknown event:", data);
         });
         return this;
     }

@@ -30,7 +30,7 @@
 - [x] Implement a heart beat functionality.
     - Client may disconnect (device sleep).
 
-### v2.0 Demo
+### ============= v2.0 Demo =============
 
 - [x] Update README.md
     - Add instructions for installation and usage.
@@ -68,7 +68,7 @@
     - Prefer to use the re-exported functionality for compatibility reasons.
         - Tauri & Tokio runtime may use different version.
 
-### v1.0 Prototype
+### ========== v1.0 Prototype ===========
 
 - [x] Bug in UI sometimes the connection is stale.
     - Sometimes the device applications not changing.

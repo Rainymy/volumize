@@ -1,3 +1,4 @@
+import type { TauriConnection, WebConnection } from "$type/navigation";
 import type {
     AppIdentifier,
     AudioApplication,
@@ -8,6 +9,7 @@ import type {
 
 export enum RUST_INVOKE {
     DISCOVER_SERVER_ADDRESS = "discover_server_address",
+    HEARTBEAT = "heartbeat",
 
     // ============= DEVICE =============
     DEVICE_GET_VOLUME = "device_get_volume",
@@ -36,7 +38,11 @@ export type PARAM_ACTION = {
 };
 
 export interface ITauriVolumeController {
-    discoverServer(): Promise<{ url: string; port: number } | null>;
+    discoverServer(): Promise<TauriConnection | WebConnection | null>;
+    heartbeat(): Promise<boolean>;
+
+    setup(url: string, port: number): Promise<void>;
+    close(): Promise<void>;
 
     // ============= DEVICE =============
     deviceGetVolume(id: DeviceIdentifier): Promise<VolumePercent>;

@@ -1,5 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
-import { DEBOUNCE_DELAY } from "$type/constant";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+
+import { DEBOUNCE_DELAY, TAURI_UPDATE_EVENT, UPDATE_CENTER_EVENT } from "$type/constant";
+import type { TauriConnection } from "$type/navigation";
+import type { UpdateEvent } from "$type/update";
 import type {
     AppIdentifier,
     AudioDevice,
@@ -20,6 +24,33 @@ export class TauriVolumeController
     extends ATauriVolumeController
     implements ITauriVolumeController
 {
+    private listener: UnlistenFn | null = null;
+
+    async close() {
+        this.listener?.();
+        this.listener = null;
+    }
+
+    async setup(_url: string, _port: number) {
+        await this.close();
+        this.listener = await listen<UpdateEvent>(
+            TAURI_UPDATE_EVENT,
+            (event) => {
+                console.log("event.id:", event.id);
+                const CENTRAL = UPDATE_CENTER_EVENT;
+                const data = new CustomEvent(CENTRAL, { detail: event });
+                document.body.dispatchEvent(data);
+            },
+            { target: { kind: "AnyLabel", label: "volume-control-panel" } },
+        );
+    }
+
+    async heartbeat() {
+        // Only need to check if listener is already set.
+        // By checking if there is unlisten function.
+        return typeof this.listener === "function";
+    }
+
     private async sendEvent<T>(
         action: T_RUST_INVOKE,
         data?: PARAM_ACTION,
@@ -165,8 +196,9 @@ export class TauriVolumeController
         DEBOUNCE_DELAY.NORMAL,
     );
 
-    discoverServer() {
-        console.warn("You are using Tauri Volume Controller.");
-        return new Promise<null>((resolve) => resolve(null));
+    async discoverServer() {
+        return await new Promise<TauriConnection>((resolve) => {
+            return resolve({ kind: "tauri", url: "", port: 0 });
+        });
     }
 }

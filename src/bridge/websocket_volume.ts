@@ -1,7 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { DEBOUNCE_DELAY, UPDATE_CENTER_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
-import { isDataEvent, isUpdateEvent } from "$type/update";
+import type { WebConnection } from "$type/navigation";
+import { isDataEvent, isRequestAcceptedEvent, isUpdateEvent } from "$type/update";
 import type {
     AppIdentifier,
     AudioApplication,
@@ -44,21 +45,20 @@ export class WebsocketTauriVolumeController
             if (event.type === "Pong") {
                 return;
             }
+
             const data = this.connection.parse_data(event);
             if (data === null) {
                 console.log("Encountered parse error: ", event);
                 return;
             }
 
-            // console.log("Received data:", isDataEvent(data), data);
-            if (isDataEvent(data)) {
+            if (isDataEvent(data) || isRequestAcceptedEvent(data)) {
                 const data2 = { channel: data.type, data: data.data };
                 const payload = { detail: data2.data };
                 this.listener.dispatchEvent(new CustomEvent(data2.channel, payload));
                 return;
             }
 
-            // console.log("Received update:", isUpdateEvent(data), data);
             if (isUpdateEvent(data)) {
                 const payload = { detail: data };
                 const __evt__ = new CustomEvent(UPDATE_CENTER_EVENT, payload);
@@ -68,7 +68,6 @@ export class WebsocketTauriVolumeController
 
             console.log("Received unknown event:", data);
         });
-        return this;
     }
 
     async close() {
@@ -250,6 +249,14 @@ export class WebsocketTauriVolumeController
 
     discoverServer: ITauriVolumeController["discoverServer"] = debounce(async () => {
         const invoke_action = RUST_INVOKE.DISCOVER_SERVER_ADDRESS;
-        return tryParseURL(await invoke<string | null>(invoke_action));
+        const parsedURL = tryParseURL(await invoke<string | null>(invoke_action));
+        if (!parsedURL) {
+            return null;
+        }
+        return {
+            kind: "web",
+            port: parsedURL.port,
+            url: parsedURL.url,
+        } satisfies WebConnection;
     }, DEBOUNCE_DELAY.NORMAL);
 }

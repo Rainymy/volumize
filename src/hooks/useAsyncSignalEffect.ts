@@ -30,8 +30,8 @@ export function useAsyncSignalEffect(
         })();
 
         return () => {
-            cleanup?.();
             abortController.abort(`[ ${useAsyncSignalEffect.name} ]: Unmounted`);
+            cleanup?.();
         };
         // biome-ignore lint/correctness/useExhaustiveDependencies: This is fine.
     }, deps);

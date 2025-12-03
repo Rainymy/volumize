@@ -1,64 +1,40 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 
 import { volumeController } from "$bridge/volumeManager";
 import { server_port, server_url } from "$model/server_url";
 import { connection_state } from "$model/volume";
-import { ConnectionState } from "$type/navigation";
-import { isSocketController } from "$util/generic";
+import { CONNECTION_MODE, ConnectionState } from "$type/navigation";
 
 export function useStartConnection() {
-    const tryConnect = useTryConnect();
     const getServerURL = useGetServerURL();
-
-    return useCallback(
-        async (manual_mode: boolean) => {
-            const url = await getServerURL(manual_mode);
-            if (!url) {
-                console.error("Failed to get server URL");
-                return;
-            }
-
-            await tryConnect(url.url, url.port);
-        },
-        [getServerURL, tryConnect],
-    );
-}
-
-function useTryConnect() {
-    const is_cancel = useRef(false);
     const set_connection_ready = useSetAtom(connection_state);
 
     useEffect(() => {
         return () => {
-            is_cancel.current = true;
+            // volumeController.close();
         };
     }, []);
 
     return useCallback(
-        async (url: string, port: number) => {
-            if (!isSocketController(volumeController)) {
-                return;
-            }
-
+        async (mode: CONNECTION_MODE) => {
             set_connection_ready(() => ConnectionState.LOADING);
-            await volumeController.close();
-
-            if (!is_cancel.current) {
+            const url = await getServerURL(mode);
+            if (!url) {
+                console.error("Failed to get server URL");
                 set_connection_ready(() => ConnectionState.DISCONNECTED);
                 return;
             }
 
-            await volumeController.setup(url, port);
-            set_connection_ready(() => ConnectionState.CONNECTED);
+            await volumeController.close();
+            await volumeController.setup(url.url, url.port);
+            set_connection_ready(ConnectionState.CONNECTED);
         },
-        [set_connection_ready],
+        [getServerURL, set_connection_ready],
     );
 }
 
 function useGetServerURL() {
-    const set_connection_ready = useSetAtom(connection_state);
-
     const connect_url = useAtomValue(server_url);
     const connect_port = useAtomValue(server_port);
 
@@ -66,21 +42,19 @@ function useGetServerURL() {
     type Info = NonNullable<Awaited<ReturnValue>>;
 
     return useCallback(
-        async (manual_input: boolean) => {
+        async (manual_input: CONNECTION_MODE) => {
             console.log("Manual mode: ", manual_input);
 
-            if (!manual_input) {
-                set_connection_ready(() => ConnectionState.LOADING);
-                console.log("Discover server from MDNS");
-                const info = await volumeController.discoverServer();
-                set_connection_ready(() => ConnectionState.DISCONNECTED);
-                return info;
+            if (manual_input === CONNECTION_MODE.MANUAL) {
+                return {
+                    kind: "web",
+                    url: connect_url,
+                    port: connect_port,
+                } satisfies Info;
             }
-            return {
-                url: connect_url,
-                port: connect_port,
-            } satisfies Info;
+
+            return await volumeController.discoverServer();
         },
-        [connect_url, connect_port, set_connection_ready],
+        [connect_url, connect_port],
     );
 }

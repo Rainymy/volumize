@@ -1,3 +1,4 @@
+import { TAURI_UPDATE_EVENT } from "./constant";
 import type { AppIdentifier, DeviceIdentifier, VolumePercent } from "./volume";
 
 const appId = "app";
@@ -66,9 +67,13 @@ export function isStateChange(change: ChangeType): change is isStateChange {
 }
 
 export type UpdatePayload = { id: Identifier; change: ChangeType };
-export type UpdateEvent = { event: "update"; payload: UpdatePayload };
+export type UpdateEvent = {
+    event: typeof TAURI_UPDATE_EVENT;
+    payload: UpdatePayload;
+};
 
 export type DataEvent = { type: string; data: object };
+export type RequestAcceptedEvent = { type: string; data: "REQUEST ACCEPTED" };
 export type ResponseEvent = { channel: string; data: object };
 
 export function isDataEvent(event: unknown): event is DataEvent {
@@ -81,7 +86,12 @@ export function isDataEvent(event: unknown): event is DataEvent {
 
 export function isUpdateEvent(event: unknown): event is UpdateEvent {
     const data = event as UpdateEvent;
-    return data.event === "update" && isUpdatePayload(data.payload);
+    return data.event === TAURI_UPDATE_EVENT && isUpdatePayload(data.payload);
+}
+
+export function isRequestAcceptedEvent(event: unknown): event is RequestAcceptedEvent {
+    const data = event as RequestAcceptedEvent;
+    return typeof data.type === "string" && data.data === "REQUEST ACCEPTED";
 }
 
 export function isUpdatePayload(payload: unknown): payload is UpdatePayload {

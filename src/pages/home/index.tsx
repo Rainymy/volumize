@@ -1,29 +1,25 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
 import { AppLogo } from "$base/appLogo";
 import { AppButton } from "$base/button";
 import { ServerURLComponent } from "$component/serverInput";
+import { useAsyncSignalEffect } from "$hook/useAsyncSignalEffect";
 import { connection_state } from "$model/volume";
 import { ConnectionState, NavigationType } from "$type/navigation";
-
 import style from "./index.module.less";
 
 export function Entry() {
     const navigate = useNavigate();
 
-    // const startConnection = useStartConnection();
     const connect_state = useAtomValue(connection_state);
     const isLoading = connect_state === ConnectionState.LOADING;
 
-    useEffect(() => {
+    useAsyncSignalEffect(async () => {
         if (ConnectionState.CONNECTED === connect_state) {
-            navigate(NavigationType.MAIN);
-            return;
+            await navigate(NavigationType.MAIN);
         }
-        return;
     }, [connect_state, navigate]);
 
     return (

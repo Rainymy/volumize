@@ -4,11 +4,12 @@ import { FaSearch } from "react-icons/fa";
 
 import { AppButton } from "$base/button";
 import { AppInput } from "$base/input";
+import { is_desktop } from "$bridge/generic";
 import { useStartConnection } from "$hook/useWebsocket";
 import { server_port, server_url } from "$model/server_url";
 import { PORT } from "$type/constant";
+import { CONNECTION_MODE } from "$type/navigation";
 import { getNumber } from "$util/generic";
-
 import { classnames } from "$util/react";
 import { tryParseURL } from "$util/temp";
 import style from "./index.module.less";
@@ -16,15 +17,29 @@ import style from "./index.module.less";
 export function ServerURLComponent() {
     const initiateConnection = useStartConnection();
 
-    return (
-        <div className={style.input_container}>
-            <ServerInput start={() => initiateConnection(true)} />
+    const server_input_component = (
+        <>
+            <ServerInput start={() => initiateConnection(CONNECTION_MODE.MANUAL)} />
             <hr className={style.divider} />
             <div className={style.discover_server}>
-                <AppButton onClick={() => initiateConnection(false)}>
+                <AppButton onClick={() => initiateConnection(CONNECTION_MODE.DISCOVERY)}>
                     Discover Servers
                 </AppButton>
             </div>
+        </>
+    );
+
+    const tauri_component = (
+        <div className={style.discover_server}>
+            <AppButton onClick={() => initiateConnection(CONNECTION_MODE.TAURI)}>
+                Volumize enter
+            </AppButton>
+        </div>
+    );
+
+    return (
+        <div className={style.input_container}>
+            {is_desktop() ? tauri_component : server_input_component}
         </div>
     );
 }

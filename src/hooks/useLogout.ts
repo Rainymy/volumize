@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { volumeController } from "$bridge/volumeManager";
 import { connection_state } from "$model/volume";
 import { ConnectionState, NavigationType } from "$type/navigation";
-import { isSocketController } from "$util/generic";
 
 export function useLogout() {
     const navigate = useNavigate();
@@ -13,11 +12,7 @@ export function useLogout() {
 
     return useCallback(async () => {
         connection(() => ConnectionState.DISCONNECTED);
-
-        if (isSocketController(volumeController)) {
-            await volumeController.close();
-        }
-
+        await volumeController.close();
         await navigate(NavigationType.HOME);
     }, [navigate, connection]);
 }

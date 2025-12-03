@@ -31,7 +31,8 @@
             "$util/*": ["./src/utils/*"],
             "$hook/*": ["./src/hooks/*"],
             "$type/*": ["./src/types/*"]
-        }
+        },
+        "types": ["vite/client"]
     },
     "include": ["src", "vite.config.ts"]
 }

@@ -1,12 +1,9 @@
 import { atom } from "jotai";
 
-import { is_desktop } from "$bridge/generic";
 import { ConnectionState } from "$type/navigation";
 import type { AppIdentifier, AudioApplication, AudioDevice } from "$type/volume";
 
-export const connection_state = atom(
-    is_desktop() ? ConnectionState.CONNECTED : ConnectionState.DISCONNECTED,
-);
+export const connection_state = atom(ConnectionState.DISCONNECTED);
 
 export const selected_device_id = atom<string>();
 export const device_list = atom<AudioDevice[]>([]);

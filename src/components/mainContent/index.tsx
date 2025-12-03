@@ -8,7 +8,6 @@ import { application_ids, device_list, selected_device_id } from "$model/volume"
 import { HEARTBEAT, UPDATE_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
 import { isAppIdentifier, isStateChange, type UpdateChange } from "$type/update";
-import { isSocketController } from "$util/generic";
 import style from "./index.module.less";
 
 /*                          UI Design
@@ -33,22 +32,20 @@ export function MainContent() {
         let retryCount = 0;
 
         const interval_id = setInterval(async () => {
-            if (isSocketController(volumeController)) {
-                const heartbeat = await volumeController.heartbeat();
-                // const hasHeartbeat = Math.random() < 0.1;
+            const heartbeat = await volumeController.heartbeat();
+            // const hasHeartbeat = Math.random() < 0.1;
 
-                console.log("Received heartbeat:", heartbeat);
-                retryCount = heartbeat ? 0 : retryCount + 1;
+            console.log("Received heartbeat:", heartbeat);
+            retryCount = heartbeat ? 0 : retryCount + 1;
 
-                if (!heartbeat) {
-                    console.log(
-                        "Heartbeat failure, retries left:",
-                        HEARTBEAT.MAX_RETRY_COUNT - retryCount,
-                    );
-                }
-                if (retryCount >= HEARTBEAT.MAX_RETRY_COUNT) {
-                    await logout();
-                }
+            if (!heartbeat) {
+                console.log(
+                    "Heartbeat failure, retries left:",
+                    HEARTBEAT.MAX_RETRY_COUNT - retryCount,
+                );
+            }
+            if (retryCount >= HEARTBEAT.MAX_RETRY_COUNT) {
+                await logout();
             }
         }, HEARTBEAT.CHECK_DELAY_MS);
 

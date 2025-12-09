@@ -48,7 +48,7 @@ export class WebsocketTauriVolumeController
 
             const data = this.connection.parse_data(event);
             if (data === null) {
-                console.log("Encountered parse error: ", event);
+                console.warn("Encountered parse error: ", event);
                 return;
             }
 
@@ -82,39 +82,31 @@ export class WebsocketTauriVolumeController
         action: SEND_ACTION,
         timeoutMs: number = 2_500,
     ): Promise<T | null> {
-        let listener: ((event: EventType<T>) => void) | null = null;
-
-        const cleanup = () => {
-            if (listener) {
+        const waitFor = new Promise<T | null>((resolve, reject) => {
+            const listener = (event: EventType<T>) => {
                 this.listener.removeEventListener(action.request_id, listener);
-                listener = null;
-            }
-        };
+                resolve(event.detail ?? null);
+            };
+            this.listener.addEventListener(action.request_id, listener);
 
-        const timer = new Promise<never>((_, reject) => {
             setTimeout(() => {
-                cleanup();
+                this.listener.removeEventListener(action.request_id, listener);
                 reject(`Event '${action.action}' timed out after ${timeoutMs}ms`);
             }, timeoutMs);
         });
 
-        const waitFor = new Promise<T | null>((resolve) => {
-            listener = (event: EventType<T>) => {
-                cleanup();
-                resolve(event.detail ?? null);
-            };
-
-            this.listener.addEventListener(action.request_id, listener);
-        });
-
-        await this.connection.send(action.data);
-
-        try {
-            return await Promise.race([waitFor, timer]);
-        } catch (error) {
-            console.warn(`[ ${this.sendEvent.name} / ${action.action} ]:`, error);
+        const did_send = await this.connection.send(action.data);
+        if (!did_send) {
             return null;
         }
+
+        try {
+            return await waitFor;
+        } catch (error) {
+            console.warn(`[ ${this.sendEvent.name} / ${action.action} ]:`, error);
+        }
+
+        return null;
     }
 
     private parse_params(action: T_RUST_INVOKE, data?: PARAM_ACTION): SEND_ACTION {

@@ -33,7 +33,7 @@ export function MainContent() {
 
         const interval_id = setInterval(async () => {
             const heartbeat = await volumeController.heartbeat();
-            // const hasHeartbeat = Math.random() < 0.1;
+            // const heartbeat = Math.random() < 0.1;
 
             console.log("Received heartbeat:", heartbeat);
             retryCount = heartbeat ? 0 : retryCount + 1;
@@ -45,6 +45,8 @@ export function MainContent() {
                 );
             }
             if (retryCount >= HEARTBEAT.MAX_RETRY_COUNT) {
+                console.log("Max retries reached, logging out...");
+                clearInterval(interval_id);
                 await logout();
             }
         }, HEARTBEAT.CHECK_DELAY_MS);
@@ -55,16 +57,14 @@ export function MainContent() {
     }, [logout]);
 
     useEffect(() => {
-        volumeController.getPlaybackDevices().then((devices) => {
-            setDeviceList(devices);
-        });
+        volumeController.getPlaybackDevices().then((devices) => setDeviceList(devices));
     }, [setDeviceList]);
 
     useEffect(() => {
         if (device_id === undefined) return;
-        volumeController.getDeviceApplications(device_id).then((apps) => {
-            setAppIds(() => apps);
-        });
+        volumeController
+            .getDeviceApplications(device_id)
+            .then((apps) => setAppIds(() => apps));
     }, [setAppIds, device_id]);
 
     useEffect(() => {

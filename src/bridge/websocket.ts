@@ -1,9 +1,10 @@
 import WebSocket, { type Message } from "@tauri-apps/plugin-websocket";
 import { DEBOUNCE_DELAY, HEARTBEAT, PORT } from "$type/constant";
 import { debounce } from "$util/debounce";
-import { sleep } from "$util/generic";
 
 type AddListener = ReturnType<WebSocket["addListener"]>;
+
+type PayloadOf<T extends Message["type"]> = Extract<Message, { type: T }>["data"];
 
 export class ConnectSocket {
     public socket: WebSocket | null = null;
@@ -14,23 +15,42 @@ export class ConnectSocket {
         this.connect_URL = `ws://${url}:${port}`;
     }
 
-    async send(data: string) {
-        await this.socket?.send({ type: "Text", data: data });
+    async send<T extends Message["type"] = "Text">(
+        data: PayloadOf<T>,
+        type: T = "Text" as T,
+    ) {
+        if (this.socket === null) {
+            return false;
+        }
+        try {
+            await this.socket.send({ type, data } as Message);
+            return true;
+        } catch (error) {
+            console.error(`Error sending message [${type}]:`, error, data);
+        }
+        return false;
     }
 
     heartbeat = debounce(async () => {
-        await this.socket?.send({ type: "Ping", data: [] });
+        const did_send = await this.send([], "Ping");
+        if (!did_send) {
+            console.error("Failed to send heartbeat");
+            return false;
+        }
 
-        const waitForPong = new Promise<boolean>((resolve) => {
+        return await new Promise<boolean>((resolve) => {
             const cleanup_handler = this.socket?.addListener((message) => {
                 if (message.type === "Pong") {
                     resolve(true);
                     cleanup_handler?.();
                 }
             });
-        });
 
-        return await Promise.race([sleep(HEARTBEAT.WAIT_FOR_BEAT, false), waitForPong]);
+            setTimeout(() => {
+                resolve(false);
+                cleanup_handler?.();
+            }, HEARTBEAT.WAIT_FOR_BEAT);
+        });
     }, DEBOUNCE_DELAY.FAST);
 
     addListener(cb: (arg: Message) => void) {
@@ -58,7 +78,11 @@ export class ConnectSocket {
 
     async close() {
         for (const listener of this.listeners) listener();
-        await this.socket?.disconnect();
+        try {
+            // Internally disconnect uses send to notify the server.
+            // This causes issue when the socket is already closed or server closed connection.
+            await this.socket?.disconnect();
+        } catch (_) {}
         this.socket = null;
     }
 }

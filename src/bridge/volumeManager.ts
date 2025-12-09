@@ -1,4 +1,3 @@
-import type { UpdatePayload } from "vite";
 import { UPDATE_CENTER_EVENT, UPDATE_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
 import type { UpdateChange } from "$type/update";
@@ -36,8 +35,7 @@ document.body.addEventListener(UPDATE_CENTER_EVENT, central_update_handler);
 window.addEventListener("beforeunload", cleanup); // When user refreshes the page.
 
 if (import.meta.hot) {
-    function hot_reload(data: UpdatePayload) {
-        console.log("Hot-reload update", data);
+    function hot_reload() {
         cleanup();
         import.meta.hot?.off("vite:beforeUpdate", hot_reload);
     }
@@ -45,7 +43,6 @@ if (import.meta.hot) {
 }
 
 function cleanup() {
-    console.log("cleanup");
     document.body.removeEventListener(UPDATE_CENTER_EVENT, central_update_handler);
     window.removeEventListener("beforeunload", cleanup);
     volumeController.close();

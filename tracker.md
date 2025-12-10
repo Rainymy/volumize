@@ -2,9 +2,6 @@
 
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
-- [ ] Autostart.
-    - [ ] Implement autostart functionality.
-    - [ ] Add autostart settings to the tray menu.
 
 ## ================ Todo ================
 
@@ -21,6 +18,9 @@
 
 ## ================ Done ================
 
+- [x] Autostart.
+    - [x] Implement autostart functionality.
+    - [x] Add autostart settings to the tray menu.
 - [x] Detect changes in volume.
     - [x] Implement volume detection functionality.
         - [x] Detect system audio changes.

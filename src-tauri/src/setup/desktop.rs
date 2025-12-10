@@ -12,6 +12,7 @@ pub fn create_tauri_app() -> TauriResult<tauri::App> {
         .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_autostart::Builder::new().build())
         .manage(VolumeCommandSender::new())
         .manage(WebSocketServerState::default())
         .manage(ServiceDiscovery::default())

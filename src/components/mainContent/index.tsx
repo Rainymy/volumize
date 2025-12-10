@@ -8,6 +8,7 @@ import { application_ids, device_list, selected_device_id } from "$model/volume"
 import { HEARTBEAT, UPDATE_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
 import { isAppIdentifier, isStateChange, type UpdateChange } from "$type/update";
+
 import style from "./index.module.less";
 
 /*                          UI Design

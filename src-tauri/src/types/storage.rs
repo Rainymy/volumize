@@ -11,6 +11,7 @@ pub struct Settings {
     pub duration: super::tray::Discovery,
     pub port_address: u16,
     pub exit_to_tray: bool,
+    pub autostart: bool,
 }
 
 impl Default for Settings {
@@ -19,6 +20,7 @@ impl Default for Settings {
             duration: Default::default(),
             port_address: 9002,
             exit_to_tray: true,
+            autostart: true,
         }
     }
 }

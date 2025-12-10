@@ -10,9 +10,13 @@ use crate::{
 };
 
 use tauri::{App, Manager};
+use tauri_plugin_autostart::ManagerExt;
 
 pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     let app_handle = app.handle();
+
+    #[cfg(debug_assertions)]
+    show_window_visibility(app_handle);
 
     setup_dev_tools(app_handle);
     setup_tray_system(app_handle)?;
@@ -20,6 +24,15 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     let storage = app_handle.state::<Storage>();
     storage.load(app_handle);
     let settings = storage.get();
+
+    if settings.autostart {
+        let autostart_manager = app.autolaunch();
+        let currently_enabled = autostart_manager.is_enabled().unwrap_or(false);
+
+        if !currently_enabled {
+            let _ = autostart_manager.enable();
+        }
+    }
 
     // let (tx, mut rx) = unbounded_channel();
     let (tx, rx) = std::sync::mpsc::channel::<UpdateChange>();
@@ -98,48 +111,42 @@ fn setup_dev_tools(_app: &tauri::AppHandle) {
 }
 
 pub fn show_window_visibility(_app: &tauri::AppHandle) {
-    #[cfg(desktop)]
-    {
-        let window = match _app.get_webview_window("main") {
-            Some(window) => window,
-            None => return,
-        };
-        let is_visible = window.is_visible().unwrap_or(false);
-        let is_minimized = window.is_minimized().unwrap_or(false);
+    let window = match _app.get_webview_window("main") {
+        Some(window) => window,
+        None => return,
+    };
+    let is_visible = window.is_visible().unwrap_or(false);
+    let is_minimized = window.is_minimized().unwrap_or(false);
 
-        match (is_visible, is_minimized) {
-            (true, true) => {
-                // Window is minimized, restore it
-                let _ = window.unminimize();
-                let _ = window.set_focus();
-            }
-            (true, false) => {}
-            (false, _) => {
-                // Window is hidden, show it
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+    match (is_visible, is_minimized) {
+        (true, true) => {
+            // Window is minimized, restore it
+            let _ = window.unminimize();
+            let _ = window.set_focus();
+        }
+        (true, false) => {}
+        (false, _) => {
+            // Window is hidden, show it
+            let _ = window.show();
+            let _ = window.set_focus();
         }
     }
 }
 
 fn _hide_window_visibility(_app: &tauri::AppHandle) {
-    #[cfg(desktop)]
-    {
-        let window = match _app.get_webview_window("main") {
-            Some(window) => window,
-            None => return,
-        };
-        let is_visible = window.is_visible().unwrap_or(false);
-        let is_minimized = window.is_minimized().unwrap_or(false);
+    let window = match _app.get_webview_window("main") {
+        Some(window) => window,
+        None => return,
+    };
+    let is_visible = window.is_visible().unwrap_or(false);
+    let is_minimized = window.is_minimized().unwrap_or(false);
 
-        match (is_visible, is_minimized) {
-            (true, true) => {}
-            (true, false) => {
-                // Window is visible and not minimized, hide it
-                let _ = window.hide();
-            }
-            (false, _) => {}
+    match (is_visible, is_minimized) {
+        (true, true) => {}
+        (true, false) => {
+            // Window is visible and not minimized, hide it
+            let _ = window.hide();
         }
+        (false, _) => {}
     }
 }

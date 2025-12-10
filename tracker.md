@@ -2,6 +2,9 @@
 
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
+- [ ] Autostart.
+    - [ ] Implement autostart functionality.
+    - [ ] Add autostart settings to the tray menu.
 
 ## ================ Todo ================
 

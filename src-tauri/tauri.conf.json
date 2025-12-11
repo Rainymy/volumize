@@ -28,13 +28,20 @@
     },
     "bundle": {
         "active": true,
+        "category": "Utility",
+        "windows": {
+            "webviewInstallMode": {
+                "silent": false,
+                "type": "embedBootstrapper"
+            }
+        },
         "android": {
             "minSdkVersion": 28
         },
         "iOS": {
             "minimumSystemVersion": "13.0"
         },
-        "targets": ["msi", "deb"],
+        "targets": ["msi", "nsis", "deb"],
         "icon": [
             "./icons/icon.ico",
             "./icons/icon_32x32.ico",

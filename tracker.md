@@ -2,6 +2,10 @@
 
 - [ ] Implement the settings + including the settings page.
     - Add different settings functionality.
+- [ ] Allow only one instance of the application to run.
+- [ ] Client detect if there is multiple server instances running.
+    - Dropdown menu to select the server instance.
+- [ ] Setup firewall rule for windows (allow "public" to "private" network)
 
 ## ================ Todo ================
 

@@ -11,7 +11,7 @@ use crate::types::tray::Discovery;
 
 pub fn create_tray(handle: &tauri::AppHandle) -> TauriResult<Menu<Wry>> {
     let show = MenuItem::with_id(handle, "show", "Show", true, None::<&str>)?;
-    let refresh_token = MenuItem::with_id(handle, "refresh", "Refresh menu", true, None::<&str>)?;
+    let refresh_token = MenuItem::with_id(handle, "refresh", "Quick refresh", true, None::<&str>)?;
 
     let separator = PredefinedMenuItem::separator(handle)?;
     let quit = PredefinedMenuItem::quit(handle, Some("Exit"))?;
@@ -57,7 +57,7 @@ fn auto_start_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>>
         None::<&str>,
     )?;
 
-    SubmenuBuilder::new(handle, "Auto Start")
+    SubmenuBuilder::new(handle, "Autostart")
         .item(&status_info)
         .item(&PredefinedMenuItem::separator(handle)?)
         .item(&auto_start_toggle)
@@ -73,7 +73,7 @@ fn discovery_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> 
     let always_off = checked_menu_item(Discovery::TurnOff, settings.duration).build(handle)?;
     let always_on = checked_menu_item(Discovery::AlwaysOn, settings.duration).build(handle)?;
 
-    SubmenuBuilder::new(handle, "Server Discovery")
+    SubmenuBuilder::new(handle, "Server discovery")
         .item(&status_info)
         .item(&PredefinedMenuItem::separator(handle)?)
         .item(&always_on)

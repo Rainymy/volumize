@@ -7,7 +7,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "generate-icons": "tauri icon ./public/icon.png",
+        "generate-icons": "tauri icon ./public/icon.svg -v --ios-color #CAE7FF",
         "dev": "vite",
         "build": "tsc && vite build",
         "preview": "vite preview",

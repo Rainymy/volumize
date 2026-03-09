@@ -7,10 +7,10 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "test": "node dev_script/index.js",
-        "generate-icons": "tauri icon ./public/icon.svg --ios-color #CAE7FF",
+        "icons:desktop": "node dev_script/index.js",
+        "icons:phone": "tauri icon ./public/icon.svg --ios-color #CAE7FF",
         "dev": "vite",
-        "build": "tsc && vite build",
+        "build": "npm run icons:desktop && tsc && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
         "biome": "biome"

@@ -16,6 +16,7 @@ dist-ssr
 src-tauri/icons
 # Android launcher icons
 ic_launcher*.png
+dev_script/temp-*
 
 # Editor directories and files
 .vscode/*

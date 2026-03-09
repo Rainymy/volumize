@@ -116,7 +116,13 @@ Before you begin, ensure you have the following installed:
     npm install
     ```
 
-3. **Run the development server**
+3. **Generate icons**
+
+    ```bash
+    npm run generate-icons
+    ```
+
+4. **Run the development server**
 
     ```bash
     npm run tauri dev

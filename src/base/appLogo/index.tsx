@@ -7,7 +7,7 @@ export function AppLogo({ className }: { className?: string }) {
 
     return (
         <div className={combineclass}>
-            <img className={style.logo} src={"/icon.png"} alt="App Logo" />
+            <img className={style.logo} src={"/icon-desktop.svg"} alt="App Logo" />
         </div>
     );
 }

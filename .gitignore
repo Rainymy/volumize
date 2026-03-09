@@ -12,7 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Tauri icons
 src-tauri/icons
+ic_launcher*.png
 
 # Editor directories and files
 .vscode/*

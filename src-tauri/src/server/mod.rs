@@ -89,7 +89,10 @@ impl WebSocketServerState {
     }
 }
 
-pub fn start_websocket_server(port: u16, app_handle: &AppHandle) -> String {
+pub fn start_websocket_server(
+    port: u16,
+    app_handle: &AppHandle,
+) -> Result<String, Box<dyn std::error::Error>> {
     let addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
 
     let state = app_handle.state::<WebSocketServerState>();
@@ -99,7 +102,7 @@ pub fn start_websocket_server(port: u16, app_handle: &AppHandle) -> String {
     let cancel = CancellationToken::new();
     let cancel_clone = cancel.clone();
 
-    let std_listener = std::net::TcpListener::bind(addr).unwrap();
+    let std_listener = std::net::TcpListener::bind(addr)?;
     std_listener
         .set_nonblocking(true)
         .expect("Cannot set non-blocking");
@@ -141,5 +144,5 @@ pub fn start_websocket_server(port: u16, app_handle: &AppHandle) -> String {
         rt::spawn(old.shutdown());
     }
 
-    addr.to_string()
+    Ok(addr.to_string())
 }

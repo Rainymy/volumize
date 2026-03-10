@@ -39,8 +39,10 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     spawn_volume_thread(app_handle, tx); // Thread for volume control
     spawn_update_thread(app_handle, rx); // Thread for propagate updates to the UI
 
-    let addr = start_websocket_server(settings.port_address, app_handle);
-    println!("WebSocket server listening on {}", addr);
+    match start_websocket_server(settings.port_address, app_handle) {
+        Ok(addr) => println!("WebSocket server listening on {}", addr),
+        Err(e) => eprintln!("Failed to start WebSocket server: {}", e),
+    }
 
     start_service_register(settings.port_address, app_handle, settings.duration);
 

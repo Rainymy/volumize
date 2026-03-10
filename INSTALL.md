@@ -119,7 +119,7 @@ Before you begin, ensure you have the following installed:
 3. **Generate icons**
 
     ```bash
-    npm run generate-icons
+    npm run icons:desktop
     ```
 
 4. **Run the development server**

@@ -27,22 +27,22 @@
         "@tauri-apps/plugin-opener": "^2.5.3",
         "@tauri-apps/plugin-os": "^2.3.2",
         "@tauri-apps/plugin-websocket": "^2.4.2",
-        "jotai": "^2.15.0",
-        "react": "^19.2.0",
-        "react-dom": "^19.2.0",
-        "react-icons": "^5.5.0",
-        "react-router-dom": "^7.9.5"
+        "jotai": "^2.18.1",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "react-icons": "^5.6.0",
+        "react-router-dom": "^7.13.1"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.3.5",
+        "@biomejs/biome": "^2.4.6",
         "@tauri-apps/cli": "^2.10.1",
-        "@types/node": "^24.0.3",
-        "@types/react": "^19.2.2",
-        "@types/react-dom": "^19.2.2",
-        "@vitejs/plugin-react": "^5.1.1",
-        "less": "^4.4.2",
+        "@types/node": "^25.4.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^5.1.4",
+        "less": "^4.5.1",
         "typescript": "^5.9.3",
-        "vite": "^7.1.12"
+        "vite": "^7.3.1"
     },
     "engines": {
         "node": ">=20"

@@ -1,11 +1,9 @@
 import { type ReactNode, useRef } from "react";
-
+import { BouncyTitle } from "$base/bouncyTitle";
 import { CardIcon } from "$base/cardIcon";
 import { VSlider } from "$base/slider";
 import { ToggleableMuteIcon } from "$base/toggleMuteIcon";
-import { useDetectOverflowX } from "$hook/useDetectOverflowX";
 import { useElementFocusedWithin } from "$hook/useElementFocusedWithin";
-import { useOverflowAmountX } from "$hook/useOverflowAmount";
 import type { MaybeAsync } from "$type/generic";
 import { classnames } from "$util/react";
 
@@ -37,9 +35,9 @@ export function Card(props: CardProps) {
 
     return (
         <div className={style.container} ref={ref}>
-            <CardBouncyTitle
-                isParentFocused={isParentFocused}
-                className={classnames([style.title, "flex-grow-1"])}
+            <BouncyTitle
+                animate={isParentFocused}
+                className={classnames(["flex-grow-1"])}
                 title={title}
             />
             <CardIcon className={"flex-grow-1"} icon={icon} />
@@ -64,35 +62,6 @@ export function Card(props: CardProps) {
                 is_mute={isMuted}
                 onClick={onButtonClick}
             />
-        </div>
-    );
-}
-
-type TitleProps = {
-    title: string;
-    className?: string;
-    isParentFocused?: boolean;
-};
-
-export function CardBouncyTitle({ title, className, isParentFocused }: TitleProps) {
-    const ref = useRef<HTMLDivElement>(null);
-
-    const isOverflowing = useDetectOverflowX(ref);
-    const overFlowAmount = useOverflowAmountX(ref);
-
-    const animate = isOverflowing && isParentFocused;
-
-    const textclass = classnames([
-        style.text_content,
-        animate ? style.bounce : null,
-        animate && Math.abs(overFlowAmount) < 50 ? style.high_speed : null,
-    ]);
-
-    return (
-        <div ref={ref} title={title} className={className}>
-            <span className={textclass} data-overflow={overFlowAmount}>
-                {title}
-            </span>
         </div>
     );
 }

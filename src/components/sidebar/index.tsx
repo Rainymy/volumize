@@ -1,13 +1,11 @@
 import { useAtom, useAtomValue } from "jotai";
 import { Fragment, useEffect } from "react";
-import { CiSpeaker } from "react-icons/ci";
-
+import { BouncyTitle } from "$base/bouncyTitle";
 import { AppButton } from "$base/button";
 import { useGenerateID } from "$hook/useGenerateID";
 import { NavbarState, navbar_state } from "$model/nav";
 import { device_list, selected_device_id } from "$model/volume";
 import { classnames } from "$util/react";
-
 import style from "./index.module.less";
 
 export function SidebarDevices() {
@@ -31,7 +29,7 @@ export function SidebarDevices() {
 
     return (
         <div className={style.navbar}>
-            {audio_devices_ids.map((audio_device, index) => {
+            {audio_devices_ids.map((audio_device) => {
                 const device = audio_device.element;
                 return (
                     <Fragment key={audio_device.id}>
@@ -40,19 +38,11 @@ export function SidebarDevices() {
                             className={nav_item}
                             onClick={() => set_device_id(() => device.id)}
                         >
-                            {collapsed && (
-                                <>
-                                    {index + 1}. <CiSpeaker />
-                                </>
-                            )}
-                            {/*
-                                FIX: friendly_name mostly likely to overflow.
-                                 - add animation that bounces from right to left.
-                                 - when expanded.
-                            */}
-                            <span>{device.friendly_name}</span>
+                            <BouncyTitle
+                                title={device.friendly_name}
+                                animate={device.id === selected_device}
+                            />
                         </AppButton>
-                        {/*{collapsed && <span>{device.friendly_name}</span>}*/}
                     </Fragment>
                 );
             })}

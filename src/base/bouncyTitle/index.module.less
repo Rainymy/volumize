@@ -1,0 +1,34 @@
+.title {
+    white-space: nowrap;
+    text-overflow: clip;
+    overflow: clip;
+
+    padding: 0.5rem 0rem;
+    width: 100%;
+}
+
+.text_content {
+    display: inline-block;
+
+    will-change: transform;
+    backface-visibility: hidden;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
+
+    &.bounce {
+        --speed-animation: attr(data-animation-duration s, 3s);
+
+        @media (prefers-reduced-motion: no-preference) {
+            animation: text-scroll calc(var(--speed-animation)) ease-in-out infinite;
+            animation-direction: alternate;
+        }
+    }
+}
+
+@keyframes text-scroll {
+    to {
+        transform: translateX(calc(-1 * attr(data-overflow px, 0px)));
+    }
+}

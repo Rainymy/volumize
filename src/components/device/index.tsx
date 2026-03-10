@@ -28,15 +28,16 @@ export function DeviceMaster() {
     useEffect(() => {
         function updateHandle(event: EventType<UpdateChange>) {
             const data = event.detail;
-            if (data && isDeviceIdentifier(data.id) && isAudioVolumeChange(data.change)) {
-                const id = data.id.content;
+            if (data === undefined) return;
+
+            if (isDeviceIdentifier(data.id) && isAudioVolumeChange(data.change)) {
                 const volume = {
                     current: data.change.volume,
                     muted: data.change.mute,
                 };
                 setDevices((prev) => {
                     return prev.map((device) => {
-                        if (device.id === id) {
+                        if (device.id === data.id.content) {
                             return {
                                 ...device,
                                 volume: { ...volume },

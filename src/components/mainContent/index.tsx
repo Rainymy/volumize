@@ -1,13 +1,20 @@
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
+
 import { volumeController } from "$bridge/volumeManager";
 import { DeviceApplications, DeviceMaster } from "$component/device";
+import { Heartbeat } from "$component/heartbeat";
 import { useGenerateID } from "$hook/useGenerateID";
-import { useLogout } from "$hook/useLogout";
 import { application_ids, device_list, selected_device_id } from "$model/volume";
-import { HEARTBEAT, UPDATE_EVENT } from "$type/constant";
+import { UPDATE_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
-import { isAppIdentifier, isStateChange, type UpdateChange } from "$type/update";
+import {
+    isAppIdentifier,
+    isAudioVolumeChange,
+    isDeviceIdentifier,
+    isStateChange,
+    type UpdateChange,
+} from "$type/update";
 
 import style from "./index.module.less";
 
@@ -23,39 +30,9 @@ import style from "./index.module.less";
  */
 
 export function MainContent() {
-    const [app_ids, setAppIds] = useAtom(application_ids);
-    const [_deviceList, setDeviceList] = useAtom(device_list);
+    const setAppIds = useSetAtom(application_ids);
+    const setDeviceList = useSetAtom(device_list);
     const device_id = useAtomValue(selected_device_id);
-    const elementsWithId = useGenerateID(app_ids);
-    const logout = useLogout();
-
-    useEffect(() => {
-        let retryCount = 0;
-
-        const interval_id = setInterval(async () => {
-            const heartbeat = await volumeController.heartbeat();
-            // const heartbeat = Math.random() < 0.1;
-
-            console.log("Received heartbeat:", heartbeat);
-            retryCount = heartbeat ? 0 : retryCount + 1;
-
-            if (!heartbeat) {
-                console.log(
-                    "Heartbeat failure, retries left:",
-                    HEARTBEAT.MAX_RETRY_COUNT - retryCount,
-                );
-            }
-            if (retryCount >= HEARTBEAT.MAX_RETRY_COUNT) {
-                console.log("Max retries reached, logging out...");
-                clearInterval(interval_id);
-                await logout();
-            }
-        }, HEARTBEAT.CHECK_DELAY_MS);
-
-        return () => {
-            clearInterval(interval_id);
-        };
-    }, [logout]);
 
     useEffect(() => {
         volumeController.getPlaybackDevices().then((devices) => setDeviceList(devices));
@@ -67,6 +44,62 @@ export function MainContent() {
             .getDeviceApplications(device_id)
             .then((apps) => setAppIds(() => apps));
     }, [setAppIds, device_id]);
+
+    return (
+        <div className={style.container}>
+            <Heartbeat />
+            <DeviceListener />
+            <ApplicationsListener />
+        </div>
+    );
+}
+
+function DeviceListener() {
+    const [selected_id, _refreshSessions] = useAtom(selected_device_id);
+    const [devices, setDevices] = useAtom(device_list);
+
+    const master = devices.find((device) => device.id === selected_id);
+
+    useEffect(() => {
+        function updateHandle(event: EventType<UpdateChange>) {
+            const data = event.detail;
+            if (data === undefined) return;
+
+            if (isDeviceIdentifier(data.id) && isAudioVolumeChange(data.change)) {
+                const volume = {
+                    current: data.change.volume,
+                    muted: data.change.mute,
+                };
+                setDevices((prev) => {
+                    return prev.map((device) => {
+                        if (device.id === data.id.content) {
+                            return {
+                                ...device,
+                                volume: { ...volume },
+                            };
+                        }
+                        return device;
+                    });
+                });
+            }
+        }
+
+        document.body.addEventListener(UPDATE_EVENT, updateHandle);
+        return () => {
+            document.body.removeEventListener(UPDATE_EVENT, updateHandle);
+        };
+    }, [setDevices]);
+
+    if (!master) {
+        return null;
+    }
+
+    return <DeviceMaster master={master} key={master.id} />;
+}
+
+function ApplicationsListener() {
+    const [app_ids, setAppIds] = useAtom(application_ids);
+    const elementsWithId = useGenerateID(app_ids);
 
     useEffect(() => {
         function handleUpdateEvent(event: EventType<UpdateChange>) {
@@ -90,12 +123,7 @@ export function MainContent() {
         };
     }, [setAppIds]);
 
-    return (
-        <div className={style.container}>
-            <DeviceMaster />
-            {elementsWithId.map(({ element, id: key }) => {
-                return <DeviceApplications id={element} key={key} />;
-            })}
-        </div>
-    );
+    return elementsWithId.map(({ element, id: key }) => {
+        return <DeviceApplications id={element} key={key} />;
+    });
 }

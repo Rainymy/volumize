@@ -28,7 +28,10 @@
 }
 
 @keyframes text-scroll {
-    to {
+    from, 10% {
+        transform: translateX(0);
+    }
+    90%, to {
         transform: translateX(calc(-1 * attr(data-overflow px, 0px)));
     }
 }

@@ -1,50 +1,63 @@
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
-type DetectOverflow = {
-    overflowAmount: number;
+type DetectOverflow<T> = {
     isOverflowing: boolean;
-    overflowRatio: number;
+    amount: number;
+    ratio: number;
+    ref: React.RefObject<T | null>;
 };
 
-/**
- * @param ref
- * @param overflowPadding -
- *      The padding percentage to use for overflow detection. 1.1 by default.
- * @returns
- */
 export function useDetectOverflowX<T extends HTMLElement>(
-    ref: React.RefObject<T | null>,
-): DetectOverflow {
+    externRef?: React.RefObject<T | null>,
+): DetectOverflow<T> {
+    const __intern_ref = useRef<T>(null);
+    const ref = externRef ?? __intern_ref;
+
     const [isOverflowing, setIsOverflowing] = useState(false);
     const [overflowAmount, setOverflowAmount] = useState(0);
     const [overflowRatio, setOverflowRatio] = useState(0);
 
-    // useLayoutEffect(() => {}, []);
     useLayoutEffect(() => {
         const span = ref.current;
         if (!span) {
-            console.warn(`${useDetectOverflowX.name}: ref is null: ${span}`);
             return;
         }
 
-        const overflowAmountX = span.scrollWidth - span.clientWidth;
-        const overflowRatio = span.scrollWidth / span.clientWidth;
+        function evaluateOverflow(element: T | Element) {
+            const overflow = calculateOverflow(element.scrollWidth, element.clientWidth);
 
-        setOverflowAmount(Math.max(0, overflowAmountX));
-        setIsOverflowing(overflowAmountX > 0);
-        setOverflowRatio(overflowRatio);
+            setOverflowAmount(Math.max(0, overflow.overflowAmount));
+            setIsOverflowing(overflow.overflowAmount > 0);
+            setOverflowRatio(overflow.overflowRatio);
+        }
+
+        evaluateOverflow(span);
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            evaluateOverflow(entries[0].target);
+        });
+
+        resizeObserver.observe(span);
+
+        return () => {
+            resizeObserver.unobserve(span);
+        };
     }, [ref.current]);
 
     return {
         isOverflowing: isOverflowing,
-        overflowAmount: overflowAmount,
-        overflowRatio: overflowRatio,
+        amount: overflowAmount,
+        ratio: overflowRatio,
+        ref: ref,
     };
 }
 
 export function useDetectOverflowY<T extends HTMLElement>(
-    ref: React.RefObject<T | null>,
-): DetectOverflow {
+    externRef?: React.RefObject<T | null>,
+): DetectOverflow<T> {
+    const __intern_ref = useRef<T>(null);
+    const ref = externRef ?? __intern_ref;
+
     const [isOverflowing, setIsOverflowing] = useState(false);
     const [overflowAmount, setOverflowAmount] = useState(0);
     const [overflowRatio, setOverflowRatio] = useState(0);
@@ -56,17 +69,41 @@ export function useDetectOverflowY<T extends HTMLElement>(
             return;
         }
 
-        const overflowAmountX = span.scrollHeight - span.clientHeight;
-        const overflowRatio = span.scrollHeight / span.clientHeight;
+        function evaluateOverflow(element: T | Element) {
+            const overflow = calculateOverflow(
+                element.scrollHeight,
+                element.clientHeight,
+            );
 
-        setOverflowAmount(Math.max(0, overflowAmountX));
-        setIsOverflowing(overflowAmountX > 0);
-        setOverflowRatio(overflowRatio);
+            setOverflowAmount(Math.max(0, overflow.overflowAmount));
+            setIsOverflowing(overflow.overflowAmount > 0);
+            setOverflowRatio(overflow.overflowRatio);
+        }
+
+        evaluateOverflow(span);
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            evaluateOverflow(entries[0].target);
+        });
+
+        resizeObserver.observe(span);
+
+        return () => {
+            resizeObserver.unobserve(span);
+        };
     }, [ref.current]);
 
     return {
         isOverflowing: isOverflowing,
-        overflowAmount: overflowAmount,
-        overflowRatio: overflowRatio,
+        amount: overflowAmount,
+        ratio: overflowRatio,
+        ref: ref,
+    };
+}
+
+function calculateOverflow(scrollSize: number, elementSize: number) {
+    return {
+        overflowAmount: scrollSize - elementSize,
+        overflowRatio: scrollSize / elementSize,
     };
 }

@@ -17,8 +17,7 @@ export function BouncyTitle({
     animate = true,
     animationDuration = 3,
 }: TitleProps) {
-    const ref = useRef<HTMLDivElement>(null);
-    const { isOverflowing, overflowAmount, overflowRatio } = useDetectOverflowX(ref);
+    const { isOverflowing, amount, ratio, ref } = useDetectOverflowX<HTMLDivElement>();
 
     const textclass = classnames([
         style.text_content,
@@ -29,8 +28,8 @@ export function BouncyTitle({
         <div ref={ref} title={title} className={classnames([style.title, className])}>
             <span
                 className={textclass}
-                data-overflow={overflowAmount}
-                data-animation-duration={animationDuration * overflowRatio}
+                data-overflow={amount}
+                data-animation-duration={animationDuration * ratio}
             >
                 {title}
             </span>

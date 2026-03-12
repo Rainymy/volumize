@@ -1,5 +1,4 @@
-import { useRef } from "react";
-import { useDetectOverflowX } from "$hook/useDetectOverflowX";
+import { useDetectOverflowX } from "react-detect-overflow";
 import { classnames } from "$util/react";
 
 import style from "./index.module.less";

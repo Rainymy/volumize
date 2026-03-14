@@ -1,9 +1,17 @@
-import { type RefObject, useEffect, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
+
+type elementFocusedWithin<T extends HTMLElement> = {
+    isFocusedWithin: boolean;
+    ref: RefObject<T | null>;
+};
 
 export function useElementFocusedWithin<T extends HTMLElement>(
-    ref: RefObject<T | null>,
-): boolean {
+    externalRef?: RefObject<T | null>,
+): elementFocusedWithin<T> {
     const [isFocusedWithin, setIsFocusedWithin] = useState(false);
+
+    const __internalRef = useRef<T>(null);
+    const ref = externalRef ?? __internalRef;
 
     useEffect(() => {
         function handleFocusOut(event: PointerEvent) {
@@ -16,7 +24,7 @@ export function useElementFocusedWithin<T extends HTMLElement>(
         return () => {
             document.removeEventListener("click", handleFocusOut);
         };
-    }, [ref.current]);
+    }, [ref]);
 
-    return isFocusedWithin;
+    return { isFocusedWithin: isFocusedWithin, ref: ref };
 }

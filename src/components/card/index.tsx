@@ -1,11 +1,10 @@
-import { type ReactNode, useRef } from "react";
+import type { ReactNode } from "react";
 import { BouncyTitle } from "$base/bouncyTitle";
 import { CardIcon } from "$base/cardIcon";
 import { VSlider } from "$base/slider";
 import { ToggleableMuteIcon } from "$base/toggleMuteIcon";
 import { useElementFocusedWithin } from "$hook/useElementFocusedWithin";
 import type { MaybeAsync } from "$type/generic";
-import { classnames } from "$util/react";
 
 import style from "./index.module.less";
 
@@ -23,24 +22,22 @@ type CardProps = {
  *
  * The `onSlider` function is called when the slider value changes. `NaN` value is ignored.
  *
- * The `volume` prop must be a number between 0 and 1.
+ * The `volume` prop must be a number between 0 and 1 (inclusive).
  * @param props
  * @returns
  */
 export function Card(props: CardProps) {
     const { title, volume, isMuted, onButtonClick, onSlider, icon } = props;
-
-    const ref = useRef<HTMLDivElement>(null);
-    const isParentFocused = useElementFocusedWithin(ref);
+    const { isFocusedWithin, ref } = useElementFocusedWithin<HTMLDivElement>();
 
     return (
         <div className={style.container} ref={ref}>
             <BouncyTitle
-                animate={isParentFocused}
-                className={classnames(["flex-grow-1"])}
+                animate={isFocusedWithin}
+                className={"flex-grow-1"}
                 title={title}
             />
-            <CardIcon className={"flex-grow-1"} icon={icon} />
+            <CardIcon className={"flex-grow-1"} alt={`${title} icon`} icon={icon} />
 
             <VSlider
                 className={"flex-grow-10"}

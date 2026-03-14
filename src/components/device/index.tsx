@@ -23,7 +23,7 @@ function DeviceMaster__({ master }: { master: AudioDevice }) {
             onSlider={(value) => {
                 return volumeController.deviceSetVolume(master.id, value);
             }}
-        ></Card>
+        />
     );
 }
 
@@ -76,14 +76,14 @@ function DeviceApplications__({ id }: { id: AppIdentifier }) {
             isMuted={app.volume.muted}
             title={app.process.name}
             volume={app.volume.current}
-            icon={base64 ? base64 : undefined}
+            icon={base64}
             onButtonClick={() => {
                 volumeController.toggleMuteApp(app.process.id, app.volume.muted);
             }}
             onSlider={(value) => {
                 volumeController.applicationSetVolume(app.process.id, value);
             }}
-        ></Card>
+        />
     );
 }
 

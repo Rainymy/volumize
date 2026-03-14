@@ -1,44 +1,29 @@
-import { type HTMLAttributes, isValidElement, type ReactNode, useState } from "react";
+import { type HTMLAttributes, isValidElement, type ReactNode } from "react";
 import { FiXOctagon } from "react-icons/fi";
-
+import { MdCheckBoxOutlineBlank } from "react-icons/md";
+import { usePreCacheImage } from "$hook/usePreCacheImage";
 import { classnames } from "$util/react";
+
 import style from "./index.module.less";
 
-type HTMLDivAttributes = HTMLAttributes<HTMLDivElement> | null;
-
-export function CardIcon(props: HTMLDivAttributes & { icon: string | ReactNode }) {
-    const [isIconValid, setIsIconValid] = useState(true);
-    const classname = classnames([style.card_icon, props?.className]);
-
-    const { icon, ...rest } = props;
-
-    return (
-        <div {...rest} className={classname}>
-            <InnerCardIcon
-                isIconValid={isIconValid}
-                setIconState={() => setIsIconValid(false)}
-                icon={icon}
-            />
-        </div>
-    );
-}
-
-type InnerProps = {
-    icon?: string | ReactNode;
-    isIconValid: boolean;
-    setIconState: () => void;
+type Props = (HTMLAttributes<HTMLDivElement> | null) & {
+    icon: string | ReactNode;
+    alt?: string;
 };
 
-function InnerCardIcon(props: InnerProps) {
-    const { isIconValid, setIconState, icon } = props;
+export function CardIcon({ icon, className, alt, ...rest }: Props) {
+    const { isValid: isValidSrc, isLoading } = usePreCacheImage(icon);
 
-    if (isValidElement(icon)) {
-        return icon;
+    function renderIcon() {
+        if (isValidElement(icon)) return icon;
+        if (isLoading) return <MdCheckBoxOutlineBlank opacity={0.5} />;
+        if (!icon || !isValidSrc) return <FiXOctagon color="lightslategrey" />;
+        return <img src={icon as string} alt={alt ?? "Card Icon"} />;
     }
 
-    if (!icon || !isIconValid) {
-        return <FiXOctagon />;
-    }
-
-    return <img onError={setIconState} src={icon as string} alt="Icon" />;
+    return (
+        <div {...rest} className={classnames([style.card_icon, className])}>
+            {renderIcon()}
+        </div>
+    );
 }

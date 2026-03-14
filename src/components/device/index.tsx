@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { MdOutlineSpeaker } from "react-icons/md";
 
 import { volumeController } from "$bridge/volumeManager";
@@ -10,7 +10,7 @@ import type { EventType } from "$type/generic";
 import { isAppIdentifier, isAudioVolumeChange, type UpdateChange } from "$type/update";
 import type { AppIdentifier, AudioApplication, AudioDevice } from "$type/volume";
 
-export function DeviceMaster({ master }: { master: AudioDevice }) {
+function DeviceMaster__({ master }: { master: AudioDevice }) {
     return (
         <Card
             isMuted={master.volume.muted}
@@ -27,7 +27,7 @@ export function DeviceMaster({ master }: { master: AudioDevice }) {
     );
 }
 
-export function DeviceApplications({ id }: { id: AppIdentifier }) {
+function DeviceApplications__({ id }: { id: AppIdentifier }) {
     const [app, setApp] = useState<AudioApplication | null>(null);
     const base64 = useURLObjectIcon(app?.process.id);
 
@@ -86,3 +86,6 @@ export function DeviceApplications({ id }: { id: AppIdentifier }) {
         ></Card>
     );
 }
+
+export const DeviceApplications = memo(DeviceApplications__);
+export const DeviceMaster = memo(DeviceMaster__);

@@ -1,8 +1,7 @@
 import { useAtom, useAtomValue } from "jotai";
-import { Fragment, useEffect } from "react";
+import { useEffect } from "react";
 import { BouncyTitle } from "$base/bouncyTitle";
 import { AppButton } from "$base/button";
-import { useGenerateID } from "$hook/useGenerateID";
 import { NavbarState, navbar_state } from "$model/nav";
 import { device_list, selected_device_id } from "$model/volume";
 import { classnames } from "$util/react";
@@ -12,8 +11,6 @@ export function SidebarDevices() {
     const [selected_device, set_device_id] = useAtom(selected_device_id);
     const audio_devices = useAtomValue(device_list);
     const navbarState = useAtomValue(navbar_state);
-
-    const audio_devices_ids = useGenerateID(audio_devices);
 
     const collapsed = navbarState !== NavbarState.EXPANDED;
     const nav_item = classnames([style.navbar_title, collapsed ? style.collapsed : ""]);
@@ -29,21 +26,19 @@ export function SidebarDevices() {
 
     return (
         <div className={style.navbar}>
-            {audio_devices_ids.map((audio_device) => {
-                const device = audio_device.element;
+            {audio_devices.map((audio_device) => {
                 return (
-                    <Fragment key={audio_device.id}>
-                        <AppButton
-                            is_active={device.id === selected_device}
-                            className={nav_item}
-                            onClick={() => set_device_id(() => device.id)}
-                        >
-                            <BouncyTitle
-                                title={device.friendly_name}
-                                animate={device.id === selected_device}
-                            />
-                        </AppButton>
-                    </Fragment>
+                    <AppButton
+                        key={audio_device.id}
+                        is_active={audio_device.id === selected_device}
+                        className={nav_item}
+                        onClick={() => set_device_id(() => audio_device.id)}
+                    >
+                        <BouncyTitle
+                            title={audio_device.friendly_name}
+                            animate={audio_device.id === selected_device}
+                        />
+                    </AppButton>
                 );
             })}
         </div>

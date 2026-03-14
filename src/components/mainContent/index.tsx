@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { volumeController } from "$bridge/volumeManager";
 import { DeviceApplications, DeviceMaster } from "$component/device";
 import { Heartbeat } from "$component/heartbeat";
-import { useGenerateID } from "$hook/useGenerateID";
 import { application_ids, device_list, selected_device_id } from "$model/volume";
 import { UPDATE_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
@@ -99,7 +98,6 @@ function DeviceListener() {
 
 function ApplicationsListener() {
     const [app_ids, setAppIds] = useAtom(application_ids);
-    const elementsWithId = useGenerateID(app_ids);
 
     useEffect(() => {
         function handleUpdateEvent(event: EventType<UpdateChange>) {
@@ -123,7 +121,7 @@ function ApplicationsListener() {
         };
     }, [setAppIds]);
 
-    return elementsWithId.map(({ element, id: key }) => {
-        return <DeviceApplications id={element} key={key} />;
+    return app_ids.map((element) => {
+        return <DeviceApplications id={element} key={element} />;
     });
 }

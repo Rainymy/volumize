@@ -72,8 +72,19 @@
         border-radius: #element_style[radius] / 2;
         border: @thumb-border-width solid darken(#type_palett[light_gray], 20%);
         box-shadow: 0px 1.5px 2px #color_palett[secondary];
+
+        &:hover { cursor: grab; }
+    }
+
+    /**
+     * Im not really sure why this is working.
+     * Either it has higher specificity or it is overriding the default cursor.
+     */
+    &:active::-webkit-slider-thumb {
+        cursor: grabbing;
     }
 }
+
 
 .vslider {
     writing-mode: vertical-lr;

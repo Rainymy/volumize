@@ -8,17 +8,20 @@
 
     padding-top: 0.25rem;
 
-    row-gap: clamp(0.25rem, 1.25dvw, 0.5rem);
-    column-gap: clamp(0.25rem, 1.25dvh, 0.5rem);
+    @gap-size: clamp(0.25rem, 1.25dvw, 0.5rem);
+    row-gap: @gap-size;
+    column-gap: @gap-size;
 
     height: 100%;
+    width: stretch;
+    width: -webkit-fill-available;
 }
 
 /**
 * Generated from:
 *  - https://www.cssportal.com/style-input-range/
 */
-.input_accent {
+.input_range_style {
     -webkit-appearance: none;
     background: transparent;
     cursor: pointer;
@@ -85,11 +88,10 @@
     }
 }
 
-
 .vslider {
     writing-mode: vertical-lr;
     direction: rtl;
     vertical-align: middle;
 
-    flex-grow: 1;
+    margin: auto;
 }

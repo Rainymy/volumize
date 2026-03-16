@@ -13,7 +13,7 @@ type SliderType = {
 };
 
 export function Slider(props: SliderType) {
-    const input_class = classnames([props.className, style.slider, style.input_accent]);
+    const input_class = classnames([style.input_range_style, props.className]);
     const container = classnames([style.container]);
 
     const ref = useRef<HTMLInputElement>(null);

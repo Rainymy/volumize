@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 
 import { AppButton } from "$base/button";
@@ -12,6 +12,7 @@ import { CONNECTION_MODE } from "$type/navigation";
 import { getNumber } from "$util/generic";
 import { classnames } from "$util/react";
 import { tryParseURL } from "$util/temp";
+
 import style from "./index.module.less";
 
 export function ServerURLComponent() {
@@ -53,7 +54,7 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
 
     const [errorText, setErrorText] = useState("");
 
-    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
         const form = parseForm(new FormData(event.currentTarget));
 

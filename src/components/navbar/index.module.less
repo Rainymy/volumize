@@ -128,11 +128,13 @@
     overflow: hidden;
     white-space: nowrap;
 
-    & > span {
-
+    &.collapsed {
+        gap: 0px;
     }
+
     &.collapsed > span {
         visibility: hidden;
+        /* display: none; */
         width: 0%;
     }
 }

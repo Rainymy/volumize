@@ -38,7 +38,7 @@ export function VNavbar() {
     const navigate = useNavigate();
     const [navbarState, setNavbarState] = useAtom(navbar_state);
 
-    const collapsed = navbarState !== NavbarState.EXPANDED;
+    // const collapsed = navbarState !== NavbarState.EXPANDED;
 
     const classname = classnames([
         style.navbar,
@@ -90,7 +90,7 @@ export function VNavbar() {
                 </div>
 
                 <div className={style.navbar_entry}>
-                    {collapsed ? <h4>Devices</h4> : <h3>Devices</h3>}
+                    <h3>Devices</h3>
                     <SidebarDevices />
                 </div>
 

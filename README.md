@@ -1,7 +1,7 @@
 # Volumize
 
 <p align="center">
-    <img height="150" src="./public/icon.png"/>
+    <img height="150" src="./public/icon-desktop.svg"/>
 </p>
 
 <p align="center">

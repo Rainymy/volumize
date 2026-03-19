@@ -1,4 +1,11 @@
-import { type ChangeEventHandler, useEffect, useRef, useState } from "react";
+import {
+    type ChangeEventHandler,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from "react";
 import { getNumber } from "$util/generic";
 import { classnames } from "$util/react";
 import style from "./index.module.less";
@@ -12,35 +19,47 @@ type SliderType = {
     onChange?: ChangeEventHandler<HTMLInputElement>;
 };
 
-export function Slider(props: SliderType) {
-    const input_class = classnames([style.input_range_style, props.className]);
-    const container = classnames([style.container]);
-
+export function Slider({ min = 0, max = 100, ...props }: SliderType) {
     const ref = useRef<HTMLInputElement>(null);
-    const [currentValue, setValue] = useState(Number(props.value));
+    const [currentValue, setValue] = useState(getNumber(props.value) ?? min);
 
-    useEffect(() => {
-        setValue(Number(props.value));
-    }, [props.value]);
+    const updatePct = useCallback(
+        (value: number) => {
+            const pct = ((value - min) / (max - min)) * 100;
+            ref.current?.style.setProperty("--range-pct", `${pct}%`);
+        },
+        [min, max],
+    );
 
+    // Sync the external value changes with the internal state.
     useEffect(() => {
+        const newValue = getNumber(props.value) ?? min;
+        setValue(() => newValue);
+        updatePct(newValue);
+    }, [updatePct, props.value, min]);
+
+    // Listen for slider input event to update the value and percentage.
+    useLayoutEffect(() => {
         const slider = ref.current;
         if (!slider) return;
 
-        const handleInput = (el: HTMLInputElement) => {
-            const min = getNumber(el.min) || (props.min ?? 0);
-            const max = getNumber(el.max) || (props.max ?? 100);
-            const pct = ((el.valueAsNumber - min) / (max - min)) * 100;
-            el.style.setProperty("--range-pct", `${pct}%`);
+        const handleInputEvent = (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            setValue(() => target.valueAsNumber);
+            updatePct(target.valueAsNumber);
         };
-        const handleInputEvent = (e: Event) => handleInput(e.target as HTMLInputElement);
+
         slider.addEventListener("input", handleInputEvent);
-        handleInput(slider);
+        // Initialize value percentage on mount.
+        updatePct(slider.valueAsNumber);
 
         return () => {
             slider.removeEventListener("input", handleInputEvent);
         };
-    }, [props.min, props.max]);
+    }, [updatePct]);
+
+    const input_class = classnames([style.input_range_style, props.className]);
+    const container = classnames([style.container]);
 
     return (
         <div className={container}>
@@ -48,14 +67,11 @@ export function Slider(props: SliderType) {
                 className={input_class}
                 ref={ref}
                 type="range"
-                min={props.min}
-                max={props.max}
-                step={props.step}
                 value={currentValue}
-                onChange={(event) => {
-                    setValue(event.target.valueAsNumber);
-                    props.onChange?.(event);
-                }}
+                min={min}
+                max={max}
+                step={props.step}
+                onChange={props.onChange}
             />
             <span>{parseFloat(currentValue.toFixed(2))}</span>
         </div>

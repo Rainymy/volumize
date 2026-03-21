@@ -19,6 +19,9 @@
 - [ ] Refactor rust codebase.
     - Unify async and sync usages.
         - Async and sync code are a mess. Especially the thread management.
+- [ ] There is "TrayIcon" setting "tauri.conf.json".
+    - Use it and refactor the tray handling code.
+    - app > TrayIcon
 
 ## ================ Done ================
 

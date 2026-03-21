@@ -5,6 +5,9 @@ import path from "node:path";
 import util from "node:util";
 import build from "../package.json" with { type: "json" };
 
+import { remove_file, renamed_copy_file } from "./copy.js";
+import { replace_files } from "./replace.js";
+
 // https://v2.tauri.app/develop/icons/
 //
 // Options:
@@ -16,12 +19,12 @@ import build from "../package.json" with { type: "json" };
 // -V, --version                Print version
 
 const current_dir_name = import.meta.dirname;
-const temp_folder = fs.mkdtempSync(path.join(current_dir_name, "temp-icons_"));
+const src_folder = fs.mkdtempSync(path.join(current_dir_name, "temp-icons_"));
 const target_folder = path.join(current_dir_name, "..", "./src-tauri/icons");
 
 let src_command = build.scripts["icons:phone"];
 src_command = src_command.replace(/icon.(svg|png)/g, "icon-desktop.svg");
-src_command += ` --output ${temp_folder}`;
+src_command += ` --output ${src_folder}`;
 
 if (src_command.startsWith("npm run ")) {
     // note: when npm is present execute is failing.
@@ -39,25 +42,8 @@ try {
     console.log(e.stderr);
 }
 
-replace_files(["icon.ico", "icon.icns"], temp_folder, target_folder);
-fs.rmSync(temp_folder, { recursive: true });
+replace_files(["icon.ico", "icon.icns"], src_folder, target_folder);
+remove_file("icon-tray.png", target_folder);
+renamed_copy_file("icon.png", "icon-tray.png", src_folder, target_folder);
 
-/**
- *
- * @param {string[]} src
- * @param {string[]} dest
- */
-function replace_files(files, src_folder, dest_folder) {
-    console.log(util.styleText("blue", "Replacing files to:"), `${dest_folder}`);
-
-    for (const file of files) {
-        const src = path.join(src_folder, file);
-
-        fs.copyFileSync(src, path.join(dest_folder, file));
-        fs.rmSync(src);
-
-        console.log(` - Replaced ${util.styleText("green", file)}`);
-    }
-
-    console.log("");
-}
+fs.rmSync(src_folder, { recursive: true });

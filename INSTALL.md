@@ -199,6 +199,10 @@ First follow the instructions for the [Desktop Development Setup](#desktop-devel
 npm run tauri build
 ```
 
+```bash
+npm run icons:desktop
+```
+
 The built executable will be in `src-tauri/target/release/`.
 
 ### Android
@@ -230,12 +234,20 @@ storeFile=<location of the key store file, such as /Users/<user name>/upload-key
 3. Generate the APK:
 
 ```bash
+npm run icons:phone
+```
+
+```bash
 npm run tauri android build
 ```
 
 The APK will be in `src-tauri/gen/android/app/build/outputs/apk/`.
 
 ### iOS
+
+```bash
+npm run icons:phone
+```
 
 ```bash
 npm run tauri ios build

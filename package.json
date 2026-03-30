@@ -4,20 +4,25 @@
     "private": true,
     "type": "module",
     "description": "Cross-platform master & per-app volume controller for Node.js",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
     "scripts": {
+        "//============== Icons ==============//": "",
         "icons:desktop": "node dev_script/index.js",
         "icons:phone": "tauri icon ./public/icon.svg --ios-color #CAE7FF",
+        "//========== Check/Validate =========//": "",
+        "check:types": "tsc",
+        "check:deps": "npx @e18e/cli analyze",
+        "//============= Project =============//": "",
         "dev": "vite",
-        "build": "npm run icons:desktop && tsc && vite build",
+        "build": "npm run check:types && vite build",
         "preview": "vite preview",
+        "//============= Binaries ============//": "",
         "tauri": "tauri",
-        "biome": "biome"
+        "biome": "biome",
+        "//===================================//": ""
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/Rainymy/volumize.git"
+        "url": "git+https://github.com/Rainymy/volumize.git"
     },
     "author": "Rainymy",
     "license": "MIT",

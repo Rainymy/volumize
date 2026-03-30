@@ -1,6 +1,6 @@
 import { useSetAtom } from "jotai";
 import { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { volumeController } from "$bridge/volumeManager";
 import { connection_state } from "$model/volume";

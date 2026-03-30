@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 
 import { isVeritcalNavbar, NavbarState, navbar_state } from "$model/nav";
 import { NavigationType } from "$type/navigation";

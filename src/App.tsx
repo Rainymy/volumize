@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router";
 
 import { Notice } from "$base/notice";
 import { MainContent } from "$component/mainContent";

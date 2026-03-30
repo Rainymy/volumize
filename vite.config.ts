@@ -1,11 +1,19 @@
 import path from "node:path";
+import { env } from "node:process";
 import react from "@vitejs/plugin-react";
-import { type CSSOptions, defineConfig, type HmrOptions } from "vite";
+import {
+    type AliasOptions,
+    type ConfigEnv,
+    type CSSOptions,
+    defineConfig,
+    type HmrOptions,
+    type UserConfig,
+} from "vite";
 
-const host = process.env.TAURI_DEV_HOST;
+const host = env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => {
+export default defineConfig(async (_env: ConfigEnv) => {
     const hmrOptions: HmrOptions = {
         protocol: "ws",
         host: host,
@@ -22,25 +30,26 @@ export default defineConfig(async () => {
         },
     };
 
-    return {
+    const aliases: AliasOptions = {
+        $page: path.resolve(__dirname, "./src/pages"),
+        $base: path.resolve(__dirname, "./src/base"),
+        $component: path.resolve(__dirname, "./src/components"),
+        $bridge: path.resolve(__dirname, "./src/bridge"),
+        $model: path.resolve(__dirname, "./src/models"),
+        $core_css: path.resolve(__dirname, "./src/css"),
+        $util: path.resolve(__dirname, "./src/utils"),
+        $hook: path.resolve(__dirname, "./src/hooks"),
+        $type: path.resolve(__dirname, "./src/types"),
+        $font: path.resolve(__dirname, "./src/fonts"),
+    };
+
+    const config: UserConfig = {
         // https://react.dev/learn/react-compiler
         plugins: [react()],
         css: cssOptions,
+        // Explicitly expose .env variables with this prefix
         envPrefix: "VOLUMIZE_",
-
-        resolve: {
-            alias: {
-                $page: path.resolve(__dirname, "./src/pages"),
-                $base: path.resolve(__dirname, "./src/base"),
-                $component: path.resolve(__dirname, "./src/components"),
-                $bridge: path.resolve(__dirname, "./src/bridge"),
-                $model: path.resolve(__dirname, "./src/models"),
-                $core_css: path.resolve(__dirname, "./src/css"),
-                $util: path.resolve(__dirname, "./src/utils"),
-                $hook: path.resolve(__dirname, "./src/hooks"),
-                $type: path.resolve(__dirname, "./src/types"),
-            },
-        },
+        resolve: { alias: aliases },
 
         // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
         //
@@ -58,4 +67,6 @@ export default defineConfig(async () => {
             },
         },
     };
+
+    return config;
 });

@@ -1,10 +1,12 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
+
 import { useEffect, useMemo } from "react";
 import { FaArrowLeft, FaHamburger } from "react-icons/fa";
 import { FaAngleRight } from "react-icons/fa6";
 import { FiArrowLeft } from "react-icons/fi";
 import { IoSettingsOutline } from "react-icons/io5";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
+
 import { AppButton, NavButton } from "$base/button";
 import { SidebarDevices } from "$component/sidebar";
 import { useLogout } from "$hook/useLogout";
@@ -12,6 +14,7 @@ import { isVeritcalNavbar, NavbarState, navbar_state } from "$model/nav";
 import { connection_state } from "$model/volume";
 import { ConnectionState, NavigationType } from "$type/navigation";
 import { classnames } from "$util/react";
+
 import style from "./index.module.less";
 
 export function Navbar() {

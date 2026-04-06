@@ -1,5 +1,6 @@
 import { type RefObject, useId } from "react";
 import { useHTMLSizing } from "$hook/useHTMLSizing";
+import { classnames } from "$util/react";
 
 import style from "./index.module.less";
 
@@ -9,10 +10,10 @@ export type MarkerDensity = {
 };
 
 export const DENSITY_BREAKPOINTS: Array<{ min_height: number } & MarkerDensity> = [
-    { min_height: 0, marker_gap_pixel: 80, small_marker_count: 1 },
-    { min_height: 120, marker_gap_pixel: 40, small_marker_count: 2 },
-    { min_height: 145, marker_gap_pixel: 45, small_marker_count: 3 },
-    { min_height: 170, marker_gap_pixel: 50, small_marker_count: 4 },
+    { min_height: 0, marker_gap_pixel: 30, small_marker_count: 1 },
+    { min_height: 120, marker_gap_pixel: 30, small_marker_count: 3 },
+    { min_height: 145, marker_gap_pixel: 35, small_marker_count: 3 },
+    { min_height: 170, marker_gap_pixel: 45, small_marker_count: 4 },
     { min_height: 240, marker_gap_pixel: 50, small_marker_count: 4 },
 ];
 
@@ -24,35 +25,65 @@ function getDensity(height: number): MarkerDensity {
     return match ?? DENSITY_BREAKPOINTS[0];
 }
 
-export function Markers<T extends HTMLElement>({ ref }: { ref: RefObject<T | null> }) {
+type MarkersProps<T extends HTMLElement> = {
+    ref: RefObject<T | null>;
+    progress?: number;
+};
+export function Markers<T extends HTMLElement>({ ref, progress = 1 }: MarkersProps<T>) {
     const { height } = useHTMLSizing(ref);
     const id = useId();
 
     const { marker_gap_pixel, small_marker_count } = getDensity(height);
-    const marker_count = Math.floor(height / marker_gap_pixel) + 1;
+    const marker_count = Math.floor(height / marker_gap_pixel);
 
-    const indices = Array.from({ length: marker_count }).map((_, i) => i);
+    // This is a workaround for using index as key warning from linter.
+    const indices = Array.from({ length: marker_count }, (_, i) => i);
 
     return (
         <div className={style.markers}>
             {/*{Math.floor(height)}*/}
-            {indices.map((a, _) => (
+            {indices.map((a, i) => (
                 <>
-                    <span></span>
-                    <MarkerGroup key={`${id}-${a}`} small_count={small_marker_count} />
+                    <span />
+                    <MarkerGroup
+                        key={`${id}-${a}`}
+                        small_count={small_marker_count}
+                        threshold={progress}
+                        group_index={i}
+                        group_count={marker_count}
+                    />
                 </>
             ))}
             {/* Adding the last major marker */}
-            <span></span>
+            <span />
         </div>
     );
 }
 
-function MarkerGroup({ small_count = 3 }) {
+function MarkerGroup({
+    small_count = 3,
+    threshold = 1,
+    group_index = 0,
+    group_count = 1,
+}) {
     const id = useId();
-    const indices = Array.from({ length: small_count }).map((_, i) => i);
+    const indices = Array.from({ length: small_count }, (_, i) => i);
 
-    return indices.map((a, _) => (
-        <span key={`${id}-${a}`} className={style.small_marker} />
-    ));
+    const group_progress = 1 / group_count;
+    const group_top_progress = 1 - group_index * group_progress;
+    const step_progress = group_progress / (small_count + 1);
+
+    return indices.map((a, i) => {
+        const marker_progress = group_top_progress - step_progress * (i + 1);
+
+        return (
+            <span
+                key={`${id}-${a}`}
+                className={classnames([
+                    style.small_marker,
+                    marker_progress > threshold ? style.dark : undefined,
+                ])}
+            />
+        );
+    });
 }

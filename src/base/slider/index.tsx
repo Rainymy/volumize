@@ -24,12 +24,16 @@ export function Slider({ min = 0, max = 100, ...props }: SliderType) {
     const ref = useRef<HTMLInputElement>(null);
     const [currentValue, setValue] = useState(getNumber(props.value) ?? min);
 
+    const calculatePercent = useCallback(
+        (value: number) => ((value - min) / (max - min)) * 100,
+        [min, max],
+    );
+
     const updatePct = useCallback(
         (value: number) => {
-            const pct = ((value - min) / (max - min)) * 100;
-            ref.current?.style.setProperty("--range-pct", `${pct}%`);
+            ref.current?.style.setProperty("--range-pct", `${calculatePercent(value)}%`);
         },
-        [min, max],
+        [calculatePercent],
     );
 
     // Sync the external value changes with the internal state.
@@ -64,7 +68,7 @@ export function Slider({ min = 0, max = 100, ...props }: SliderType) {
 
     return (
         <div className={container}>
-            <Markers ref={ref} />
+            <Markers ref={ref} progress={calculatePercent(currentValue) / 100} />
             <input
                 className={input_class}
                 ref={ref}

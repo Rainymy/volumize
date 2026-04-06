@@ -1,5 +1,6 @@
 import style from "./index.module.less";
 
+export default Settings;
 export function Settings() {
     return (
         <div className={style.container}>

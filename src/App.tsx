@@ -1,13 +1,15 @@
+import { lazy } from "react";
 import { Route, Routes } from "react-router";
 
 import { Notice } from "$base/notice";
-import { MainContent } from "$component/mainContent";
 import { Navbar } from "$component/navbar";
 import { useIsNavigateToSettings, useNavbarState } from "$hook/useNavbar";
-import { Entry } from "$page/home";
-import { Settings } from "$page/settings";
 import { NavigationType } from "$type/navigation";
 import { classnames } from "$util/react";
+
+const Entry = lazy(() => import("$page/home"));
+const MainContent = lazy(() => import("$component/mainContent"));
+const Settings = lazy(() => import("$page/settings"));
 
 export default function AudioMixer() {
     const navbarState = useNavbarState();

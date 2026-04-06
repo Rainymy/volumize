@@ -11,6 +11,7 @@
         "//========== Check/Validate =========//": "",
         "check:types": "tsc",
         "check:deps": "npx @e18e/cli analyze",
+        "visualizer": "npx vite-bundle-visualizer",
         "//============= Project =============//": "",
         "dev": "vite",
         "build": "npm run check:types && vite build",

@@ -28,6 +28,7 @@ import style from "./index.module.less";
  * |-------------||-------------|-------------|-------------|------|
  */
 
+export default MainContent;
 export function MainContent() {
     const setAppIds = useSetAtom(application_ids);
     const setDeviceList = useSetAtom(device_list);

@@ -10,6 +10,7 @@ import { connection_state } from "$model/volume";
 import { ConnectionState, NavigationType } from "$type/navigation";
 import style from "./index.module.less";
 
+export default Entry;
 export function Entry() {
     const navigate = useNavigate();
 

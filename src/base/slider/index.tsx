@@ -9,6 +9,7 @@ import {
 import { getNumber } from "$util/generic";
 import { classnames } from "$util/react";
 import style from "./index.module.less";
+import { Markers } from "./marker";
 
 type SliderType = {
     className?: string;
@@ -63,6 +64,7 @@ export function Slider({ min = 0, max = 100, ...props }: SliderType) {
 
     return (
         <div className={container}>
+            <Markers ref={ref} />
             <input
                 className={input_class}
                 ref={ref}

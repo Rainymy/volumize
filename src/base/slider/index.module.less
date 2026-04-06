@@ -6,6 +6,7 @@
     align-items: center;
     justify-content: center;
 
+    position: relative;
     padding-top: 0.25rem;
 
     @gap-size: clamp(0.25rem, 1.25dvw, 0.5rem);
@@ -37,6 +38,8 @@
 
     /* --- Webkit Browsers --- */
     &::-webkit-slider-runnable-track {
+        anchor-name: --range-slider-anchor;
+
         /* `height` has no effect here — vertical writing-mode swaps the axis. */
         width: @track-width;
 
@@ -85,6 +88,55 @@
      */
     &:active::-webkit-slider-thumb {
         cursor: grabbing;
+    }
+}
+
+/* justify-items: center; */
+/* align-items: center; */
+/* flex-direction: row; */
+/* writing-mode: vertical-lr; */
+/* direction: rtl; */
+
+.markers {
+    position-anchor: --range-slider-anchor;
+    anchor-name: --marker;
+
+    padding: 0.2rem 0;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-content: center;
+    flex-wrap: nowrap;
+
+    position: absolute;
+    position-area: center center;
+
+    top: anchor(top, 0);
+    left: anchor(left, 0);
+
+    height: anchor-size(height);
+    width: calc(anchor-size(width) / 1.5);
+
+    .base-marker() {
+        width: 100%;
+        height: 2px;
+        opacity: 75%;
+
+        border-radius: #element_style[radius] * 2;
+        background-blend-mode: exclusion;
+    }
+
+    & > * {
+        .base-marker();
+        background-color: fade(#color_palett[contrast], 25%);
+    }
+
+    & > .small_marker {
+        .base-marker();
+        background-color: fade(#color_palett[secondary], 75%);
+        width: 50%;
+        margin: 0 auto;
     }
 }
 

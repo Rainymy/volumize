@@ -22,7 +22,7 @@ const current_dir_name = import.meta.dirname;
 const src_folder = fs.mkdtempSync(path.join(current_dir_name, "temp-icons_"));
 const target_folder = path.join(current_dir_name, "..", "./src-tauri/icons");
 
-let src_command = build.scripts["icons:phone"];
+let src_command = build.scripts["icons:phone"].slice();
 src_command = src_command.replace(/icon.(svg|png)/g, "icon-desktop.svg");
 src_command += ` --output ${src_folder}`;
 

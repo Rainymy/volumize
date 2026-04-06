@@ -124,19 +124,25 @@
         opacity: 75%;
 
         border-radius: #element_style[radius] * 2;
-        background-blend-mode: exclusion;
     }
 
     & > * {
         .base-marker();
-        background-color: fade(#color_palett[contrast], 25%);
+        background-color: fadeout(tint(#color_palett[contrast], 25%), 25%);
+        filter: blur(0.5px);
     }
 
     & > .small_marker {
         .base-marker();
-        background-color: fade(#color_palett[secondary], 75%);
-        width: 50%;
+        background-color: fadeout(tint(#color_palett[secondary], 30%), 30%);
+        width: 70%;
         margin: 0 auto;
+
+        &.dark {
+            @active-color: mix(#color_palett[darkContrast], #color_palett[primary], 25%);
+            background-color: tint(@active-color, 50%);
+            opacity: 75%;
+        }
     }
 }
 

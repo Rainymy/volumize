@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
+import { useClickedWithin } from "react-clicked-within";
+
 import { BouncyTitle } from "$base/bouncyTitle";
 import { CardIcon } from "$base/cardIcon";
 import { VSlider } from "$base/slider";
 import { ToggleableMuteIcon } from "$base/toggleMuteIcon";
-import { useElementFocusedWithin } from "$hook/useElementFocusedWithin";
 import type { MaybeAsync } from "$type/generic";
 
 import style from "./index.module.less";
@@ -28,12 +29,12 @@ type CardProps = {
  */
 export function Card(props: CardProps) {
     const { title, volume, isMuted, onButtonClick, onSlider, icon } = props;
-    const { isFocusedWithin, ref } = useElementFocusedWithin<HTMLDivElement>();
+    const { isClickedWithin, ref } = useClickedWithin<HTMLDivElement>();
 
     return (
         <div className={style.container} ref={ref}>
             <BouncyTitle
-                animate={isFocusedWithin}
+                animate={isClickedWithin}
                 className={"flex-grow-1"}
                 title={title}
             />

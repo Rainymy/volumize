@@ -1,4 +1,4 @@
-import { type RefObject, useId } from "react";
+import { Fragment, type RefObject, useId } from "react";
 import { useHTMLSizing } from "$hook/useHTMLSizing";
 import { classnames } from "$util/react";
 
@@ -43,16 +43,15 @@ export function Markers<T extends HTMLElement>({ ref, progress = 1 }: MarkersPro
         <div className={style.markers}>
             {/*{Math.floor(height)}*/}
             {indices.map((a, i) => (
-                <>
+                <Fragment key={`${id}-${a}`}>
                     <span />
                     <MarkerGroup
-                        key={`${id}-${a}`}
                         small_count={small_marker_count}
                         threshold={progress}
                         group_index={i}
                         group_count={marker_count}
                     />
-                </>
+                </Fragment>
             ))}
             {/* Adding the last major marker */}
             <span />

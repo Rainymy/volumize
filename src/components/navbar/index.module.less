@@ -52,22 +52,24 @@
 
 .hidden_navbar_button {
     display: flex;
-    justify-content: start;
+    justify-content: end;
     align-items: center;
     position: absolute;
 
-    @ratio: 0.5;
-    @height: 2.5rem;
-    @safe-area-var: calc(#safe-area[left] - 0px);
-    @width: calc(@height * @ratio + @safe-area-var);
+    @safe-area-var: max(#safe-area[left], 1.25rem);
+    @total-wdith: calc(0.25rem + @safe-area-var);
 
-    width: @width;
-    height: @height;
+    width: @total-wdith;
+    height: 2.5rem;
 
     border: none;
     padding: 0;
+    padding-right: 0.25rem;
 
-    border-radius: 0 0.75rem 0.75rem 0;
+    border-radius: 0;
+    border-top-right-radius: 0.75rem;
+    border-bottom-right-radius: 0.75rem;
+
     @bg-color: shade(#color_palett[contrast], 25%);
     background: linear-gradient(
         to right,
@@ -87,15 +89,13 @@
     transition: left 0.5s ease;
 
     & > svg {
-        padding: 0.25rem 0.25rem;
-        width: calc(@width - @safe-area-var);
-        margin-left: auto;
+        aspect-ratio: 2.5 / 4;
         height: 100%;
         filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
     }
 
     &.hide {
-        left: -1.25rem * 3;
+        left: calc(@total-wdith * -2);
     }
 }
 

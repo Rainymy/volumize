@@ -13,6 +13,7 @@
         "check:deps": "npx @e18e/cli analyze",
         "visualizer": "npx vite-bundle-visualizer",
         "//============= Project =============//": "",
+        "server": "node dev_script/server/index.js",
         "dev": "vite",
         "build": "npm run check:types && vite build",
         "preview": "vite preview",

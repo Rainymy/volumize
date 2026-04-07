@@ -101,19 +101,20 @@
     position-anchor: --range-slider-anchor;
     anchor-name: --marker;
 
+    pointer-events: none;
     padding: 0.2rem 0;
 
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    align-content: center;
     flex-wrap: nowrap;
 
     position: absolute;
     position-area: center center;
 
     top: anchor(top, 0);
-    left: anchor(left, 0);
+    /* Looks centered with offset */
+    left: calc(anchor(left, 0) + 0.75px);
 
     height: anchor-size(height);
     width: calc(anchor-size(width) / 1.5);

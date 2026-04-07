@@ -92,9 +92,8 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-    const lan = getLanIP();
     const localUrl = `http://localhost:${PORT}`;
-    const lanUrl = `http://${lan}:${PORT}`;
+    const lanUrl = `http://${getLanIP()}:${PORT}`;
 
     console.log();
     console.log(styleText(["blue", "bold"], "LAN File Server running"));

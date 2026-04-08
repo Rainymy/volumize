@@ -1,9 +1,10 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, RefObject } from "react";
 import { classnames } from "$util/react";
 import style from "./index.module.less";
 
 type AppButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
     is_active?: boolean;
+    ref?: RefObject<HTMLButtonElement | null>;
 };
 
 export function AppButton(props: AppButtonProps) {

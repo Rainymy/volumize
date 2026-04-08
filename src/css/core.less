@@ -23,10 +23,6 @@
 }
 
 #safe-area() {
-    /* top:    10px; */
-    /* bottom: 10px; */
-    /* right:  10px; */
-    /* left:   10px; */
     top: env(safe-area-inset-top, 10px);
     bottom: env(safe-area-inset-bottom, 10px);
     right: env(safe-area-inset-right, 10px);
@@ -34,11 +30,20 @@
 }
 
 #element-edge() {
-    @mask: linear-gradient(to bottom,
-          black 100%,
-          /* transparent */
-      );
-    edge-mask: @mask;
+    edge-mask: linear-gradient(to bottom, black 100%);
+}
+
+#font() {
+    .heading() {
+        font-family: Space Grosteck, Arial, Helvetica, sans-serif;
+        fallback: ;
+    }
+    .body() {
+        font-family: DM Sans, Copperplate, Papyrus, fantasy;
+    };
+    .mono() {
+        font-family: Fira Coda, "Courier New", Courier, monospace;
+    }
 }
 
 #navbar_style() {

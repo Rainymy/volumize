@@ -45,7 +45,6 @@
 
         /* `--range-pct` is set via JS to split the track into "below" & "above" thumb. */
         background: linear-gradient(to top,
-            /* #color_palett[darkContrast] var(--range-pct, 0%), */
             #color_palett[primary]   var(--range-pct, 0%),
             #color_palett[secondary] var(--range-pct, 0%)
         );
@@ -82,24 +81,13 @@
         &:hover { cursor: grab; }
     }
 
-    /**
-     * Im not really sure why this is working.
-     * Either it has higher specificity or it is overriding the default cursor.
-     */
     &:active::-webkit-slider-thumb {
         cursor: grabbing;
     }
 }
 
-/* justify-items: center; */
-/* align-items: center; */
-/* flex-direction: row; */
-/* writing-mode: vertical-lr; */
-/* direction: rtl; */
-
 .markers {
     position-anchor: --range-slider-anchor;
-    anchor-name: --marker;
 
     pointer-events: none;
     padding: 0.2rem 0;

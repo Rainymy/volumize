@@ -1,19 +1,15 @@
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect } from "react";
+
 import { BouncyTitle } from "$base/bouncyTitle";
 import { AppButton } from "$base/button";
-import { NavbarState, navbar_state } from "$model/nav";
 import { device_list, selected_device_id } from "$model/volume";
-import { classnames } from "$util/react";
+
 import style from "./index.module.less";
 
 export function SidebarDevices() {
     const [selected_device, set_device_id] = useAtom(selected_device_id);
     const audio_devices = useAtomValue(device_list);
-    const navbarState = useAtomValue(navbar_state);
-
-    const collapsed = navbarState !== NavbarState.EXPANDED;
-    const nav_item = classnames([style.navbar_title, collapsed ? style.collapsed : ""]);
 
     useEffect(() => {
         if (typeof selected_device === "undefined" && audio_devices.length) {
@@ -31,7 +27,7 @@ export function SidebarDevices() {
                     <AppButton
                         key={audio_device.id}
                         is_active={audio_device.id === selected_device}
-                        className={nav_item}
+                        className={style.navbar_title}
                         onClick={() => set_device_id(() => audio_device.id)}
                     >
                         <BouncyTitle

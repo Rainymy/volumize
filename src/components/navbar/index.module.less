@@ -38,7 +38,7 @@
 .navbar_entry {
     width: 100%;
 
-    & > button {
+    & > * {
         width: 100%;
     }
 
@@ -114,27 +114,3 @@
     scrollbar-width: thin;
 }
 
-.navbar_title {
-    font-size: 1.2rem;
-
-    width: 100%;
-
-    align-items: center;
-    gap: 4px;
-
-    transition: all 0.5s ease;
-
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-
-    &.collapsed {
-        gap: 0px;
-    }
-
-    &.collapsed > span {
-        visibility: hidden;
-        /* display: none; */
-        width: 0%;
-    }
-}

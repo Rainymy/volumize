@@ -1,0 +1,25 @@
+.navbar_title {
+    @gap-size: 4px;
+
+    width: 100%;
+    align-items: center;
+
+    font-size: 1.2rem;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+
+    & span {
+        max-width: attr(--data-max-width px, 200px);
+        overflow: hidden;
+        transition:
+            max-width 0.5s ease,
+            margin 0.25s ease;
+        margin-left: @gap-size;
+    }
+
+    & span.collapsed {
+        margin-left: 0;
+        max-width: 0;
+    }
+}

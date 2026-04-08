@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
-import { useEffect, useMemo } from "react";
+import { Activity, useCallback, useEffect, useMemo } from "react";
 import { FaArrowLeft, FaHamburger } from "react-icons/fa";
 import { FaAngleRight } from "react-icons/fa6";
 import { FiArrowLeft } from "react-icons/fi";
@@ -8,6 +8,7 @@ import { IoSettingsOutline } from "react-icons/io5";
 import { useLocation, useNavigate } from "react-router";
 
 import { AppButton, NavButton } from "$base/button";
+import { CollapseButton } from "$base/collapseButton";
 import { SidebarDevices } from "$component/sidebar";
 import { useLogout } from "$hook/useLogout";
 import { isVeritcalNavbar, NavbarState, navbar_state } from "$model/nav";
@@ -20,6 +21,7 @@ import style from "./index.module.less";
 export function Navbar() {
     const location = useLocation();
     const setVerticalNavbar = useSetAtom(isVeritcalNavbar);
+    const [navbarState, setNavbarState] = useAtom(navbar_state);
 
     const isMainPath = useMemo(
         () => location.pathname === NavigationType.MAIN,
@@ -30,18 +32,44 @@ export function Navbar() {
         setVerticalNavbar(() => isMainPath);
     }, [isMainPath, setVerticalNavbar]);
 
-    return isMainPath ? <VNavbar /> : <HNavbar />;
+    const toggleExpanded = useCallback(() => {
+        if (NavbarState.COLLAPSED === navbarState) {
+            setNavbarState(NavbarState.EXPANDED);
+            return;
+        }
+        setNavbarState(NavbarState.COLLAPSED);
+    }, [navbarState, setNavbarState]);
+
+    const is_nav_hidden = navbarState === NavbarState.HIDDEN;
+
+    return (
+        <>
+            <Activity mode={isMainPath ? "visible" : "hidden"}>
+                <AppButton
+                    className={classnames([
+                        style.hidden_navbar_button,
+                        !is_nav_hidden ? style.hide : undefined,
+                    ])}
+                    onClick={() => is_nav_hidden && toggleExpanded()}
+                >
+                    <FaAngleRight />
+                </AppButton>
+                <VNavbar toggleExpanded={toggleExpanded} />
+            </Activity>
+            <Activity mode={!isMainPath ? "visible" : "hidden"}>
+                <HNavbar />
+            </Activity>
+        </>
+    );
 }
 
 /**
  * Vertical Navbar
  * @returns
  */
-export function VNavbar() {
+function VNavbar({ toggleExpanded }: { toggleExpanded: () => void }) {
     const navigate = useNavigate();
     const [navbarState, setNavbarState] = useAtom(navbar_state);
-
-    // const collapsed = navbarState !== NavbarState.EXPANDED;
 
     const classname = classnames([
         style.navbar,
@@ -50,61 +78,39 @@ export function VNavbar() {
         navbarState === NavbarState.EXPANDED ? style.wide : undefined,
         navbarState === NavbarState.HIDDEN ? style.hidden : undefined,
     ]);
-    const item_class = classnames([
-        style.navbar_title,
-        navbarState !== NavbarState.EXPANDED ? style.collapsed : undefined,
-    ]);
-    const pop_show_nav = classnames([
-        style.hidden_navbar_button,
-        navbarState !== NavbarState.HIDDEN ? style.hide : undefined,
-    ]);
-
-    function toggleExpanded() {
-        if (NavbarState.COLLAPSED === navbarState) {
-            setNavbarState(NavbarState.EXPANDED);
-            return;
-        }
-        setNavbarState(NavbarState.COLLAPSED);
-    }
 
     return (
-        <>
-            <AppButton
-                className={pop_show_nav}
-                onClick={() => {
-                    if (navbarState === NavbarState.HIDDEN) toggleExpanded();
-                }}
-            >
-                <FaAngleRight />
-            </AppButton>
-            <aside className={classname}>
-                <div className={style.navbar_entry}>
-                    <AppButton className={item_class} onClick={() => toggleExpanded()}>
-                        <FaHamburger />
-                        <span>Menu</span>
-                    </AppButton>
-                    <AppButton
-                        className={item_class}
-                        onClick={() => setNavbarState(NavbarState.HIDDEN)}
-                    >
-                        <FiArrowLeft />
-                        <span>Hide</span>
-                    </AppButton>
-                </div>
+        <aside className={classname}>
+            <div className={style.navbar_entry}>
+                <CollapseButton
+                    collapsed={navbarState === NavbarState.COLLAPSED}
+                    icon={<FaHamburger />}
+                    onClick={() => toggleExpanded()}
+                    text="Menu"
+                />
+                <CollapseButton
+                    collapsed={navbarState === NavbarState.COLLAPSED}
+                    icon={<FiArrowLeft />}
+                    onClick={() => setNavbarState(NavbarState.HIDDEN)}
+                    text="Hide"
+                />
+            </div>
 
-                <div className={style.navbar_entry}>
-                    <h3>Devices</h3>
-                    <SidebarDevices />
-                </div>
+            <div className={style.navbar_entry}>
+                <h3>Devices</h3>
+                <SidebarDevices />
+            </div>
 
-                <div className={style.navbar_entry}>
-                    <NavButton onClick={() => navigate(NavigationType.SETTINGS)}>
-                        <IoSettingsOutline />
-                        {navbarState === NavbarState.EXPANDED && <span>Settings</span>}
-                    </NavButton>
-                </div>
-            </aside>
-        </>
+            <div className={style.navbar_entry}>
+                <CollapseButton
+                    collapsed={navbarState === NavbarState.COLLAPSED}
+                    icon={<IoSettingsOutline />}
+                    CustomElement={NavButton}
+                    onClick={() => navigate(NavigationType.SETTINGS)}
+                    text="Settings"
+                />
+            </div>
+        </aside>
     );
 }
 
@@ -112,7 +118,7 @@ export function VNavbar() {
  * Horizontal Navbar
  * @returns
  */
-export function HNavbar() {
+function HNavbar() {
     const location = useLocation();
     const navigate = useNavigate();
 

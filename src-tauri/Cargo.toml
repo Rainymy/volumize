@@ -35,16 +35,24 @@ image = "0.25.10"
 tauri-plugin-autostart = "2.5.1"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.61.3", features = [
-    "Win32_Foundation",
-    "Win32_System_Com",
+windows = { version = "0.62.2", features = [
+    # ------------ Audio ------------
+    "Win32_Media",
     "Win32_Media_Audio",
     "Win32_Media_Audio_Endpoints",
-    "Win32_System_ProcessStatus",
-    "Win32_UI_Shell_PropertiesSystem",
     "Win32_Devices_FunctionDiscovery",
-    "Win32_Storage",
+    # ------------- COM -------------
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Variant",
+    # ----------- Process -----------
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Threading",
+    # ------- Icon Extraction -------
+    "Win32_Graphics_Gdi",
     "Win32_Storage_FileSystem",
+    "Win32_UI_WindowsAndMessaging",
+    # -------------------------------
 ] }
-windows-core = "0.61.2"
-
+windows-core = "0.62.2"

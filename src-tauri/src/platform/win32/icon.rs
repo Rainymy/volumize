@@ -148,7 +148,7 @@ fn extract_hicon(path: &str) -> windows::core::Result<HICON> {
     let psfi = unsafe { psfi.assume_init() };
 
     if info_exit_code == 0 || psfi.hIcon.is_invalid() {
-        return Err(windows::core::Error::from_win32());
+        return Err(windows::core::Error::from_thread());
     }
 
     Ok(psfi.hIcon)

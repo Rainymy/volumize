@@ -20,16 +20,7 @@ pub fn menu_event(app: &AppHandle, event: MenuEvent) {
         "auto_start" => {
             let manager = app.autolaunch();
 
-            let storage = app.app_handle().state::<Storage>();
-            let mut settings = storage.get();
-
-            let currently_enabled = manager.is_enabled().unwrap_or_default();
-            settings.autostart = !currently_enabled;
-
-            if let Err(err) = storage.save(app, &settings) {
-                eprintln!("{}", err);
-            }
-
+            let currently_enabled = manager.is_enabled().unwrap_or(false);
             if currently_enabled {
                 let _ = manager.disable();
             } else {

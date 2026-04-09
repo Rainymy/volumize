@@ -10,7 +10,6 @@ use crate::{
 };
 
 use tauri::{App, Manager};
-use tauri_plugin_autostart::ManagerExt;
 
 pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     let app_handle = app.handle();
@@ -25,16 +24,6 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     storage.load(app_handle);
     let settings = storage.get();
 
-    if settings.autostart {
-        let autostart_manager = app.autolaunch();
-        let currently_enabled = autostart_manager.is_enabled().unwrap_or(false);
-
-        if !currently_enabled {
-            let _ = autostart_manager.enable();
-        }
-    }
-
-    // let (tx, mut rx) = unbounded_channel();
     let (tx, rx) = std::sync::mpsc::channel::<UpdateChange>();
     spawn_volume_thread(app_handle, tx); // Thread for volume control
     spawn_update_thread(app_handle, rx); // Thread for propagate updates to the UI

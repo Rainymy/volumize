@@ -83,13 +83,13 @@ function VNavbar({ toggleExpanded }: { toggleExpanded: () => void }) {
         <aside className={classname}>
             <div className={style.navbar_entry}>
                 <CollapseButton
-                    collapsed={navbarState === NavbarState.COLLAPSED}
+                    collapsed={navbarState !== NavbarState.EXPANDED}
                     icon={<FaHamburger />}
                     onClick={() => toggleExpanded()}
                     text="Menu"
                 />
                 <CollapseButton
-                    collapsed={navbarState === NavbarState.COLLAPSED}
+                    collapsed={navbarState !== NavbarState.EXPANDED}
                     icon={<FiArrowLeft />}
                     onClick={() => setNavbarState(NavbarState.HIDDEN)}
                     text="Hide"

@@ -17,11 +17,12 @@ pub fn create_tray(handle: &tauri::AppHandle) -> TauriResult<Menu<Wry>> {
     let quit = PredefinedMenuItem::quit(handle, Some("Exit"))?;
 
     let tray_menu = Menu::new(handle)?;
+    let _ = tray_menu.append(&app_version(handle)?);
+    let _ = tray_menu.append(&separator);
     let _ = tray_menu.append(&show);
     let _ = tray_menu.append(&refresh_token);
     let _ = tray_menu.append(&separator);
     let _ = tray_menu.append(&auto_start_sub_menu(handle)?); // Sub-menu
-    let _ = tray_menu.append(&separator)?;
     let _ = tray_menu.append(&discovery_sub_menu(handle)?); // Sub-menu
     let _ = tray_menu.append(&separator);
     let _ = tray_menu.append(&quit);
@@ -62,6 +63,21 @@ fn auto_start_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>>
         .item(&PredefinedMenuItem::separator(handle)?)
         .item(&auto_start_toggle)
         .build()
+}
+
+fn app_version(handle: &tauri::AppHandle) -> tauri::Result<MenuItem<Wry>> {
+    let package_info = handle.package_info();
+
+    let version = package_info.version.to_string();
+    let name = package_info.name.to_string();
+
+    MenuItem::with_id(
+        handle,
+        "version",
+        &format!("{name} v{version}"),
+        false,
+        None::<&str>,
+    )
 }
 
 fn discovery_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> {

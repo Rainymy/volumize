@@ -16,10 +16,6 @@
 
         /* Linting */
         "strict": true,
-        // "noUnusedLocals": true,
-        // "noUnusedParameters": true,
-        // "noFallthroughCasesInSwitch": true,
-        // "allowSyntheticDefaultImports": false,
 
         "rootDir": "./",
         "paths": {

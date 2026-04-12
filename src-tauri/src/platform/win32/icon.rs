@@ -132,26 +132,23 @@ fn convert_hicon_to_rgba(hicon: HICON) -> Option<IconData> {
 fn extract_hicon(path: &str) -> windows::core::Result<HICON> {
     let (_buffer, pzpath) = util::string_to_pcwstr(path);
 
-    let mut psfi = MaybeUninit::<SHFILEINFOW>::uninit();
+    let mut psfi = SHFILEINFOW::default();
 
-    let info_exit_code = unsafe {
+    unsafe {
         SHGetFileInfoW(
             pzpath,
             // without SHGFI_USEFILEATTRIBUTES this flag is ignored.
             FILE_FLAGS_AND_ATTRIBUTES(0),
-            Some(psfi.as_mut_ptr()),
+            Some(&mut psfi),
             std::mem::size_of::<SHFILEINFOW>() as u32,
             SHGFI_ICON | SHGFI_LARGEICON, // SHGFI_USEFILEATTRIBUTES
         )
     };
 
-    let psfi = unsafe { psfi.assume_init() };
-
-    if info_exit_code == 0 || psfi.hIcon.is_invalid() {
-        return Err(windows::core::Error::from_thread());
+    match psfi.hIcon.is_invalid() {
+        true => Err(windows::core::Error::from_thread()),
+        false => Ok(psfi.hIcon),
     }
-
-    Ok(psfi.hIcon)
 }
 
 fn bitmap_to_image(data: IconData) -> Option<Vec<u8>> {

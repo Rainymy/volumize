@@ -1,4 +1,4 @@
-use std::{mem::MaybeUninit, path::PathBuf};
+use std::path::PathBuf;
 
 use windows::Win32::{
     Foundation::GetLastError,
@@ -66,6 +66,8 @@ fn convert_hicon_to_rgba(hicon: HICON) -> Option<IconData> {
             eprintln!("No valid bitmap found");
             return None;
         };
+
+        use std::mem::MaybeUninit;
 
         let mut bitmap: MaybeUninit<BITMAP> = MaybeUninit::uninit();
         let result = GetObjectW(
@@ -158,19 +160,23 @@ fn bitmap_to_image(data: IconData) -> Option<Vec<u8>> {
         mut data,
     } = data;
 
-    // convert bgra -> rgba
+    // Convert bgra -> rgba
     for chunk in data.chunks_exact_mut(4) {
         let [b, _, r, _] = chunk else { unreachable!() };
         std::mem::swap(b, r);
     }
 
     // Raw RGBA data.
-    let img = image::RgbaImage::from_vec(width, height, data)?;
+    let rgba_img = image::RgbaImage::from_vec(width, height, data)?;
+    // Container
+    let mut encoded_image = std::io::Cursor::new(vec![]);
 
-    // Encode the image as PNG. (buffer is smaller than the original)
-    let mut buffer = std::io::Cursor::new(vec![]);
-    let _ = img.write_to(&mut buffer, image::ImageFormat::Png).ok()?;
-    Some(buffer.into_inner())
+    // Start encoding.
+    let _ = rgba_img
+        .write_to(&mut encoded_image, image::ImageFormat::WebP)
+        .ok()?;
+
+    Some(encoded_image.into_inner())
 }
 
 pub fn extract_icon(path: PathBuf) -> Option<Vec<u8>> {

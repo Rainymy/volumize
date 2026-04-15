@@ -6,6 +6,7 @@
 - [ ] Client detect if there is multiple server instances running.
     - Dropdown menu to select the server instance.
 - [ ] Setup firewall rule for windows (allow "public" to "private" network)
+- [ ] Exit to tray option is missing from tray manu option.
 
 ## ================ Todo ================
 
@@ -19,9 +20,9 @@
 - [ ] Refactor rust codebase.
     - Unify async and sync usages.
         - Async and sync code are a mess. Especially the thread management.
-- [ ] There is "TrayIcon" setting "tauri.conf.json".
+- [ ] There is "TrayIcon" setting in "tauri.conf.json".
     - Use it and refactor the tray handling code.
-    - app > TrayIcon
+    - location: [ app > TrayIcon ]
 
 ## ================ Done ================
 

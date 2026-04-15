@@ -90,12 +90,8 @@ fn setup_dev_tools(_app: &tauri::AppHandle) {
     #[cfg(debug_assertions)]
     {
         for window_config in &_app.config().app.windows {
-            if window_config.devtools.unwrap_or(false) {
-                use tauri::Manager;
-
-                if let Some(window) = _app.get_webview_window(&window_config.label) {
-                    window.open_devtools();
-                }
+            if let Some(window) = _app.get_webview_window(&window_config.label) {
+                window.open_devtools();
             }
         }
     }

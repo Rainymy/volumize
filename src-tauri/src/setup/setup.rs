@@ -15,9 +15,11 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     let app_handle = app.handle();
 
     #[cfg(debug_assertions)]
-    show_window_visibility(app_handle);
+    {
+        show_window_visibility(app_handle);
+        setup_dev_tools(app_handle);
+    }
 
-    setup_dev_tools(app_handle);
     setup_tray_system(app_handle)?;
 
     let storage = app_handle.state::<Storage>();
@@ -40,8 +42,6 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
 
 pub fn setup_tray_system(app: &tauri::AppHandle) -> Result<(), Box<dyn Error>> {
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-
-    let storage = app.state::<Storage>();
 
     let icon = app
         .default_window_icon()
@@ -73,6 +73,7 @@ pub fn setup_tray_system(app: &tauri::AppHandle) -> Result<(), Box<dyn Error>> {
         })
         .build(app)?;
 
+    let storage = app.state::<Storage>();
     let mut icon_id = match storage.tray_icon_id.lock() {
         Ok(icon_id) => icon_id,
         Err(e) => Err(format!("Failed to lock tray icon ID: {}", e))?,
@@ -86,19 +87,16 @@ pub fn setup_tray_system(app: &tauri::AppHandle) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn setup_dev_tools(_app: &tauri::AppHandle) {
-    #[cfg(debug_assertions)]
-    {
-        for window_config in &_app.config().app.windows {
-            if let Some(window) = _app.get_webview_window(&window_config.label) {
-                window.open_devtools();
-            }
+fn setup_dev_tools(app: &tauri::AppHandle) {
+    for window_config in &app.config().app.windows {
+        if let Some(window) = app.get_webview_window(&window_config.label) {
+            window.open_devtools();
         }
     }
 }
 
-pub fn show_window_visibility(_app: &tauri::AppHandle) {
-    let window = match _app.get_webview_window("main") {
+pub fn show_window_visibility(app: &tauri::AppHandle) {
+    let window = match app.get_webview_window("main") {
         Some(window) => window,
         None => return,
     };
@@ -117,23 +115,5 @@ pub fn show_window_visibility(_app: &tauri::AppHandle) {
             let _ = window.show();
             let _ = window.set_focus();
         }
-    }
-}
-
-fn _hide_window_visibility(_app: &tauri::AppHandle) {
-    let window = match _app.get_webview_window("main") {
-        Some(window) => window,
-        None => return,
-    };
-    let is_visible = window.is_visible().unwrap_or(false);
-    let is_minimized = window.is_minimized().unwrap_or(false);
-
-    match (is_visible, is_minimized) {
-        (true, true) => {}
-        (true, false) => {
-            // Window is visible and not minimized, hide it
-            let _ = window.hide();
-        }
-        (false, _) => {}
     }
 }

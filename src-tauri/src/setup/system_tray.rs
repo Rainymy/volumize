@@ -13,17 +13,24 @@ pub fn create_tray(handle: &tauri::AppHandle) -> TauriResult<Menu<Wry>> {
     let show = MenuItem::with_id(handle, "show", "Show", true, None::<&str>)?;
     let refresh_token = MenuItem::with_id(handle, "refresh", "Quick refresh", true, None::<&str>)?;
 
+    let app_name = handle
+        .config()
+        .product_name
+        .clone()
+        .unwrap_or("application".into());
+
     let separator = PredefinedMenuItem::separator(handle)?;
-    let quit = PredefinedMenuItem::quit(handle, Some("Exit"))?;
+    let quit = PredefinedMenuItem::quit(handle, Some(&format!("Quit {app_name}")))?;
 
     let tray_menu = Menu::new(handle)?;
     let _ = tray_menu.append(&app_version(handle)?);
     let _ = tray_menu.append(&separator);
     let _ = tray_menu.append(&show);
     let _ = tray_menu.append(&refresh_token);
+    let _ = tray_menu.append(&exit_to_tray_menu(handle)?);
     let _ = tray_menu.append(&separator);
-    let _ = tray_menu.append(&auto_start_sub_menu(handle)?); // Sub-menu
-    let _ = tray_menu.append(&discovery_sub_menu(handle)?); // Sub-menu
+    let _ = tray_menu.append(&auto_start_sub_menu(handle)?);
+    let _ = tray_menu.append(&discovery_sub_menu(handle)?);
     let _ = tray_menu.append(&separator);
     let _ = tray_menu.append(&quit);
 
@@ -62,6 +69,37 @@ fn auto_start_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>>
         .item(&status_info)
         .item(&PredefinedMenuItem::separator(handle)?)
         .item(&auto_start_toggle)
+        .build()
+}
+
+fn exit_to_tray_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> {
+    let settings = handle.state::<Storage>().get();
+
+    let exit_to_tray = settings.exit_to_tray;
+
+    let status_info = MenuItem::with_id(
+        handle,
+        "",
+        format!(
+            "Status: {}",
+            if exit_to_tray { "Enabled" } else { "Disabled" }
+        ),
+        false,
+        None::<&str>,
+    )?;
+
+    let tray_main = MenuItem::with_id(
+        handle,
+        "exit_to_tray",
+        if exit_to_tray { "Disable" } else { "Enable" },
+        true,
+        None::<&str>,
+    )?;
+
+    SubmenuBuilder::new(handle, "Minimize to tray")
+        .item(&status_info)
+        .item(&PredefinedMenuItem::separator(handle)?)
+        .item(&tray_main)
         .build()
 }
 

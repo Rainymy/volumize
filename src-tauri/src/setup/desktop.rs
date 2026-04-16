@@ -2,7 +2,7 @@ use tauri::{Manager, Result as TauriResult};
 
 use crate::{
     server::{ServiceDiscovery, WebSocketServerState},
-    types::{click::ClickState, storage::Storage, volume::VolumeCommandSender},
+    types::{click::DoubleClickState, storage::Storage, volume::VolumeCommandSender},
 };
 
 use crate::commands;
@@ -16,7 +16,7 @@ pub fn create_tauri_app() -> TauriResult<tauri::App> {
         .manage(VolumeCommandSender::new())
         .manage(WebSocketServerState::default())
         .manage(ServiceDiscovery::default())
-        .manage(ClickState::new(None))
+        .manage(DoubleClickState::new(None))
         .manage(Storage::default())
         .setup(super::setup)
         .on_menu_event(super::menu_event)

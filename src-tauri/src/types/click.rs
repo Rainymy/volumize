@@ -3,22 +3,20 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub struct ClickState {
+pub struct DoubleClickState {
     last_click_time: Mutex<Instant>,
-    double_click_threshold: Duration,
+    threshold: Duration,
 }
 
-impl ClickState {
+impl DoubleClickState {
     /// If parameter is None, this will default to 500ms.
     ///
     /// windows double click definition:
     /// - https://learn.microsoft.com/en-us/windows/win32/controls/ttm-setdelaytime
-    pub fn new(double_click_threshold_ms: Option<Duration>) -> Self {
-        let time = double_click_threshold_ms.unwrap_or(Duration::from_millis(500));
-
+    pub fn new(threshold: Option<Duration>) -> Self {
         Self {
             last_click_time: Mutex::new(Instant::now()),
-            double_click_threshold: time,
+            threshold: threshold.unwrap_or(Duration::from_millis(500)),
         }
     }
     pub fn is_double_click(&self) -> bool {
@@ -26,12 +24,12 @@ impl ClickState {
             Ok(value) => value,
             Err(e) => e.into_inner(),
         };
-        let threshold = self.double_click_threshold;
-        let now = Instant::now();
 
-        let is_double = now.saturating_duration_since(*last_click_time) < threshold;
+        let current_time = Instant::now();
+        let eclipsed = current_time.saturating_duration_since(*last_click_time);
 
-        *last_click_time = now;
-        is_double
+        *last_click_time = current_time;
+
+        eclipsed < self.threshold
     }
 }

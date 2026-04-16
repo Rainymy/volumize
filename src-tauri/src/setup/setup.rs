@@ -66,10 +66,10 @@ pub fn setup_tray_system(app: &tauri::AppHandle) -> Result<(), Box<dyn Error>> {
     }
 
     tray_icon_builder.on_tray_icon_event(|tray, event| {
-        use crate::types::click::ClickState;
+        use crate::types::click::DoubleClickState;
         use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 
-        let click_state = tray.app_handle().state::<ClickState>();
+        let click_state = tray.app_handle().state::<DoubleClickState>();
         match event {
             TrayIconEvent::Click {
                 button: MouseButton::Left,

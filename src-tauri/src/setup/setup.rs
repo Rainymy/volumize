@@ -41,48 +41,48 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn setup_tray_system(app: &tauri::AppHandle) -> Result<(), Box<dyn Error>> {
-    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+    use std::io::Error;
+    use tauri::tray::TrayIconBuilder;
 
-    let icon = app
-        .default_window_icon()
-        .expect("Application should have a default window icon configured")
-        .clone();
+    let app_config = app.config();
+    let tray_config = app_config.app.tray_icon.clone().unwrap_or_default();
 
-    let tray_menu = super::system_tray::create_tray(app)?;
-    let tray = TrayIconBuilder::new()
-        .menu(&tray_menu)
-        .tooltip("Volumize")
-        .show_menu_on_left_click(false)
-        .icon(icon)
-        .on_tray_icon_event(|tray, event| {
-            use crate::types::click::ClickState;
+    let tray_icon_path = tray_config.icon_path.clone();
+    let tray_id = tray_config.id.unwrap_or("tray_icon_id".into()).clone();
 
-            let click_state = tray.app_handle().state::<ClickState>();
-            match event {
-                TrayIconEvent::Click {
-                    button: MouseButton::Left,
-                    button_state: MouseButtonState::Up,
-                    ..
-                } => {
-                    if click_state.is_double_click() {
-                        show_window_visibility(tray.app_handle());
-                    }
+    let tray_icon_builder = app
+        .tray_by_id(&tray_id)
+        .or_else(|| TrayIconBuilder::with_id(&tray_id).build(app).ok())
+        .ok_or_else(|| Box::new(Error::other("Failed to build TrayIconBuilder")))?;
+
+    let _ = tray_icon_builder.set_menu(super::system_tray::create_tray(app).ok());
+
+    if let Ok(false) = tray_icon_path.try_exists() {
+        let icon = app
+            .default_window_icon()
+            .expect("Application should have a default window icon configured")
+            .clone();
+        let _ = tray_icon_builder.set_icon(Some(icon));
+    }
+
+    tray_icon_builder.on_tray_icon_event(|tray, event| {
+        use crate::types::click::ClickState;
+        use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
+
+        let click_state = tray.app_handle().state::<ClickState>();
+        match event {
+            TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } => {
+                if click_state.is_double_click() {
+                    show_window_visibility(tray.app_handle());
                 }
-                _ => {}
             }
-        })
-        .build(app)?;
-
-    let storage = app.state::<Storage>();
-    let mut icon_id = match storage.tray_icon_id.lock() {
-        Ok(icon_id) => icon_id,
-        Err(e) => Err(format!("Failed to lock tray icon ID: {}", e))?,
-    };
-
-    match icon_id.replace(tray.id().as_ref().to_string()) {
-        Some(old_id) => app.remove_tray_by_id(&old_id),
-        None => None,
-    };
+            _ => {}
+        }
+    });
 
     Ok(())
 }

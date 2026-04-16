@@ -21,6 +21,13 @@
                 "height": 400
             }
         ],
+        "trayIcon": {
+            "iconPath": "./icons/icon.ico",
+            "showMenuOnLeftClick": false,
+            "tooltip": "Volumize",
+            "title": "Volumize",
+            "id": "tray_main"
+        },
         "security": {
             "csp": null
         }

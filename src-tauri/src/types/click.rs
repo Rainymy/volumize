@@ -5,7 +5,7 @@ use std::{
 
 pub struct ClickState {
     last_click_time: Mutex<Instant>,
-    double_click_threshold_ms: Duration,
+    double_click_threshold: Duration,
 }
 
 impl ClickState {
@@ -18,7 +18,7 @@ impl ClickState {
 
         Self {
             last_click_time: Mutex::new(Instant::now()),
-            double_click_threshold_ms: time,
+            double_click_threshold: time,
         }
     }
     pub fn is_double_click(&self) -> bool {
@@ -26,7 +26,7 @@ impl ClickState {
             Ok(value) => value,
             Err(e) => e.into_inner(),
         };
-        let threshold = self.double_click_threshold_ms;
+        let threshold = self.double_click_threshold;
         let now = Instant::now();
 
         let is_double = now.saturating_duration_since(*last_click_time) < threshold;

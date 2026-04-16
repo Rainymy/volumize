@@ -6,7 +6,6 @@
 - [ ] Client detect if there is multiple server instances running.
     - Dropdown menu to select the server instance.
 - [ ] Setup firewall rule for windows (allow "public" to "private" network)
-- [ ] Exit to tray option is missing from tray manu option.
 
 ## ================ Todo ================
 
@@ -15,20 +14,19 @@
     - Scan QR code.
 - [ ] System tray menu update on timer.
     - tray menu is not reflected when choosing timer option.
-- [ ] Improved UI design.
-    - The new design is better than the old one.
 - [ ] Refactor rust codebase.
     - Unify async and sync usages.
         - Async and sync code are a mess. Especially the thread management.
-- [ ] There is "TrayIcon" setting in "tauri.conf.json".
-    - Use it and refactor the tray handling code.
-    - location: [ app > TrayIcon ]
 
 ## ================ Done ================
 
+- [x] Exit to tray option is missing from tray manu option.
+- [x] There is "TrayIcon" setting in "tauri.conf.json".
+    - Use it and refactor the tray handling code.
 - [x] Autostart.
     - [x] Implement autostart functionality.
     - [x] Add autostart settings to the tray menu.
+- [x] Improved UI design.
 - [x] Detect changes in volume.
     - [x] Implement volume detection functionality.
         - [x] Detect system audio changes.

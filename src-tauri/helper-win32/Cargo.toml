@@ -1,0 +1,17 @@
+[package]
+name = "helper-win32"
+version = "1.0.0"
+edition = "2024"
+
+[[bin]]
+name = "helper-win32"
+path = "src/main.rs"
+
+[dependencies]
+windows_firewall = "0.6.0"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

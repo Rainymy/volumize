@@ -32,9 +32,10 @@ fn main() {
         for error in result.errors {
             println!("cargo:warning=[sign binary]: {}", error);
         }
-        if result.is_fatal {
-            assert!(result.is_fatal, "helper-win32 signing failed");
-        }
+        assert!(!result.is_fatal, "helper-win32 signing failed");
+
+        let hash = build_helper::sha256_file(&helper_path).expect("Expected file to not fail");
+        println!("cargo:rustc-env=EMBEDDED_WIN32_SHA256={}", hash);
 
         println!("cargo:rerun-if-changed={}/Cargo.toml", helper_folder);
         println!("cargo:rerun-if-changed={}/src/main.rs", helper_folder);

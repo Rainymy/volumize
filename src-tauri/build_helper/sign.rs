@@ -39,9 +39,10 @@ pub fn sign_binary(path: &PathBuf) -> SignBinaryResult {
 }
 
 pub fn sign_with_signtool(path: &PathBuf) -> SignBinaryResult {
-    let pfx_path = std::env::var("SIGN_CERT_PATH").expect("[ENV var]: SIGN_CERT_PATH not set");
-    let pfx_pass =
-        std::env::var("SIGN_CERT_PASSWORD").expect("[ENV var]: SIGN_CERT_PASSWORD not set");
+    use std::env;
+
+    let pfx_path = env::var("SIGN_CERT_PATH").expect("[ENV var]: SIGN_CERT_PATH not set");
+    let pfx_pass = env::var("SIGN_CERT_PASSWORD").expect("[ENV var]: SIGN_CERT_PASSWORD not set");
 
     let status = Command::new("signtool")
         .status()

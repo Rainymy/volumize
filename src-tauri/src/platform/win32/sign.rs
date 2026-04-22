@@ -1,32 +1,48 @@
-use std::{env, path::PathBuf};
+use std::{
+    env,
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 use super::util::string_to_pcwstr;
 
 const HELPER_HASH: &str = env!("EMBEDDED_WIN32_SHA256"); // set in build.rs
 
 pub fn verify_hash(path: &PathBuf) -> bool {
-    let hash_match = match sha256_file(path) {
+    match sha256_file(path) {
         Ok(hash) => hash == HELPER_HASH,
         Err(e) => {
             eprintln!("Failed to read helper: {e}");
             return false;
         }
-    };
-
-    if !hash_match {
-        eprintln!("Hash mismatch! Expected {HELPER_HASH}, got {hash_match}");
     }
-    hash_match
 }
 
-fn sha256_file(path: &PathBuf) -> Result<String, std::io::Error> {
+fn sha256_file(path: &Path) -> Result<String, std::io::Error> {
     use sha2::{Digest, Sha256};
+    use std::fs::File;
+    use std::io::BufReader;
 
-    Ok(Sha256::digest(std::fs::read(path)?)
-        .into_iter()
+    const DEFAULT_BUF_SIZE: usize = 16 * 1024;
+
+    let file = File::open(path)?;
+    let mut reader = BufReader::with_capacity(DEFAULT_BUF_SIZE, file);
+    let mut hasher = Sha256::new();
+
+    let mut buf = [0u8; DEFAULT_BUF_SIZE];
+    loop {
+        match reader.read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => hasher.update(&buf[..n]),
+            Err(e) => return Err(e),
+        }
+    }
+
+    Ok(hasher
+        .finalize()
+        .iter()
         .map(|b| format!("{:02x}", b))
-        .collect::<Vec<String>>()
-        .join(""))
+        .collect())
 }
 
 use windows::Win32::Security::WinTrust::{

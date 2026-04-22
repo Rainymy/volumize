@@ -35,10 +35,17 @@
     "bundle": {
         "active": true,
         "category": "Utility",
+        "resources": {
+            "./helper-win32/target/release/helper-win32.exe": "helper.exe"
+        },
         "windows": {
             "webviewInstallMode": {
                 "silent": false,
                 "type": "embedBootstrapper"
+            },
+            "wix": {
+                "fragmentPaths": ["./wix/firewall.wxs"],
+                "componentRefs": ["FirewallHelperComponents"]
             }
         },
         "android": {

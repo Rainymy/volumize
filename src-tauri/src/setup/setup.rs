@@ -1,8 +1,5 @@
 use std::error::Error;
 
-#[cfg(target_os = "windows")]
-use crate::platform::firewall::setup_firewall;
-
 use crate::{
     server::{
         service_register::start_service_register,
@@ -23,11 +20,6 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
         setup_dev_tools(app_handle);
     }
 
-    #[cfg(target_os = "windows")]
-    {
-        use tauri::{process::current_binary, Env};
-        setup_firewall(&current_binary(&Env::default())?)?;
-    }
     setup_tray_system(app_handle)?;
 
     let storage = app_handle.state::<Storage>();
@@ -95,6 +87,7 @@ pub fn setup_tray_system(app: &tauri::AppHandle) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(debug_assertions)]
 fn setup_dev_tools(app: &tauri::AppHandle) {
     for window_config in &app.config().app.windows {
         if let Some(window) = app.get_webview_window(&window_config.label) {

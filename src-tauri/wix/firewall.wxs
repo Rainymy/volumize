@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <!-- FILE COMPONENT -->
+    <Fragment>
+        <DirectoryRef Id="INSTALLDIR">
+            <Component Id="FirewallHelperComponents" Guid="*">
+                <File
+                    Id="FirewallHelper"
+                    KeyPath="yes"
+                    Source="$(var.SourceDir)\..\helper.exe"
+                    Checksum="yes"
+                    ReadOnly="yes"
+                />
+            </Component>
+        </DirectoryRef>
+    </Fragment>
+
+    <!-- CUSTOM ACTIONS -->
+    <Fragment>
+        <CustomAction
+            Id="AddFirewallRule"
+            FileKey="FirewallHelper"
+            ExeCommand="--add"
+            Execute="deferred"
+            Impersonate="no"
+            Return="check"
+        />
+
+        <CustomAction
+            Id="RemoveFirewallRule"
+            FileKey="FirewallHelper"
+            ExeCommand="--remove"
+            Execute="deferred"
+            Impersonate="no"
+            Return="check"
+        />
+
+        <InstallExecuteSequence>
+            <Custom Action="AddFirewallRule" After="InstallFiles">
+                NOT Installed AND NOT REMOVE
+            </Custom>
+
+            <Custom Action="RemoveFirewallRule" Before="RemoveFiles">
+                Installed AND REMOVE="ALL"
+            </Custom>
+        </InstallExecuteSequence>
+    </Fragment>
+</Wix>

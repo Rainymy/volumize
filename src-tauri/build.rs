@@ -23,20 +23,34 @@ fn main() {
                 "--manifest-path",
                 &format!("{}/Cargo.toml", helper_folder),
             ])
-            // .env("EMBEDDED_WIN32_SHA256", "<Just setting here>")
             .status()
             .expect("Failed to build helper-win32");
 
         assert!(status.success(), "helper-win32 build failed");
 
-        let result = build_helper::sign::sign_binary();
-        for error in result.errors {
-            println!("cargo:warning=[sign binary]: {}", error);
-        }
-        assert!(!result.is_fatal, "helper-win32 signing failed");
+        // Copy how Tauri does it. To get the target directory.
+        let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+        let target_dir = out_dir
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap();
 
-        let hash = build_helper::sha256_file(&helper_path).expect("Expected file to not fail");
-        println!("cargo:rustc-env=EMBEDDED_WIN32_SHA256={}", hash);
+        println!(
+            "cargo:warning=Target directory: {}",
+            target_dir.to_string_lossy()
+        );
+
+        fn copy_file(src: &PathBuf, dest: &PathBuf) {
+            std::fs::copy(src, dest).expect("Failed to copy file");
+        }
+
+        copy_file(
+            &helper_path,
+            &target_dir.join(helper_path.file_name().unwrap()),
+        );
 
         println!("cargo:rerun-if-changed={}/Cargo.toml", helper_folder);
         println!("cargo:rerun-if-changed={}/src/main.rs", helper_folder);

@@ -6,6 +6,10 @@
 - [ ] Client detect if there is multiple server instances running.
     - Dropdown menu to select the server instance.
 - [ ] Setup firewall rule for windows (allow "public" to "private" network)
+    - TODO: Wix
+        - Execute Embedded Exe to check if it is in private network
+        - If private, ask for admin privilage (either Wix or myself)
+        - Check for Install & Uninstall script is running. If firewall is left.
 
 ## ================ Todo ================
 

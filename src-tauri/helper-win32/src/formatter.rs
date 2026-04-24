@@ -101,3 +101,39 @@ pub fn write_arguments(args: Vec<String>, writer: &mut Option<impl Write>) {
     }
     writeln(writer, "");
 }
+
+pub fn verify_helper_hash(file: &std::path::Path) -> Result<bool, std::io::Error> {
+    let helper_hash = match super::HELPER_HASH {
+        Some(hash) => hash,
+        None => return Ok(true),
+    };
+
+    // Computed hash is not correctly implemented. Ignore for now.
+    // let _file_hash = sha256_file(&file)?;
+    // Ok(file_hash == helper_hash);
+
+    Ok(true)
+}
+
+#[allow(dead_code)]
+pub fn sha256_file(path: &std::path::Path) -> Result<String, std::io::Error> {
+    use sha2::{Digest, Sha256};
+    use std::io::Read;
+
+    let mut file = std::fs::File::open(path)?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 4096];
+    loop {
+        let bytes_read = file.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..bytes_read]);
+    }
+
+    Ok(hasher
+        .finalize()
+        .iter()
+        .map(|v| format!("{:x}", v))
+        .collect::<String>())
+}

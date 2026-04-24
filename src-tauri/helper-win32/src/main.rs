@@ -5,6 +5,9 @@ mod win32;
 
 use my_exit_code::CustomExitCode;
 
+// If unset - no hash verification will be performed
+pub const HELPER_HASH: Option<&str> = option_env!("HELPER_HASH");
+
 #[cfg(unix)]
 fn main() -> std::process::ExitCode {
     return CustomExitCode::SUCCESS.to_exit_code();
@@ -12,8 +15,6 @@ fn main() -> std::process::ExitCode {
 
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
-    const FILE_HASH: Option<&str> = option_env!("EMBEDDED_WIN32_SHA256");
-
     let os_args = formatter::get_formatted_args();
     let command = formatter::get_command_at_index(0, &os_args);
 
@@ -21,13 +22,20 @@ fn main() -> std::process::ExitCode {
         .inspect_err(|err| eprintln!("Failed to create writer: {}", err))
         .ok();
 
+    use std::env::current_exe;
+
+    let current_exe = current_exe().unwrap();
+    let hash = formatter::sha256_file(&current_exe).unwrap();
+    let hash2 = HELPER_HASH.unwrap_or("<NO_HASH>");
+
+    formatter::writeln(&mut writer, &format!("FILE_HASH: {}", hash2));
+    formatter::writeln(&mut writer, &format!("CURR_HASH: {}", hash));
     formatter::write_arguments(os_args, &mut writer);
 
     let divider = "-".repeat(40);
     formatter::writeln(&mut writer, &divider);
     let exit_code = execute(&command, &mut writer).to_exit_code();
     formatter::writeln(&mut writer, &divider);
-    formatter::writeln(&mut writer, &FILE_HASH.unwrap_or("<No File hash>"));
 
     exit_code
 }

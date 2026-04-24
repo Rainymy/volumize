@@ -18,6 +18,7 @@ dependencies = [
 name = "helper-win32"
 version = "1.0.0"
 dependencies = [
+ "windows",
  "windows_firewall",
 ]
 
@@ -285,9 +286,9 @@ dependencies = [
 
 [[package]]
 name = "windows_firewall"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15e2995778d7469f5469a6063444dd79b844a6f66d7553be61500ac5c5f6a4ec"
+checksum = "2ddc2f3269a952979bd3ddadf1db86475b42ae7fcbee018339c3a6f5d54468ca"
 dependencies = [
  "getset",
  "ipnet",

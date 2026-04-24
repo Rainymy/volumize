@@ -1,127 +1,76 @@
-use std::path::PathBuf;
+#![allow(dead_code)]
+use super::formatter::writeln;
+use super::my_exit_code::CustomExitCode;
+use std::io::Write;
 
-use super::embedded;
-use super::sign;
+use windows_firewall::{Action, Direction, FirewallRule, Profile, Protocol};
 
-pub fn setup_firewall() -> Result<(), String> {
-    if !is_private_network() {
-        return Ok(());
-    }
+// Try to get name/port/application from build.rs env, fallback to a hardcoded value
+//
+// const RULE_NAME: &str = env!("RULE_NAME");
+// const RULE_NAME: &str = "Volumize";
 
-    if exists_firewall_rule() {
-        return Ok(());
-    }
-
-    add_firewall_rule()
+pub fn firewall_rule() -> FirewallRule {
+    FirewallRule::builder()
+        .name("Volumize")
+        .application_name("Volumize")
+        .description("Volumize firewall rule")
+        .enabled(true)
+        .action(Action::Allow)
+        .profiles(Profile::Private)
+        .protocol(Protocol::Tcp)
+        .direction(Direction::In)
+        .local_ports([9002])
+        .build()
 }
 
-fn is_private_network() -> bool {
-    use windows::Win32::Networking::NetworkListManager::{
-        INetwork, INetworkListManager, NetworkListManager, NLM_ENUM_NETWORK_CONNECTED,
-        NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED, NLM_NETWORK_CATEGORY_PRIVATE,
-        NLM_NETWORK_CATEGORY_PUBLIC,
-    };
-    use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_ALL};
+pub fn firewall_rule_add_or_update(writer: &mut Option<impl Write>) -> CustomExitCode {
+    let rule = firewall_rule();
 
-    let nlm: INetworkListManager = unsafe {
-        match CoCreateInstance(&NetworkListManager, None, CLSCTX_ALL) {
-            Ok(v) => v,
-            Err(_) => return false,
-        }
-    };
-
-    // Early exit if not connected
-    let is_connected = unsafe { nlm.IsConnected().map(|v| v.as_bool()).unwrap_or(false) };
-    if !is_connected {
-        return false;
-    }
-
-    let network_enumator = unsafe {
-        match nlm.GetNetworks(NLM_ENUM_NETWORK_CONNECTED) {
-            Ok(connections) => connections,
-            Err(_) => return false,
-        }
-    };
-
-    let network = unsafe {
-        let mut networks = [None::<INetwork>; 1];
-        let mut pceltfetched = 0u32;
-
-        match network_enumator.Next(&mut networks, Some(&mut pceltfetched)) {
-            Ok(_) if pceltfetched > 0 => {}
-            _ => return false,
-        }
-        match networks[0].take() {
-            Some(net) => net,
-            None => return false,
-        }
-    };
-
-    match unsafe { network.GetCategory() } {
-        Ok(NLM_NETWORK_CATEGORY_PRIVATE) => true,
-        // I'm not sure what the domain authenticated category means,
-        // so treat it as private.
-        Ok(NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED) => true,
-        Ok(NLM_NETWORK_CATEGORY_PUBLIC) | _ => false,
-    }
-}
-
-#[allow(dead_code)]
-pub enum FireWallEnum {
-    ADD,
-    REMOVE,
-    EXISTS,
-}
-
-impl FireWallEnum {
-    fn as_str(&self) -> &'static str {
-        match self {
-            FireWallEnum::ADD => "--add-rule",
-            FireWallEnum::REMOVE => "--remove-rule",
-            FireWallEnum::EXISTS => "--exist",
+    match rule.add_or_update() {
+        Ok(true) => writeln(writer, "Firewall rule added successfully!"),
+        Ok(false) => writeln(writer, "Firewall rule updated successfully!"),
+        Err(e) => {
+            writeln(
+                writer,
+                &format!("Failed to add/update firewall rule: {}", e),
+            );
+            return CustomExitCode::FAILED_TO_ADD_FIREWALL_RULE;
         }
     }
+    CustomExitCode::SUCCESS
 }
 
-#[allow(dead_code)]
-struct FireWallWindows {}
+pub fn firewall_rule_remove(writer: &mut Option<impl Write>) -> CustomExitCode {
+    let rule = firewall_rule();
+    writeln(writer, "Remove Firewall Rule");
 
-impl FireWallWindows {
-    #[allow(dead_code)]
-    fn execute_helper(&self, operation: FireWallEnum) -> Result<(), String> {
-        let path = embedded::extract_helper().unwrap();
-        embedded::elevate_helper(&path, operation.as_str())
-    }
-}
-
-fn embed_validator(path: &PathBuf) -> Result<(), String> {
-    if !sign::verify_hash(path) {
-        return Err("Hash mismatch".to_string());
-    }
-    sign::verify_signature(path)?;
-    Ok(())
-}
-
-pub fn add_firewall_rule() -> Result<(), String> {
-    let path = embedded::extract_helper()?;
-    embed_validator(&path)?;
-    embedded::elevate_helper(&path, "--add-rule")?;
-    Ok(())
-}
-
-#[allow(dead_code)]
-pub fn remove_firewall_rule() -> Result<(), String> {
-    let path = embedded::extract_helper()?;
-    embed_validator(&path)?;
-    embedded::elevate_helper(&path, "--remove-rule")?;
-    Ok(())
-}
-
-pub fn exists_firewall_rule() -> bool {
-    if let Ok(path) = embedded::extract_helper() {
-        if embed_validator(&path).is_ok() {
-            return embedded::elevate_helper(&path, "--exist").is_ok();
+    match rule.remove() {
+        Ok(_) => writeln(writer, "Removed firewall rule successfully!"),
+        Err(e) => {
+            writeln(writer, &format!("Failed to remove firewall rule: {}", e));
+            return CustomExitCode::FAILED_TO_REMOVE_FIREWALL_RULE;
         }
     }
-    false
+
+    CustomExitCode::SUCCESS
+}
+
+pub fn firewall_rule_exists(writer: &mut Option<impl Write>) -> Result<bool, ()> {
+    let rule = firewall_rule();
+
+    match rule.exists() {
+        Ok(true) => {
+            writeln(writer, "Firewall rule already exist");
+            Ok(true)
+        }
+        Ok(false) => {
+            writeln(writer, "Firewall rule does not exist");
+            Ok(false)
+        }
+        Err(e) => {
+            writeln(writer, &format!("Failed to check firewall rule: {}", e));
+            Err(())
+        }
+    }
 }

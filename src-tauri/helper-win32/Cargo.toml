@@ -8,7 +8,22 @@ name = "helper-win32"
 path = "src/main.rs"
 
 [dependencies]
-windows_firewall = "0.6.0"
+windows_firewall = "0.7.0"
+windows = { version = "0.62.2", features = [
+    # Checking elevation
+    "Win32_Security",
+    "Win32_System_Threading",
+    # Checking Network
+    "Win32_Networking",
+    "Win32_Networking_NetworkListManager",
+    # ShellExecuteW
+    "Win32_UI",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+    # Local time
+    "Win32_System_SystemInformation",
+    "Win32_System_Time",
+] }
 
 [profile.release]
 opt-level = "z"

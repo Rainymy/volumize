@@ -1,16 +1,20 @@
-#![allow(dead_code)]
-use super::formatter::writeln;
-use super::my_exit_code::CustomExitCode;
+#[cfg(target_family = "windows")]
+use super::CustomExitCode;
+#[allow(unused_imports)]
+use super::writeln;
+#[allow(unused_imports)]
 use std::io::Write;
-
-use windows_firewall::{Action, Direction, FirewallRule, Profile, Protocol};
 
 // Try to get name/port/application from build.rs env, fallback to a hardcoded value
 //
 // const RULE_NAME: &str = env!("RULE_NAME");
 // const RULE_NAME: &str = "Volumize";
 
-pub fn firewall_rule() -> FirewallRule {
+#[cfg(target_family = "windows")]
+use windows_firewall::{Action, Direction, FirewallRule, Profile, Protocol};
+
+#[cfg(target_family = "windows")]
+fn firewall_rule() -> FirewallRule {
     FirewallRule::builder()
         .name("Volumize")
         .application_name("Volumize")
@@ -24,6 +28,7 @@ pub fn firewall_rule() -> FirewallRule {
         .build()
 }
 
+#[cfg(target_family = "windows")]
 pub fn firewall_rule_add_or_update(writer: &mut Option<impl Write>) -> CustomExitCode {
     let rule = firewall_rule();
 
@@ -41,6 +46,7 @@ pub fn firewall_rule_add_or_update(writer: &mut Option<impl Write>) -> CustomExi
     CustomExitCode::SUCCESS
 }
 
+#[cfg(target_family = "windows")]
 pub fn firewall_rule_remove(writer: &mut Option<impl Write>) -> CustomExitCode {
     let rule = firewall_rule();
     writeln(writer, "Remove Firewall Rule");
@@ -56,6 +62,7 @@ pub fn firewall_rule_remove(writer: &mut Option<impl Write>) -> CustomExitCode {
     CustomExitCode::SUCCESS
 }
 
+#[cfg(target_family = "windows")]
 pub fn firewall_rule_exists(writer: &mut Option<impl Write>) -> Result<bool, ()> {
     let rule = firewall_rule();
 

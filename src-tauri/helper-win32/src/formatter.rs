@@ -19,7 +19,10 @@ fn format_current_time() -> String {
     let now = SystemTime::now();
     let since_epoch = now.duration_since(UNIX_EPOCH).unwrap_or_default();
 
-    let offset = local_utc_offset_secs();
+    #[cfg(target_os = "windows")]
+    let offset = super::win32::local_utc_offset_secs();
+    #[cfg(not(target_os = "windows"))]
+    let offset = 0i64;
     let t_secs = since_epoch.as_secs() as i64 + offset;
 
     let ms = since_epoch.subsec_millis() % 1000;
@@ -30,42 +33,12 @@ fn format_current_time() -> String {
     format!("{:02}:{:02}:{:02}:{:03}", hours, mins, secs, ms)
 }
 
-fn local_utc_offset_secs() -> i64 {
-    use windows::Win32::System::Time::{
-        DYNAMIC_TIME_ZONE_INFORMATION, GetDynamicTimeZoneInformation, GetTimeZoneInformation,
-        TIME_ZONE_INFORMATION,
-    };
-
-    unsafe {
-        let mut tz = DYNAMIC_TIME_ZONE_INFORMATION::default();
-        let _ = GetDynamicTimeZoneInformation(&mut tz);
-
-        if tz.DynamicDaylightTimeDisabled {
-            return 0 as i64;
-        }
-
-        let mut _tz_info = TIME_ZONE_INFORMATION::default();
-        let time_zone = GetTimeZoneInformation(&mut _tz_info);
-
-        let is_daylight = time_zone == 2;
-
-        let bias = tz.Bias;
-        let offset_bias = if is_daylight {
-            tz.DaylightBias
-        } else {
-            tz.StandardBias
-        };
-
-        -((offset_bias + bias) as i64 * 60)
-    }
-}
-
 pub fn writeln(w: &mut Option<impl Write>, msg: &str) {
-    let now = format_current_time();
+    let curent_time = format_current_time();
 
     let _ = match w {
         Some(w) => {
-            let formatted = format!("[{}]: {}\n", now, msg);
+            let formatted = format!("[{curent_time}]: {}\n", msg);
             #[cfg(debug_assertions)]
             print!("{}", formatted);
             let _ = write!(w, "{}", formatted);

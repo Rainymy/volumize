@@ -4,11 +4,11 @@ version = "1.0.0"
 edition = "2024"
 
 [[bin]]
-name = "helper-win32"
+name = "helper"
 path = "src/main.rs"
 
-[dependencies]
-windows_firewall = "0.7.0"
+[target.'cfg(windows)'.dependencies]
+windows_firewall = { version = "0.7.0" }
 windows = { version = "0.62.2", features = [
     # Checking elevation
     "Win32_Security",
@@ -24,9 +24,3 @@ windows = { version = "0.62.2", features = [
     "Win32_System_SystemInformation",
     "Win32_System_Time",
 ] }
-
-[profile.release]
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"

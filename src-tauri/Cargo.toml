@@ -9,6 +9,9 @@ edition = "2021"
 name = "volumize_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[workspace]
+members = ["helper-win32"]
+
 [build-dependencies]
 tauri-build = { version = "2.5.6", features = [] }
 dotenv = { version = "=0.15.0", features = [] }

@@ -5,13 +5,10 @@ pub struct CustomExitCode(u8);
 #[allow(dead_code)]
 impl CustomExitCode {
     pub const SUCCESS: Self = CustomExitCode(0);
-    pub const FAILED_TO_CREATE_WRITER: Self = Self(1);
-    pub const FAILED_TO_EXECUTE_COMMAND: Self = Self(2);
-    pub const FAILED_TO_CHECK_FIREWALL_RULE: Self = Self(4);
-    pub const FAILED_TO_ADD_FIREWALL_RULE: Self = Self(8);
-    pub const FAILED_TO_REMOVE_FIREWALL_RULE: Self = Self(16);
-    pub const FAILED_TO_ELEVATE: Self = Self(32);
-    pub const USER_DENIED_TO_ELEVATE: Self = Self(64);
+    pub const FAILED_TO_CHECK_FIREWALL_RULE: Self = Self(1);
+    pub const FAILED_TO_ADD_FIREWALL_RULE: Self = Self(2);
+    pub const FAILED_TO_REMOVE_FIREWALL_RULE: Self = Self(4);
+    pub const USER_DENIED_TO_ELEVATE: Self = Self(8);
 
     pub fn new() -> Self {
         CustomExitCode::SUCCESS

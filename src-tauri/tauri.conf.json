@@ -36,7 +36,7 @@
         "active": true,
         "category": "Utility",
         "resources": {
-            "./helper-win32/target/release/helper-win32.exe": "helper.exe"
+            "./helper-win32/target/release/helper.exe": "helper.exe"
         },
         "windows": {
             "webviewInstallMode": {

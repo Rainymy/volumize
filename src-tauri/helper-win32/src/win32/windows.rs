@@ -12,18 +12,13 @@ pub fn string_to_pcwstr_vec(pw_string: &str) -> Vec<u16> {
 /// Elevates the current executable by running it with admin privileges.
 #[cfg(target_family = "windows")]
 pub fn elevate_current_exe() -> Result<bool, String> {
-    use super::{get_formatted_args, verify_helper_hash};
+    use super::get_formatted_args;
     use std::env::current_exe;
 
     use windows::Win32::UI::{Shell::ShellExecuteW, WindowsAndMessaging::SW_SHOWNORMAL};
     use windows::core::{Error, PCWSTR};
 
     let current_exe = current_exe().map_err(|e| format!("Failed to get current exe: {e}"))?;
-    let is_valid = verify_helper_hash(&current_exe).map_err(|e| format!("[Integrity]: {}", e))?;
-
-    if !is_valid {
-        return Err("[Integrity]: Invalid hash. (File is corrupted or tampered with)".to_string());
-    }
 
     let verb = string_to_pcwstr_vec("runas");
     let path = string_to_pcwstr_vec(&current_exe.display().to_string());

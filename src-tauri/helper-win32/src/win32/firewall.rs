@@ -1,99 +1,65 @@
-#[cfg(target_family = "windows")]
-use super::CustomExitCode;
-// #[allow(unused_imports)]
-use super::writeln;
-// #[allow(unused_imports)]
-use std::io::Write;
+use windows_firewall::FirewallRule;
 
-#[cfg(target_family = "windows")]
-use windows_firewall::{Action, Direction, FirewallRule, Profile, Protocol};
+pub struct FirewallRules {
+    inbound: FirewallRule,
+    outbound: FirewallRule,
+}
+
+impl FirewallRules {
+    pub fn add_or_update(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let inbound = self.inbound.add_or_update()?;
+        let outbound = self.outbound.add_or_update()?;
+        Ok(inbound && outbound)
+    }
+
+    pub fn remove(self) -> Result<(), Box<dyn std::error::Error>> {
+        self.inbound.remove()?;
+        self.outbound.remove()?;
+        Ok(())
+    }
+
+    pub fn exists(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let inbound = self.inbound.exists()?;
+        let outbound = self.outbound.exists()?;
+        Ok(inbound && outbound)
+    }
+}
 
 /// Only reason for returning `Option` is to handle `std::env::current_exe` error.
 #[cfg(target_family = "windows")]
-fn firewall_rule() -> Option<FirewallRule> {
+pub fn firewall_rules() -> Option<FirewallRules> {
     use std::env::current_exe;
+    use windows_firewall::Direction;
 
     let application_path = current_exe().ok()?.display().to_string();
-    let description = "
-        Volumize detected that user is using private network.
-        Windows does not allow any LAN traffic between private and public networks.
-        To allow LAN traffic between your LAN devices, adding this firewall exceptions.
-    ";
 
-    Some(
+    let base = |direction: Direction| {
+        use windows_firewall::{Action, Profile, Protocol};
+
+        let description = "\
+            Volumize (private network) enables LAN traffic between local devices\
+        ";
+
+        let name = match direction {
+            Direction::In => format!("{} (Inbound)", super::super::APPLICATION_NAME),
+            Direction::Out => format!("{} (Outbound)", super::super::APPLICATION_NAME),
+            Direction::Max => format!("{} (Max)", super::super::APPLICATION_NAME),
+        };
+
         FirewallRule::builder()
-            .name(super::super::APPLICATION_NAME)
-            .application_name(application_path)
+            .name(name)
+            .application_name(&application_path)
+            .grouping(super::super::APPLICATION_NAME)
             .description(description)
             .enabled(true)
             .action(Action::Allow)
             .profiles(Profile::Private)
             .protocol(Protocol::Tcp)
-            .direction(Direction::In)
-            .local_ports([9002])
-            .build(),
-    )
-}
-
-#[cfg(target_family = "windows")]
-pub fn firewall_rule_add_or_update(writer: &mut Option<impl Write>) -> CustomExitCode {
-    let rule = match firewall_rule() {
-        Some(rule) => rule,
-        None => return CustomExitCode::FAILED_TO_FIND_EXECUTABLE,
+            .direction(direction)
     };
 
-    match rule.add_or_update() {
-        Ok(true) => writeln(writer, "Firewall rule added successfully!"),
-        Ok(false) => writeln(writer, "Firewall rule updated successfully!"),
-        Err(e) => {
-            writeln(
-                writer,
-                &format!("Failed to add/update firewall rule: {}", e),
-            );
-            return CustomExitCode::FAILED_TO_ADD_FIREWALL_RULE;
-        }
-    }
-    CustomExitCode::SUCCESS
-}
-
-#[cfg(target_family = "windows")]
-pub fn firewall_rule_remove(writer: &mut Option<impl Write>) -> CustomExitCode {
-    let rule = match firewall_rule() {
-        Some(rule) => rule,
-        None => return CustomExitCode::FAILED_TO_FIND_EXECUTABLE,
-    };
-    writeln(writer, "Remove Firewall Rule");
-
-    match rule.remove() {
-        Ok(_) => writeln(writer, "Removed firewall rule successfully!"),
-        Err(e) => {
-            writeln(writer, &format!("Failed to remove firewall rule: {}", e));
-            return CustomExitCode::FAILED_TO_REMOVE_FIREWALL_RULE;
-        }
-    }
-
-    CustomExitCode::SUCCESS
-}
-
-#[cfg(target_family = "windows")]
-pub fn firewall_rule_exists(writer: &mut Option<impl Write>) -> Result<bool, CustomExitCode> {
-    let rule = match firewall_rule() {
-        Some(rule) => rule,
-        None => return Err(CustomExitCode::FAILED_TO_FIND_EXECUTABLE),
-    };
-
-    match rule.exists() {
-        Ok(true) => {
-            writeln(writer, "Firewall rule already exist");
-            Ok(true)
-        }
-        Ok(false) => {
-            writeln(writer, "Firewall rule does not exist");
-            Ok(false)
-        }
-        Err(e) => {
-            writeln(writer, &format!("Failed to check firewall rule: {}", e));
-            Err(CustomExitCode::FAILED_TO_CHECK_FIREWALL_RULE)
-        }
-    }
+    Some(FirewallRules {
+        inbound: base(Direction::In).local_ports([9002]).build(),
+        outbound: base(Direction::Out).build(),
+    })
 }

@@ -22,7 +22,7 @@ fn main() -> std::process::ExitCode {
         .ok();
 
     formatter::writeln(&mut writer, &format!("NAME={}", APPLICATION_NAME));
-    formatter::write_arguments(&mut writer, os_args);
+    // formatter::write_arguments(&mut writer, os_args);
 
     let divider = "-".repeat(40);
     formatter::writeln(&mut writer, &divider);
@@ -36,8 +36,19 @@ fn main() -> std::process::ExitCode {
 fn execute(command: &str, writer: &mut Option<impl std::io::Write>) -> CustomExitCode {
     match command {
         "--add" => {
-            if !win32::is_private_network() {
-                return CustomExitCode::SUCCESS;
+            match win32::is_private_network() {
+                Ok(true) => {}
+                Ok(false) => {
+                    formatter::writeln(
+                        writer,
+                        "Not on a private network, skipping firewall rule addition",
+                    );
+                    return CustomExitCode::SUCCESS;
+                }
+                Err(err) => {
+                    formatter::writeln(writer, &format!("[command]: {}", err));
+                    return CustomExitCode::FAILED_TO_CHECK_NETWORK;
+                }
             }
             match win32::firewall_rule_exists(writer) {
                 Ok(value) => value,
@@ -55,7 +66,10 @@ fn execute(command: &str, writer: &mut Option<impl std::io::Write>) -> CustomExi
             }
             win32::firewall_rule_remove(writer)
         }
-        _ => CustomExitCode::SUCCESS,
+        option => {
+            formatter::writeln(writer, &format!("Unknown option: {}", option));
+            CustomExitCode::SUCCESS
+        }
     }
 }
 

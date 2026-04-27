@@ -1,8 +1,9 @@
+mod apply_rule;
 mod firewall;
 mod windows;
 
 #[cfg(windows)]
-pub use firewall::*;
+pub use apply_rule::*;
 #[cfg(windows)]
 pub use windows::*;
 

@@ -9,7 +9,8 @@ impl CustomExitCode {
     pub const FAILED_TO_ADD_FIREWALL_RULE: Self = Self(2);
     pub const FAILED_TO_REMOVE_FIREWALL_RULE: Self = Self(4);
     pub const FAILED_TO_FIND_EXECUTABLE: Self = Self(8);
-    pub const USER_DENIED_TO_ELEVATE: Self = Self(16);
+    pub const FAILED_TO_CHECK_NETWORK: Self = Self(16);
+    pub const USER_DENIED_TO_ELEVATE: Self = Self(32);
 
     pub fn new() -> Self {
         CustomExitCode::SUCCESS

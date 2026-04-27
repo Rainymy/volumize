@@ -84,8 +84,29 @@ pub fn is_elevated() -> bool {
     }
 }
 
+struct ComGuard();
+
+impl ComGuard {
+    fn new() -> Result<Self, String> {
+        use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
+        let guard = match unsafe { CoInitializeEx(None, COINIT_MULTITHREADED).ok() } {
+            Ok(_) => Ok(Self()),
+            Err(err) => Err(format!("[CoInitializeEx] {}", err)),
+        };
+
+        return guard;
+    }
+}
+
+impl Drop for ComGuard {
+    fn drop(&mut self) {
+        use windows::Win32::System::Com::CoUninitialize;
+        unsafe { CoUninitialize() };
+    }
+}
+
 #[cfg(windows)]
-pub fn is_private_network() -> bool {
+pub fn is_private_network() -> Result<bool, String> {
     use windows::Win32::Networking::NetworkListManager::{
         INetwork, INetworkListManager, NLM_ENUM_NETWORK_CONNECTED,
         NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED, NLM_NETWORK_CATEGORY_PRIVATE,
@@ -93,23 +114,27 @@ pub fn is_private_network() -> bool {
     };
     use windows::Win32::System::Com::{CLSCTX_ALL, CoCreateInstance};
 
+    let _guard = ComGuard::new()?;
+
     let nlm: INetworkListManager = unsafe {
         match CoCreateInstance(&NetworkListManager, None, CLSCTX_ALL) {
             Ok(v) => v,
-            Err(_) => return false,
+            Err(err) => return Err(format!("[CoCreateInstance] {}", err)),
         }
     };
 
     // Early exit if not connected
-    let is_connected = unsafe { nlm.IsConnected().map(|v| v.as_bool()).unwrap_or(false) };
+    let is_connected = unsafe { nlm.IsConnected().map(|v| v.as_bool()) }
+        .map_err(|err| format!("[IsConnected] {}", err))?;
+
     if !is_connected {
-        return false;
+        return Err("No network connection".to_string());
     }
 
     let network_enumator = unsafe {
         match nlm.GetNetworks(NLM_ENUM_NETWORK_CONNECTED) {
             Ok(connections) => connections,
-            Err(_) => return false,
+            Err(err) => return Err(format!("[GetNetworks] {}", err)),
         }
     };
 
@@ -119,21 +144,30 @@ pub fn is_private_network() -> bool {
 
         match network_enumator.Next(&mut networks, Some(&mut pceltfetched)) {
             Ok(_) if pceltfetched > 0 => {}
-            _ => return false,
+            Ok(_) => return Err("[Next] No network connection".to_string()),
+            Err(err) => return Err(format!("[Next] {}", err)),
         }
         match networks[0].take() {
             Some(net) => net,
-            None => return false,
+            None => {
+                return Err(
+                    "Something went very wrong. Expected [networks; 1] to be valid".to_string(),
+                );
+            }
         }
     };
 
-    match unsafe { network.GetCategory() } {
+    let is_private = match unsafe { network.GetCategory() } {
         Ok(NLM_NETWORK_CATEGORY_PRIVATE) => true,
         // I'm not sure what the domain authenticated category means,
         // so treat it as private.
         Ok(NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED) => true,
-        Ok(NLM_NETWORK_CATEGORY_PUBLIC) | _ => false,
-    }
+        Ok(NLM_NETWORK_CATEGORY_PUBLIC) => false,
+        Ok(_) => false,
+        Err(err) => return Err(format!("[GetCategory] {}", err)),
+    };
+
+    Ok(is_private)
 }
 
 #[cfg(windows)]

@@ -5,8 +5,7 @@ mod win32;
 
 use my_exit_code::CustomExitCode;
 
-// If unset - no hash verification will be performed
-pub const HELPER_HASH: Option<&str> = option_env!("HELPER_HASH");
+pub const APPLICATION_NAME: &str = env!("APPLICATION_NAME");
 
 #[cfg(unix)]
 fn main() -> std::process::ExitCode {

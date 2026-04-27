@@ -1,23 +1,17 @@
 #[cfg(target_family = "windows")]
 use super::CustomExitCode;
-#[allow(unused_imports)]
+// #[allow(unused_imports)]
 use super::writeln;
-#[allow(unused_imports)]
+// #[allow(unused_imports)]
 use std::io::Write;
-
-// Try to get name/port/application from build.rs env, fallback to a hardcoded value
-//
-// const RULE_NAME: &str = env!("RULE_NAME");
-// const RULE_NAME: &str = "Volumize";
 
 #[cfg(target_family = "windows")]
 use windows_firewall::{Action, Direction, FirewallRule, Profile, Protocol};
 
+/// Only reason for returning `Option` is to handle `std::env::current_exe` error.
 #[cfg(target_family = "windows")]
 fn firewall_rule() -> FirewallRule {
     FirewallRule::builder()
-        .name("Volumize")
-        .application_name("Volumize")
         .description("Volumize firewall rule")
         .enabled(true)
         .action(Action::Allow)
@@ -26,6 +20,8 @@ fn firewall_rule() -> FirewallRule {
         .direction(Direction::In)
         .local_ports([9002])
         .build()
+            .name(super::super::APPLICATION_NAME)
+            .application_name(application_path)
 }
 
 #[cfg(target_family = "windows")]

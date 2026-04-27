@@ -102,8 +102,8 @@ pub fn write_arguments(args: Vec<String>, writer: &mut Option<impl Write>) {
     writeln(writer, "");
 }
 
-pub fn verify_helper_hash(file: &std::path::Path) -> Result<bool, std::io::Error> {
-    let helper_hash = match super::HELPER_HASH {
+pub fn verify_helper_hash(_file: &std::path::Path) -> Result<bool, std::io::Error> {
+    let _helper_hash = match super::HELPER_HASH {
         Some(hash) => hash,
         None => return Ok(true),
     };

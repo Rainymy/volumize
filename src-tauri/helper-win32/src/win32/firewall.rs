@@ -10,18 +10,29 @@ use windows_firewall::{Action, Direction, FirewallRule, Profile, Protocol};
 
 /// Only reason for returning `Option` is to handle `std::env::current_exe` error.
 #[cfg(target_family = "windows")]
-fn firewall_rule() -> FirewallRule {
-    FirewallRule::builder()
-        .description("Volumize firewall rule")
-        .enabled(true)
-        .action(Action::Allow)
-        .profiles(Profile::Private)
-        .protocol(Protocol::Tcp)
-        .direction(Direction::In)
-        .local_ports([9002])
-        .build()
+fn firewall_rule() -> Option<FirewallRule> {
+    use std::env::current_exe;
+
+    let application_path = current_exe().ok()?.display().to_string();
+    let description = "
+        Volumize detected that user is using private network.
+        Windows does not allow any LAN traffic between private and public networks.
+        To allow LAN traffic between your LAN devices, adding this firewall exceptions.
+    ";
+
+    Some(
+        FirewallRule::builder()
             .name(super::super::APPLICATION_NAME)
             .application_name(application_path)
+            .description(description)
+            .enabled(true)
+            .action(Action::Allow)
+            .profiles(Profile::Private)
+            .protocol(Protocol::Tcp)
+            .direction(Direction::In)
+            .local_ports([9002])
+            .build(),
+    )
 }
 
 #[cfg(target_family = "windows")]

@@ -26,7 +26,10 @@ fn firewall_rule() -> FirewallRule {
 
 #[cfg(target_family = "windows")]
 pub fn firewall_rule_add_or_update(writer: &mut Option<impl Write>) -> CustomExitCode {
-    let rule = firewall_rule();
+    let rule = match firewall_rule() {
+        Some(rule) => rule,
+        None => return CustomExitCode::FAILED_TO_FIND_EXECUTABLE,
+    };
 
     match rule.add_or_update() {
         Ok(true) => writeln(writer, "Firewall rule added successfully!"),
@@ -44,7 +47,10 @@ pub fn firewall_rule_add_or_update(writer: &mut Option<impl Write>) -> CustomExi
 
 #[cfg(target_family = "windows")]
 pub fn firewall_rule_remove(writer: &mut Option<impl Write>) -> CustomExitCode {
-    let rule = firewall_rule();
+    let rule = match firewall_rule() {
+        Some(rule) => rule,
+        None => return CustomExitCode::FAILED_TO_FIND_EXECUTABLE,
+    };
     writeln(writer, "Remove Firewall Rule");
 
     match rule.remove() {
@@ -59,8 +65,11 @@ pub fn firewall_rule_remove(writer: &mut Option<impl Write>) -> CustomExitCode {
 }
 
 #[cfg(target_family = "windows")]
-pub fn firewall_rule_exists(writer: &mut Option<impl Write>) -> Result<bool, ()> {
-    let rule = firewall_rule();
+pub fn firewall_rule_exists(writer: &mut Option<impl Write>) -> Result<bool, CustomExitCode> {
+    let rule = match firewall_rule() {
+        Some(rule) => rule,
+        None => return Err(CustomExitCode::FAILED_TO_FIND_EXECUTABLE),
+    };
 
     match rule.exists() {
         Ok(true) => {
@@ -73,7 +82,7 @@ pub fn firewall_rule_exists(writer: &mut Option<impl Write>) -> Result<bool, ()>
         }
         Err(e) => {
             writeln(writer, &format!("Failed to check firewall rule: {}", e));
-            Err(())
+            Err(CustomExitCode::FAILED_TO_CHECK_FIREWALL_RULE)
         }
     }
 }

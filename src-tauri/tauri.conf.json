@@ -48,6 +48,7 @@
                 "installMode": "currentUser",
                 "displayLanguageSelector": true,
                 "compression": "lzma",
+                "installerHooks": "./windows/firewall.nsh",
                 "sidebarImage": "./icons/sidebar.bmp",
                 "installerIcon": "./icons/icon.ico",
                 "headerImage": "./icons/header.bmp"
@@ -61,7 +62,7 @@
         },
         "targets": ["nsis", "deb"],
         "resources": {
-            "./helper-win32/target/release/helper.exe": "./helper2.exe"
+            "./helper-win32/target/release/helper.exe": "./helper.exe"
         },
         "icon": [
             "./icons/32x32.png",

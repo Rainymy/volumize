@@ -41,14 +41,17 @@ fn main() {
 /// Because Tauri doesn't expose the config parsing to build scripts.
 fn build_tauri_config() -> tauri::utils::config::Config {
     use std::env::{current_dir, var};
-    use tauri::utils::{config, platform};
+    use tauri::utils::{
+        config::{parse, Config},
+        platform,
+    };
 
     let target_triple = var("TARGET").expect("TARTGET TO EXIST");
     let target = platform::Target::from_triple(&target_triple);
-    let mut current_dir = current_dir().expect("NO CURRENT DIR");
-    current_dir.push("tauri.conf.json");
+    let current_dir = current_dir().unwrap();
 
-    let (config, _path) = config::parse(target, current_dir).unwrap();
+    let (read_value, _path) = parse::read_from(target, &current_dir).unwrap();
+    let config: Config = serde_json::from_value(read_value).unwrap();
     config
 }
 

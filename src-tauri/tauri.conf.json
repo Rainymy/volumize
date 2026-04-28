@@ -41,7 +41,7 @@
                 "type": "embedBootstrapper"
             },
             "wix": {
-                "fragmentPaths": ["./wix/firewall.wxs"],
+                "fragmentPaths": ["./windows/fragments/firewall.wxs"],
                 "componentRefs": ["FirewallHelperComponents"]
             }
         },

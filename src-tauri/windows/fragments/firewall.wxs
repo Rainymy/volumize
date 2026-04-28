@@ -37,11 +37,11 @@
 
         <InstallExecuteSequence>
             <Custom Action="AddFirewallRule" After="InstallFiles">
-                NOT Installed AND NOT REMOVE
+                (NOT Installed) AND (NOT REMOVE)
             </Custom>
 
             <Custom Action="RemoveFirewallRule" Before="RemoveFiles">
-                Installed AND REMOVE="ALL"
+                (NOT UPGRADINGPRODUCTCODE) AND (REMOVE="ALL")
             </Custom>
         </InstallExecuteSequence>
     </Fragment>

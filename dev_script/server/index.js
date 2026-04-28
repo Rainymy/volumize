@@ -11,6 +11,7 @@ const ROOT_FOLDER = join(import.meta.dirname, "../../");
 const FILES = [
     "src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk",
     getLatestFile("src-tauri/target/release/bundle/msi"),
+    getLatestFile("src-tauri/target/release/bundle/nsis"),
 ].map((p) => join(ROOT_FOLDER, p));
 
 // ─────────────────────────────────────────────────────────────

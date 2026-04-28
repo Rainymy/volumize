@@ -12,12 +12,20 @@ import sharp from "sharp";
  * @param {string} inputPath
  * @param {ResizeOptions?} options
  * @param {Background?} background
+ * @param {number?} padding
  * @returns {Promise<Buffer>}
  */
-export async function imageToBitmap(inputPath, options, background) {
+export async function imageToBitmap(inputPath, options, background, padding = 1) {
     const bg_channel = background ?? { r: 255, g: 255, b: 255 };
 
     const { data, info } = await sharp(inputPath)
+        .extend({
+            top: padding,
+            bottom: padding,
+            left: padding,
+            right: padding,
+            background: bg_channel,
+        })
         .flatten({ background: bg_channel })
         .resize({ fit: "contain", background: bg_channel, ...options })
         .toColourspace("srgb")

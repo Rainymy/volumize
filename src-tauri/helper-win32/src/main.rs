@@ -50,6 +50,7 @@ fn execute(command: &str, writer: &mut Option<impl std::io::Write>) -> CustomExi
                     return CustomExitCode::FAILED_TO_CHECK_NETWORK;
                 }
             }
+            // This is check is just redundant. Just remove it.
             match win32::firewall_rule_exists(writer) {
                 Ok(value) => value,
                 Err(err) => return err,
@@ -82,13 +83,11 @@ fn ensure_elevation(writer: &mut Option<impl std::io::Write>) -> bool {
 
     formatter::writeln(writer, "I need admin privilage");
     match win32::elevate_current_exe() {
-        Ok(true) => true,
-        Ok(false) => {
-            formatter::writeln(writer, "User denied to elevate");
-            false
-        }
+        // The elevated child has already done the work and exited.
+        // Exit this process with the same code.
+        Ok(exit_code) => std::process::exit(exit_code as i32),
         Err(err) => {
-            formatter::writeln(writer, &err);
+            formatter::writeln(writer, &format!("[elevate_current_exe]: {}", err));
             return false;
         }
     }

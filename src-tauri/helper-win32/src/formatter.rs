@@ -34,10 +34,9 @@ fn format_current_time() -> String {
 }
 
 pub fn writeln(w: &mut Option<impl Write>, msg: &str) {
-    let curent_time = format_current_time();
-
     let _ = match w {
         Some(w) => {
+            let curent_time = format_current_time();
             let formatted = format!("[{curent_time}]: {}\n", msg);
             #[cfg(debug_assertions)]
             print!("{}", formatted);
@@ -67,7 +66,7 @@ fn get_log_path() -> std::path::PathBuf {
 pub fn create_writer() -> Result<impl Write, std::io::Error> {
     let folder = get_log_path();
 
-    const FILE_SIZE: u64 = 4 * 1024; // 256KB
+    const FILE_SIZE: u64 = 64 * 1024; // 64KB
     match remove_file_over(&folder, FILE_SIZE) {
         Ok(_) => (),
         Err(err) => eprintln!("Remove file error: {}", err),

@@ -11,12 +11,15 @@ pub fn string_to_pcwstr_vec(pw_string: &str) -> Vec<u16> {
 
 /// Elevates the current executable by running it with admin privileges.
 #[cfg(target_family = "windows")]
-pub fn elevate_current_exe() -> Result<bool, String> {
+pub fn elevate_current_exe() -> Result<u32, String> {
     use super::get_formatted_args;
     use std::env::current_exe;
 
-    use windows::Win32::UI::{Shell::ShellExecuteW, WindowsAndMessaging::SW_SHOWNORMAL};
-    use windows::core::{Error, PCWSTR};
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::System::Threading::{GetExitCodeProcess, INFINITE, WaitForSingleObject};
+    use windows::Win32::UI::Shell::{SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW, ShellExecuteExW};
+    use windows::Win32::UI::WindowsAndMessaging::SW_HIDE;
+    use windows::core::PCWSTR;
 
     let current_exe = current_exe().map_err(|e| format!("Failed to get current exe: {e}"))?;
 
@@ -24,26 +27,30 @@ pub fn elevate_current_exe() -> Result<bool, String> {
     let path = string_to_pcwstr_vec(&current_exe.display().to_string());
     let args = string_to_pcwstr_vec(&get_formatted_args().join(" "));
 
-    let exit_code = unsafe {
-        ShellExecuteW(
-            None,
-            PCWSTR(verb.as_ptr()),
-            PCWSTR(path.as_ptr()),
-            PCWSTR(args.as_ptr()),
-            None,
-            SW_SHOWNORMAL,
-        )
+    let mut info = SHELLEXECUTEINFOW {
+        cbSize: std::mem::size_of::<SHELLEXECUTEINFOW>() as u32,
+        fMask: SEE_MASK_NOCLOSEPROCESS,
+        lpVerb: PCWSTR(verb.as_ptr()),
+        lpFile: PCWSTR(path.as_ptr()),
+        lpParameters: PCWSTR(args.as_ptr()),
+        nShow: SW_HIDE.0,
+        ..Default::default()
     };
 
-    if exit_code.is_invalid() {
-        return Err(format!("Failed to elevate: {}", Error::from_thread()));
-    }
+    unsafe {
+        ShellExecuteExW(&mut info).map_err(|e| format!("Failed to elevate: {e}"))?;
 
-    // https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shellexecutew
-    // - If the function succeeds, it returns a value greater than 32.
-    //
-    // Over 32 = user accepted admin elevation.
-    Ok((exit_code.0 as usize) > 32)
+        // No need to handle the return value of WaitForSingleObject.
+        WaitForSingleObject(info.hProcess, INFINITE);
+
+        let mut exit_code = 0u32;
+        GetExitCodeProcess(info.hProcess, &mut exit_code)
+            .map_err(|e| format!("Failed to get exit code: {e}"))?;
+
+        CloseHandle(info.hProcess).map_err(|e| format!("Failed to close handle: {e}"))?;
+
+        Ok(exit_code)
+    }
 }
 
 /// Returns `true` if the current process is elevated (has admin privileges).
@@ -51,36 +58,31 @@ pub fn elevate_current_exe() -> Result<bool, String> {
 pub fn is_elevated() -> bool {
     use windows::Win32::Foundation::{CloseHandle, HANDLE};
     use windows::Win32::Security::{
-        GetTokenInformation, TOKEN_ELEVATION_TYPE, TOKEN_QUERY, TokenElevationType,
-        TokenElevationTypeFull,
+        GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation,
     };
     use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 
-    let mut token = HANDLE::default();
     unsafe {
+        let mut token = HANDLE::default();
         if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token).is_err() {
             return false;
         }
 
-        let mut elevation = TOKEN_ELEVATION_TYPE::default();
+        let mut elevation = TOKEN_ELEVATION::default();
         let mut size = 0u32;
 
-        if GetTokenInformation(
+        let result = GetTokenInformation(
             token,
-            TokenElevationType,
+            TokenElevation,
             Some(&mut elevation as *mut _ as *mut _),
-            std::mem::size_of::<TOKEN_ELEVATION_TYPE>() as u32,
+            std::mem::size_of::<TOKEN_ELEVATION>() as u32,
             &mut size,
         )
-        .inspect_err(|err| eprintln!("{}", err))
-        .is_err()
-        {
-            return false;
-        }
+        .is_ok();
 
         let _ = CloseHandle(token);
 
-        !token.is_invalid() && elevation == TokenElevationTypeFull
+        result && elevation.TokenIsElevated != 0
     }
 }
 
@@ -88,8 +90,8 @@ struct ComGuard();
 
 impl ComGuard {
     fn new() -> Result<Self, String> {
-        use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
-        let guard = match unsafe { CoInitializeEx(None, COINIT_MULTITHREADED).ok() } {
+        use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx};
+        let guard = match unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok() } {
             Ok(_) => Ok(Self()),
             Err(err) => Err(format!("[CoInitializeEx] {}", err)),
         };
@@ -117,14 +119,13 @@ pub fn is_private_network() -> Result<bool, String> {
     let _guard = ComGuard::new()?;
 
     let nlm: INetworkListManager = unsafe {
-        match CoCreateInstance(&NetworkListManager, None, CLSCTX_ALL) {
-            Ok(v) => v,
-            Err(err) => return Err(format!("[CoCreateInstance] {}", err)),
-        }
+        CoCreateInstance(&NetworkListManager, None, CLSCTX_ALL)
+            .map_err(|e| format!("[CoCreateInstance] {}", e))?
     };
 
     // Early exit if not connected
-    let is_connected = unsafe { nlm.IsConnected().map(|v| v.as_bool()) }
+    let is_connected = unsafe { nlm.IsConnected() }
+        .map(|v| v.as_bool())
         .map_err(|err| format!("[IsConnected] {}", err))?;
 
     if !is_connected {
@@ -132,42 +133,56 @@ pub fn is_private_network() -> Result<bool, String> {
     }
 
     let network_enumator = unsafe {
-        match nlm.GetNetworks(NLM_ENUM_NETWORK_CONNECTED) {
-            Ok(connections) => connections,
-            Err(err) => return Err(format!("[GetNetworks] {}", err)),
-        }
+        nlm.GetNetworks(NLM_ENUM_NETWORK_CONNECTED)
+            .map_err(|e| format!("[GetNetworks] {}", e))?
     };
 
-    let network = unsafe {
-        let mut networks = [None::<INetwork>; 1];
-        let mut pceltfetched = 0u32;
+    let mut found_any = false;
 
-        match network_enumator.Next(&mut networks, Some(&mut pceltfetched)) {
-            Ok(_) if pceltfetched > 0 => {}
-            Ok(_) => return Err("[Next] No network connection".to_string()),
-            Err(err) => return Err(format!("[Next] {}", err)),
-        }
-        match networks[0].take() {
-            Some(net) => net,
-            None => {
-                return Err(
-                    "Something went very wrong. Expected [networks; 1] to be valid".to_string(),
-                );
+    loop {
+        let mut networks: [Option<INetwork>; 16] = std::array::from_fn(|_| None);
+        let mut fetched = 0u32;
+
+        let done = unsafe {
+            match network_enumator.Next(&mut networks, Some(&mut fetched)) {
+                Ok(_) if fetched == 0 => true,
+                Ok(_) => false,
+                Err(e) => return Err(format!("[Next] {}", e)),
+            }
+        };
+
+        for network in networks[..fetched as usize].iter_mut() {
+            let network = match network.take() {
+                Some(n) => n,
+                None => continue,
+            };
+
+            found_any = true;
+
+            let category = unsafe {
+                network
+                    .GetCategory()
+                    .map_err(|e| format!("[GetCategory] {}", e))?
+            };
+
+            match category {
+                NLM_NETWORK_CATEGORY_PRIVATE => return Ok(true),
+                NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED => return Ok(true),
+                NLM_NETWORK_CATEGORY_PUBLIC => {}
+                _ => {}
             }
         }
-    };
 
-    let is_private = match unsafe { network.GetCategory() } {
-        Ok(NLM_NETWORK_CATEGORY_PRIVATE) => true,
-        // I'm not sure what the domain authenticated category means,
-        // so treat it as private.
-        Ok(NLM_NETWORK_CATEGORY_DOMAIN_AUTHENTICATED) => true,
-        Ok(NLM_NETWORK_CATEGORY_PUBLIC) => false,
-        Ok(_) => false,
-        Err(err) => return Err(format!("[GetCategory] {}", err)),
-    };
+        if done {
+            break;
+        }
+    }
 
-    Ok(is_private)
+    if !found_any {
+        return Err("No networks returned by enumerator".to_string());
+    }
+
+    Ok(false)
 }
 
 #[cfg(windows)]

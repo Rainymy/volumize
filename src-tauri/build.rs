@@ -1,24 +1,16 @@
-use std::path::PathBuf;
-use std::process::Command;
-
 const HELPER_FOLDER: &str = "helper-win32";
 
 fn main() {
     #[cfg(windows)]
     {
-        match dotenv::dotenv() {
-            Ok(_) => {}
-            Err(e) => assert!(false, "[.env] - {}", e),
-        }
+        dotenv::dotenv().expect("[env.] dotenv to not fail");
 
         let helper_folder = HELPER_FOLDER;
-        let helper_file = format!("./{}/target/release/helper.exe", helper_folder);
-        let helper_path = PathBuf::from(&helper_file);
-
         let product_name = build_tauri_config()
             .product_name
-            .unwrap_or(env!("CARGO_PKG_NAME").to_string());
+            .unwrap_or(env!("CARGO_PKG_NAME").into());
 
+        use std::process::Command;
         let status = Command::new("cargo")
             .args([
                 "build",
@@ -34,14 +26,7 @@ fn main() {
         for line in String::from_utf8_lossy(&status.stderr).lines() {
             println!("cargo:warning=[helper] {}", format_child_output(line));
         }
-
         assert!(status.status.success(), "helper-win32 build failed");
-
-        std::fs::copy(
-            &helper_path,
-            &get_target_dir().join(helper_path.file_name().unwrap()),
-        )
-        .expect("Failed to copy file");
 
         println!("cargo:rerun-if-changed=./{}/Cargo.toml", helper_folder);
         println!("cargo:rerun-if-changed=./{}/build.rs", helper_folder);
@@ -55,28 +40,16 @@ fn main() {
 ///
 /// Because Tauri doesn't expose the config parsing to build scripts.
 fn build_tauri_config() -> tauri::utils::config::Config {
-    use tauri::utils;
+    use std::env::{current_dir, var};
+    use tauri::utils::{config, platform};
 
-    let target_triple = std::env::var("TARGET").expect("TARTGET TO EXIST");
-    let target = utils::platform::Target::from_triple(&target_triple);
-    let mut current_dir = std::env::current_dir().expect("NO CURRENT DIR");
+    let target_triple = var("TARGET").expect("TARTGET TO EXIST");
+    let target = platform::Target::from_triple(&target_triple);
+    let mut current_dir = current_dir().expect("NO CURRENT DIR");
     current_dir.push("tauri.conf.json");
 
-    let (config, _path) = utils::config::parse(target, current_dir).unwrap();
+    let (config, _path) = config::parse(target, current_dir).unwrap();
     config
-}
-
-fn get_target_dir() -> std::path::PathBuf {
-    // Copy how Tauri does it. To get the target directory.
-    let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
-    let target_dir = out_dir
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap();
-    target_dir.to_path_buf()
 }
 
 fn format_child_output(input: &str) -> String {

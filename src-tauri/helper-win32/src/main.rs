@@ -6,6 +6,7 @@ mod win32;
 use my_exit_code::CustomExitCode;
 
 pub const APPLICATION_NAME: &str = env!("APPLICATION_NAME");
+pub const APPLICATION_EXE: &str = env!("APPLICATION_EXE");
 
 #[cfg(unix)]
 fn main() -> std::process::ExitCode {

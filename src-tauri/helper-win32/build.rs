@@ -9,7 +9,7 @@
 macro_rules! require_field {
     ($field:expr) => {
         $field.expect(&format!(
-            "Application [{}] MUST be set to properly target main executable",
+            "[Helper] [{}] MUST be set to properly target main executable",
             stringify!($field)
         ))
     };
@@ -19,11 +19,18 @@ fn main() {
     #[cfg(debug_assertions)]
     {
         expose_env("APPLICATION_NAME", "Volumize");
+        expose_env("APPLICATION_EXE", "volumize.exe");
     }
     #[cfg(not(debug_assertions))]
     {
-        pub const APPLICATION_NAME: Option<&str> = option_env!("APPLICATION_NAME");
-        expose_env("APPLICATION_NAME", require_field!(APPLICATION_NAME));
+        expose_env(
+            "APPLICATION_NAME",
+            require_field!(option_env!("APPLICATION_NAME")),
+        );
+        expose_env(
+            "APPLICATION_EXE",
+            require_field!(option_env!("APPLICATION_EXE")),
+        );
     }
 }
 

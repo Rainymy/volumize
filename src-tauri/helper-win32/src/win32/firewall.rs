@@ -28,14 +28,16 @@ impl FirewallRules {
 /// Only reason for returning `Option` is to handle `std::env::current_exe` error.
 #[cfg(target_family = "windows")]
 pub fn firewall_rules() -> Option<FirewallRules> {
-    use std::env::current_exe;
+    use std::env::current_dir;
     use windows_firewall::Direction;
 
-    let application_path = current_exe().ok()?.display().to_string();
+    let mut application_path = current_dir().ok()?;
+    application_path.push(super::super::APPLICATION_EXE);
 
     let base = |direction: Direction| {
         use windows_firewall::{Action, Profile, Protocol};
 
+        let application_path = application_path.display().to_string();
         let description = "\
             Volumize (private network) enables LAN traffic between local devices\
         ";
@@ -48,7 +50,7 @@ pub fn firewall_rules() -> Option<FirewallRules> {
 
         FirewallRule::builder()
             .name(name)
-            .application_name(&application_path)
+            .application_name(application_path)
             .grouping(super::super::APPLICATION_NAME)
             .description(description)
             .enabled(true)

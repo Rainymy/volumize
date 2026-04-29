@@ -1,5 +1,5 @@
 !macro NSIS_HOOK_POSTINSTALL
-    ExecWait '"$INSTDIR\helper.exe" --add' $0
+    nsExec::Exec '"$INSTDIR\helper.exe" --add' $0
 
     ${If} $0 != 0
         IntFmt $1 "0x%08X" $0

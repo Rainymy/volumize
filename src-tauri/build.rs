@@ -6,9 +6,10 @@ fn main() {
         dotenv::dotenv().expect("[env.] dotenv to not fail");
 
         let helper_folder = HELPER_FOLDER;
+        let cargo_pkg_name = env!("CARGO_PKG_NAME");
         let product_name = build_tauri_config()
             .product_name
-            .unwrap_or(env!("CARGO_PKG_NAME").into());
+            .unwrap_or(cargo_pkg_name.into());
 
         use std::process::Command;
         let status = Command::new("cargo")
@@ -19,6 +20,7 @@ fn main() {
                 &format!("./{}/Cargo.toml", helper_folder),
             ])
             .env("APPLICATION_NAME", &product_name)
+            .env("APPLICATION_EXE", &format!("{}.exe", cargo_pkg_name))
             .output()
             .expect(&format!("Failed to build {}", helper_folder));
 

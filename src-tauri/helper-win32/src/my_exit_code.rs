@@ -16,7 +16,8 @@ impl CustomExitCode {
         CustomExitCode::SUCCESS
     }
     pub fn is_success(&self) -> bool {
-        self.0 == Self::SUCCESS.0
+        // Can't extract "ExitCode" success value.
+        ExitCode::from(self.0) == ExitCode::SUCCESS
     }
     pub fn has_flag(&self, flag: Self) -> bool {
         (self.0 & flag.0) != 0

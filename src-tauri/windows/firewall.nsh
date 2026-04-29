@@ -1,5 +1,6 @@
 !macro NSIS_HOOK_POSTINSTALL
-    nsExec::Exec '"$INSTDIR\helper.exe" --add' $0
+    nsExec::Exec '"$INSTDIR\helper.exe" --add'
+    Pop $0
 
     ${If} $0 != 0
         IntFmt $1 "0x%08X" $0
@@ -12,7 +13,8 @@
 !macroend
 
 !macro NSIS_HOOK_PREUNINSTALL
-    ExecWait '"$INSTDIR\helper.exe" --remove' $0
+    nsExec::Exec '"$INSTDIR\helper.exe" --remove'
+    Pop $0
 
     ${If} $0 != 0
         IntFmt $1 "0x%08X" $0

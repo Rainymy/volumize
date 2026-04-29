@@ -5,11 +5,20 @@ fn main() {
     {
         dotenv::dotenv().expect("[env.] dotenv to not fail");
 
-        let helper_folder = HELPER_FOLDER;
+        let tauri_config = build_tauri_config();
+        let current_dir = std::env::current_dir().unwrap();
+
         let cargo_pkg_name = env!("CARGO_PKG_NAME");
-        let product_name = build_tauri_config()
-            .product_name
-            .unwrap_or(cargo_pkg_name.into());
+        let product_name = tauri_config.product_name.unwrap_or(cargo_pkg_name.into());
+        let installer_icon = current_dir.join(
+            tauri_config
+                .bundle
+                .windows
+                .nsis
+                .unwrap()
+                .installer_icon
+                .unwrap(),
+        );
 
         use std::process::Command;
         let status = Command::new("cargo")
@@ -17,12 +26,13 @@ fn main() {
                 "build",
                 "--release",
                 "--manifest-path",
-                &format!("./{}/Cargo.toml", helper_folder),
+                &format!("./{}/Cargo.toml", HELPER_FOLDER),
             ])
-            .env("APPLICATION_NAME", &product_name)
-            .env("APPLICATION_EXE", &format!("{}.exe", cargo_pkg_name))
+            .env("APPLICATION_NAME", product_name)
+            .env("APPLICATION_ICON", installer_icon.display().to_string())
+            .env("APPLICATION_EXE", format!("{}.exe", cargo_pkg_name))
             .output()
-            .expect(&format!("Failed to build {}", helper_folder));
+            .expect(&format!("Failed to build {}", HELPER_FOLDER));
 
         // Some reason clippy only outputs to stderr.
         for line in String::from_utf8_lossy(&status.stderr).lines() {
@@ -30,9 +40,10 @@ fn main() {
         }
         assert!(status.status.success(), "helper-win32 build failed");
 
-        println!("cargo:rerun-if-changed=./{}/Cargo.toml", helper_folder);
-        println!("cargo:rerun-if-changed=./{}/build.rs", helper_folder);
-        println!("cargo:rerun-if-changed=./{}/src/main.rs", helper_folder);
+        println!("cargo:rerun-if-changed=./{}/Cargo.toml", HELPER_FOLDER);
+        println!("cargo:rerun-if-changed=./{}/build.rs", HELPER_FOLDER);
+        println!("cargo:rerun-if-changed=./{}/src/main.rs", HELPER_FOLDER);
+        println!("cargo:rerun-if-changed=./{}/manifest.xml", HELPER_FOLDER);
     }
 
     tauri_build::build()

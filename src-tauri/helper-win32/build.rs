@@ -15,22 +15,42 @@ macro_rules! require_field {
     };
 }
 
+macro_rules! require_release {
+    ($tenv:literal, $uenv:expr) => {
+        if cfg!(debug_assertions) {
+            $uenv
+        } else {
+            require_field!(option_env!($tenv))
+        }
+    };
+}
+
 fn main() {
-    #[cfg(debug_assertions)]
+    let application_name = require_release!("APPLICATION_NAME", "Volumize");
+    let application_exe = require_release!("APPLICATION_EXE", "volumize.exe");
+    let application_icon = require_release!("APPLICATION_ICON", "");
+
+    expose_env("APPLICATION_NAME", application_name);
+    expose_env("APPLICATION_EXE", application_exe);
+    // expose_env("APPLICATION_ICON", application_icon);
+
+    #[cfg(windows)]
     {
-        expose_env("APPLICATION_NAME", "Volumize");
-        expose_env("APPLICATION_EXE", "volumize.exe");
-    }
-    #[cfg(not(debug_assertions))]
-    {
-        expose_env(
-            "APPLICATION_NAME",
-            require_field!(option_env!("APPLICATION_NAME")),
-        );
-        expose_env(
-            "APPLICATION_EXE",
-            require_field!(option_env!("APPLICATION_EXE")),
-        );
+        let mut res = winresource::WindowsResource::new();
+
+        res.set_icon(application_icon);
+
+        // These strings appear in the UAC prompt and file properties
+        res.set("FileDescription", "Volumize Firewall Helper");
+        res.set("ProductName", application_name);
+        res.set("CompanyName", "Firewall Helper");
+        res.set("LegalCopyright", "Copyright © 2026 {Author}");
+
+        // Embed the manifest
+        res.set_manifest_file("manifest.xml");
+
+        #[cfg(not(debug_assertions))]
+        res.compile().expect("Failed to compile Windows resources");
     }
 }
 

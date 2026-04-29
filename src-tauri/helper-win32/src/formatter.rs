@@ -91,12 +91,3 @@ fn remove_file_over(path: &Path, size: u64) -> Result<(), std::io::Error> {
         Ok(())
     }
 }
-
-pub fn write_arguments(writer: &mut Option<impl Write>, args: Vec<String>) {
-    writeln(writer, "");
-    writeln(writer, "Arguments:");
-    for (index, arg) in args.iter().enumerate() {
-        writeln(writer, &format!("   {}: {}", index + 1, arg));
-    }
-    writeln(writer, "");
-}

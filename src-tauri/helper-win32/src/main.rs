@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 mod formatter;
 mod my_exit_code;
 mod win32;
@@ -18,12 +17,9 @@ fn main() -> std::process::ExitCode {
     let os_args = formatter::get_formatted_args();
     let command = formatter::get_command_at_index(0, &os_args);
 
-    let mut writer = formatter::create_writer()
-        .inspect_err(|err| eprintln!("Failed to create writer: {}", err))
-        .ok();
+    let mut writer = formatter::create_writer().ok();
 
-    formatter::writeln(&mut writer, &format!("NAME={}", APPLICATION_NAME));
-    // formatter::write_arguments(&mut writer, os_args);
+    // formatter::writeln(&mut writer, &format!("NAME={}", APPLICATION_NAME));
 
     let divider = "-".repeat(40);
     formatter::writeln(&mut writer, &divider);
@@ -33,63 +29,14 @@ fn main() -> std::process::ExitCode {
     exit_code
 }
 
-#[cfg(windows)]
+// #[cfg(windows)]
 fn execute(command: &str, writer: &mut Option<impl std::io::Write>) -> CustomExitCode {
     match command {
-        "--add" => {
-            match win32::is_private_network() {
-                Ok(true) => {}
-                Ok(false) => {
-                    formatter::writeln(
-                        writer,
-                        "Not on a private network, skipping firewall rule addition",
-                    );
-                    return CustomExitCode::SUCCESS;
-                }
-                Err(err) => {
-                    formatter::writeln(writer, &format!("[command]: {}", err));
-                    return CustomExitCode::FAILED_TO_CHECK_NETWORK;
-                }
-            }
-            // This is check is just redundant. Just remove it.
-            match win32::firewall_rule_exists(writer) {
-                Ok(value) => value,
-                Err(err) => return err,
-            };
-            // Guard rest of the operations. They need admin elevation.
-            if !ensure_elevation(writer) {
-                return CustomExitCode::USER_DENIED_TO_ELEVATE;
-            }
-            win32::firewall_rule_add_or_update(writer)
-        }
-        "--remove" => {
-            if !ensure_elevation(writer) {
-                return CustomExitCode::USER_DENIED_TO_ELEVATE;
-            }
-            win32::firewall_rule_remove(writer)
-        }
+        "--add" => win32::firewall_rule_add_or_update(writer),
+        "--remove" => win32::firewall_rule_remove(writer),
         option => {
             formatter::writeln(writer, &format!("Unknown option: {}", option));
             CustomExitCode::SUCCESS
-        }
-    }
-}
-
-#[cfg(windows)]
-fn ensure_elevation(writer: &mut Option<impl std::io::Write>) -> bool {
-    if win32::is_elevated() {
-        formatter::writeln(writer, "Running as elevated");
-        return true;
-    }
-
-    formatter::writeln(writer, "I need admin privilage");
-    match win32::elevate_current_exe() {
-        // The elevated child has already done the work and exited.
-        // Exit this process with the same code.
-        Ok(exit_code) => std::process::exit(exit_code as i32),
-        Err(err) => {
-            formatter::writeln(writer, &format!("[elevate_current_exe]: {}", err));
-            return false;
         }
     }
 }

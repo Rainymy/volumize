@@ -45,7 +45,8 @@ pub fn firewall_rule_remove(writer: &mut Option<impl Write>) -> CustomExitCode {
     CustomExitCode::SUCCESS
 }
 
-#[cfg(target_family = "windows")]
+#[cfg(windows)]
+#[allow(dead_code)]
 pub fn firewall_rule_exists(writer: &mut Option<impl Write>) -> Result<bool, CustomExitCode> {
     let rule = match super::firewall::firewall_rules() {
         Some(rule) => rule,

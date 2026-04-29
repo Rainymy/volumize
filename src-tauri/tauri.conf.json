@@ -52,7 +52,8 @@
                 "sidebarImage": "./icons/sidebar.bmp",
                 "installerIcon": "./icons/icon.ico",
                 "headerImage": "./icons/header.bmp"
-            }
+            },
+            "timestampUrl": ""
         },
         "android": {
             "minSdkVersion": 28
@@ -62,7 +63,7 @@
         },
         "targets": ["nsis", "deb"],
         "resources": {
-            "./helper-win32/target/release/helper.exe": "./helper.exe"
+            "./helper-win32/target/release/firewall_helper.exe": "./firewall_helper.exe"
         },
         "icon": [
             "./icons/32x32.png",

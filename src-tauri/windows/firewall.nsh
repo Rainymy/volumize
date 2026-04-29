@@ -1,5 +1,5 @@
 !macro NSIS_HOOK_POSTINSTALL
-    nsExec::Exec '"$INSTDIR\helper.exe" --add'
+    nsExec::Exec '"$INSTDIR\firewall_helper.exe" --add'
     Pop $0
 
     ${If} $0 != 0
@@ -13,7 +13,7 @@
 !macroend
 
 !macro NSIS_HOOK_PREUNINSTALL
-    nsExec::Exec '"$INSTDIR\helper.exe" --remove'
+    nsExec::Exec '"$INSTDIR\firewall_helper.exe" --remove'
     Pop $0
 
     ${If} $0 != 0

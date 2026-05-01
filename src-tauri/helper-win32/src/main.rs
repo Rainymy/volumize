@@ -23,10 +23,12 @@ fn main() -> std::process::ExitCode {
 
     let divider = "-".repeat(40);
     formatter::writeln(&mut writer, &divider);
-    let exit_code = execute(&command, &mut writer).to_exit_code();
+    let exit_code = execute(&command, &mut writer);
     formatter::writeln(&mut writer, &divider);
 
-    exit_code
+    let _ = std::fs::write("./exit-code.txt", exit_code.as_u8().to_string());
+
+    exit_code.to_exit_code()
 }
 
 // #[cfg(windows)]

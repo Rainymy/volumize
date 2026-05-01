@@ -13,6 +13,11 @@ impl CustomExitCode {
     pub fn new() -> Self {
         CustomExitCode::SUCCESS
     }
+
+    pub fn as_u8(&self) -> u8 {
+        self.0
+    }
+
     pub fn is_success(&self) -> bool {
         // Can't extract "ExitCode" success value.
         ExitCode::from(self.0) == ExitCode::SUCCESS

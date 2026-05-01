@@ -41,12 +41,11 @@ fn main() {
         res.set_icon(application_icon);
 
         // These strings appear in the UAC prompt and file properties
+        // Only if it's signed binary.
         res.set("FileDescription", "Volumize Firewall Helper");
         res.set("ProductName", application_name);
-        res.set("CompanyName", "Firewall Helper");
+        res.set("CompanyName", "Volumize");
         res.set("LegalCopyright", "Copyright © 2026 {Author}");
-
-        // Embed the manifest
         res.set_manifest_file("manifest.xml");
 
         #[cfg(not(debug_assertions))]

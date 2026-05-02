@@ -51,7 +51,7 @@
                 "installerHooks": "./windows/firewall.nsh",
                 "installerIcon": "./icons/icon.ico",
                 "uninstallerIcon": "./icons/icon.ico",
-                "uninstallerHeaderImage": "./icons/sidebar.bmp",
+                "uninstallerHeaderImage": "./icons/header.bmp",
                 "sidebarImage": "./icons/sidebar.bmp",
                 "headerImage": "./icons/header.bmp"
             },

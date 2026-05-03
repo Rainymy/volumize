@@ -1,7 +1,7 @@
 {
     "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
     "productName": "Volumize",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "identifier": "com.volumize.rainy",
     "build": {
         "beforeDevCommand": "npm run dev",
@@ -29,7 +29,7 @@
             "id": "tray_main"
         },
         "security": {
-            "csp": null
+            "csp": "default-src 'self'"
         }
     },
     "bundle": {

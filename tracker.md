@@ -9,6 +9,7 @@
     - Scan QR code.
 - [ ] System tray menu update on timer.
     - tray menu is not reflected when choosing timer option.
+    - [ ] Remove the timer options. Easier to remove than implement
 - [ ] Refactor rust codebase.
     - Unify async and sync usages.
         - Async and sync code are a mess. Especially the thread management.

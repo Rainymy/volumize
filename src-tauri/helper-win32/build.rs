@@ -1,11 +1,3 @@
-/// Ensures that an `Option` field is set, otherwise panics with a descriptive message.
-///
-/// This macro unwraps the given `Option<T>`. If the value is `None`,
-/// it panics with a message that includes the field name.
-///
-/// The field name is automatically derived using `stringify!`, so you
-/// do not need to pass it manually.
-#[allow(unused_macros)]
 macro_rules! require_field {
     ($field:expr) => {
         $field.expect(&format!(
@@ -23,12 +15,15 @@ macro_rules! require_release {
             require_field!(option_env!($tenv))
         }
     };
+    ($tenv:literal) => {
+        require_field!(option_env!($tenv))
+    };
 }
 
 fn main() {
     let application_name = require_release!("APPLICATION_NAME", "Volumize");
     let application_exe = require_release!("APPLICATION_EXE", "volumize.exe");
-    let application_icon = require_release!("APPLICATION_ICON", "");
+    let application_icon = require_release!("APPLICATION_ICON");
 
     expose_env("APPLICATION_NAME", application_name);
     expose_env("APPLICATION_EXE", application_exe);
@@ -44,7 +39,7 @@ fn main() {
         // Only if it's signed binary.
         res.set("FileDescription", "Volumize Firewall Helper");
         res.set("ProductName", application_name);
-        res.set("CompanyName", "Volumize");
+        res.set("CompanyName", application_name);
         res.set("LegalCopyright", "Copyright © 2026 {Author}");
         res.set_manifest_file("manifest.xml");
 

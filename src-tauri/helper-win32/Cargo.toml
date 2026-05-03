@@ -10,24 +10,9 @@ path = "src/main.rs"
 [build-dependencies]
 winresource = { version = "0.1.31", features = [] }
 
-[dependencies]
-sha2 = { version = "0.11.0" }
-
 [target.'cfg(windows)'.dependencies]
 windows_firewall = { version = "0.7.0" }
 windows = { version = "0.62.2", features = [
-    # Checking elevation
-    "Win32_Security",
-    "Win32_System_Threading",
-    # Checking Network
-    "Win32_Networking",
-    "Win32_Networking_NetworkListManager",
-    # ShellExecuteW
-    "Win32_UI",
-    "Win32_UI_Shell",
-    "Win32_UI_WindowsAndMessaging",
-    "Win32_System_Registry",
     # Local time
-    "Win32_System_SystemInformation",
     "Win32_System_Time",
 ] }

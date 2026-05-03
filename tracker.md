@@ -1,13 +1,9 @@
-## ============== Priority ==============
-
-- [ ] Implement the settings + including the settings page.
-    - Add different settings functionality.
-- [ ] Allow only one instance of the application to run.
-- [ ] Client detect if there is multiple server instances running.
-    - Dropdown menu to select the server instance.
-
 ## ================ Todo ================
 
+- [ ] Client detect if there is multiple server instances running.
+    - Dropdown menu to select the server instance.
+- [ ] Implement the settings + including the settings page.
+    - Add different settings functionality.
 - [ ] Implement a authentication system.
     - Easies should be generate Random String.
     - Scan QR code.
@@ -19,6 +15,7 @@
 
 ## ================ Done ================
 
+- [x] Allow only one instance of the application to run.
 - [x] Setup firewall rule for windows (allow "public" to "private" network)
 - [x] Exit to tray option is missing from tray menu option.
 - [x] There is "TrayIcon" setting in "tauri.conf.json".

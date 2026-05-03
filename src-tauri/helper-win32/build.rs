@@ -16,7 +16,11 @@ macro_rules! require_release {
         }
     };
     ($tenv:literal) => {
-        require_field!(option_env!($tenv))
+        if cfg!(debug_assertions) {
+            ""
+        } else {
+            require_field!(option_env!($tenv))
+        }
     };
 }
 

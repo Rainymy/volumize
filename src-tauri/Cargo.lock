@@ -5703,6 +5703,7 @@ dependencies = [
  "dotenv",
  "futures-util",
  "image",
+ "json-patch",
  "local-ip-address",
  "mdns-sd",
  "serde",

@@ -1,8 +1,9 @@
 const HELPER_FOLDER: &str = "helper-win32";
 
 fn main() {
-    #[cfg(windows)]
-    {
+    let target_os = std::env::var_os("CARGO_CFG_TARGET_OS").unwrap();
+
+    if target_os == "windows" {
         dotenv::dotenv().expect("[env.] dotenv to not fail");
 
         let tauri_config = build_tauri_config();
@@ -15,9 +16,9 @@ fn main() {
                 .bundle
                 .windows
                 .nsis
-                .unwrap()
+                .expect("NSIS config is missing")
                 .installer_icon
-                .unwrap(),
+                .expect("installer_icon is missing"),
         );
 
         use std::process::Command;
@@ -63,7 +64,12 @@ fn build_tauri_config() -> tauri::utils::config::Config {
     let target = platform::Target::from_triple(&target_triple);
     let current_dir = current_dir().unwrap();
 
-    let (read_value, _path) = parse::read_from(target, &current_dir).unwrap();
+    let (mut read_value, _path) = parse::read_from(target, &current_dir).unwrap();
+    if let Ok(env) = var("TAURI_CONFIG") {
+        let merge_config: serde_json::Value = serde_json::from_str(&env).unwrap();
+        json_patch::merge(&mut read_value, &merge_config);
+    }
+
     let config: Config = serde_json::from_value(read_value).unwrap();
     config
 }

@@ -33,8 +33,7 @@ fn main() {
     expose_env("APPLICATION_EXE", application_exe);
     // expose_env("APPLICATION_ICON", application_icon);
 
-    #[cfg(windows)]
-    {
+    if std::env::var("CARGO_CFG_TARGET_OS").unwrap() == "windows" {
         let mut res = winresource::WindowsResource::new();
 
         res.set_icon(application_icon);

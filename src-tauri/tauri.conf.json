@@ -35,37 +35,11 @@
     "bundle": {
         "active": true,
         "category": "Utility",
-        "windows": {
-            "webviewInstallMode": {
-                "silent": true,
-                "type": "embedBootstrapper"
-            },
-            "wix": {
-                "fragmentPaths": ["./windows/fragments/firewall.wxs"],
-                "componentRefs": ["FirewallHelperComponents"]
-            },
-            "nsis": {
-                "installMode": "currentUser",
-                "displayLanguageSelector": true,
-                "compression": "lzma",
-                "installerHooks": "./windows/firewall.nsh",
-                "installerIcon": "./icons/icon.ico",
-                "uninstallerIcon": "./icons/icon.ico",
-                "uninstallerHeaderImage": "./icons/header.bmp",
-                "sidebarImage": "./icons/sidebar.bmp",
-                "headerImage": "./icons/header.bmp"
-            },
-            "allowDowngrades": false
-        },
         "android": {
             "minSdkVersion": 28
         },
         "iOS": {
             "minimumSystemVersion": "13.0"
-        },
-        "targets": ["nsis", "deb"],
-        "resources": {
-            "./helper-win32/target/release/firewall_helper.exe": "./firewall_helper.exe"
         },
         "icon": [
             "./icons/32x32.png",

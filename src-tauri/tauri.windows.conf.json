@@ -1,0 +1,33 @@
+{
+    "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+    "identifier": "com.volumize.rainy",
+    "bundle": {
+        "useLocalToolsDir": false,
+        "windows": {
+            "webviewInstallMode": {
+                "silent": true,
+                "type": "embedBootstrapper"
+            },
+            "wix": {
+                "fragmentPaths": ["./windows/fragments/firewall.wxs"],
+                "componentRefs": ["FirewallHelperComponents"]
+            },
+            "nsis": {
+                "installMode": "currentUser",
+                "displayLanguageSelector": true,
+                "compression": "lzma",
+                "installerHooks": "./windows/firewall.nsh",
+                "installerIcon": "./icons/icon.ico",
+                "uninstallerIcon": "./icons/icon.ico",
+                "uninstallerHeaderImage": "./icons/header.bmp",
+                "sidebarImage": "./icons/sidebar.bmp",
+                "headerImage": "./icons/header.bmp"
+            },
+            "allowDowngrades": false
+        },
+        "targets": ["nsis"],
+        "resources": {
+            "./helper-win32/target/release/firewall_helper.exe": "./firewall_helper.exe"
+        }
+    }
+}

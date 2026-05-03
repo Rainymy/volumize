@@ -9,10 +9,16 @@ use crate::commands;
 
 pub fn create_tauri_app() -> TauriResult<tauri::App> {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            super::show_window_visibility(app);
+        }))
         .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::default(),
+            None,
+        ))
         .manage(VolumeCommandSender::new())
         .manage(WebSocketServerState::default())
         .manage(ServiceDiscovery::default())

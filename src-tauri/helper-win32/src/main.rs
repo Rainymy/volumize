@@ -5,7 +5,6 @@ mod win32;
 use my_exit_code::CustomExitCode;
 
 pub const APPLICATION_NAME: &str = env!("APPLICATION_NAME");
-pub const APPLICATION_EXE: &str = env!("APPLICATION_EXE");
 
 #[cfg(unix)]
 fn main() -> std::process::ExitCode {
@@ -18,8 +17,6 @@ fn main() -> std::process::ExitCode {
     let command = formatter::get_command_at_index(0, &os_args);
 
     let mut writer = formatter::create_writer().ok();
-
-    // formatter::writeln(&mut writer, &format!("NAME={}", APPLICATION_NAME));
 
     let divider = "-".repeat(40);
     formatter::writeln(&mut writer, &divider);

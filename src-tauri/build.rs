@@ -4,8 +4,6 @@ fn main() {
     let target_os = std::env::var_os("CARGO_CFG_TARGET_OS").unwrap();
 
     if target_os == "windows" {
-        dotenv::dotenv().expect("[env.] dotenv to not fail");
-
         let tauri_config = build_tauri_config();
         let current_dir = std::env::current_dir().unwrap();
 
@@ -16,9 +14,9 @@ fn main() {
                 .bundle
                 .windows
                 .nsis
-                .expect("NSIS config is missing")
+                .unwrap_or_default()
                 .installer_icon
-                .expect("installer_icon is missing"),
+                .unwrap_or_default(),
         );
 
         use std::process::Command;
@@ -31,7 +29,6 @@ fn main() {
             ])
             .env("APPLICATION_NAME", product_name)
             .env("APPLICATION_ICON", installer_icon.display().to_string())
-            .env("APPLICATION_EXE", format!("{}.exe", cargo_pkg_name))
             .output()
             .expect(&format!("Failed to build {}", HELPER_FOLDER));
 
@@ -62,7 +59,7 @@ fn build_tauri_config() -> tauri::utils::config::Config {
 
     let target_triple = var("TARGET").expect("TARTGET TO EXIST");
     let target = platform::Target::from_triple(&target_triple);
-    let current_dir = current_dir().unwrap();
+    let current_dir = current_dir().expect("Failed to get current_dir");
 
     let (mut read_value, _path) = parse::read_from(target, &current_dir).unwrap();
     if let Ok(env) = var("TAURI_CONFIG") {

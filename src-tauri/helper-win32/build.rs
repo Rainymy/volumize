@@ -26,11 +26,9 @@ macro_rules! require_release {
 
 fn main() {
     let application_name = require_release!("APPLICATION_NAME", "Volumize");
-    let application_exe = require_release!("APPLICATION_EXE", "volumize.exe");
     let application_icon = require_release!("APPLICATION_ICON");
 
     expose_env("APPLICATION_NAME", application_name);
-    expose_env("APPLICATION_EXE", application_exe);
     // expose_env("APPLICATION_ICON", application_icon);
 
     if std::env::var("CARGO_CFG_TARGET_OS").unwrap() == "windows" {

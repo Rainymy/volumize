@@ -15,12 +15,3 @@
         - Async and sync code are a mess. Especially the thread management.
 
 ## ================ Done ================
-
-- [x] Allow only one instance of the application to run.
-- [x] Setup firewall rule for windows (allow "public" to "private" network)
-- [x] Exit to tray option is missing from tray menu option.
-- [x] There is "TrayIcon" setting in "tauri.conf.json".
-    - Use it and refactor the tray handling code.
-- [x] Autostart.
-    - [x] Implement autostart functionality.
-    - [x] Add autostart settings to the tray menu.

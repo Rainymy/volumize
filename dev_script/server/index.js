@@ -12,7 +12,12 @@ const FILES = [
     "src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk",
     getLatestFile("src-tauri/target/release/bundle/msi"),
     getLatestFile("src-tauri/target/release/bundle/nsis"),
-].map((p) => join(ROOT_FOLDER, p));
+]
+    .map((p) => {
+        if (p) return join(ROOT_FOLDER, p);
+        return null;
+    })
+    .filter((value) => typeof value === "string");
 
 // ─────────────────────────────────────────────────────────────
 
@@ -121,8 +126,13 @@ function getLanIP() {
 }
 
 function getLatestFile(path) {
-    const files = readdirSync(join(ROOT_FOLDER, path), { withFileTypes: true });
-    return join(path, files[files.length - 1].name);
+    try {
+        const files = readdirSync(join(ROOT_FOLDER, path), { withFileTypes: true });
+        return join(path, files[files.length - 1].name);
+    } catch (_error) {
+        console.error(`Error reading directory ${path}:`);
+        return null;
+    }
 }
 
 /**

@@ -1,0 +1,11 @@
+{
+    "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+    "identifier": "com.volumize.rainy",
+    "bundle": {
+        "active": true,
+        "android": {
+            "autoIncrementVersionCode": false,
+            "minSdkVersion": 28
+        }
+    }
+}

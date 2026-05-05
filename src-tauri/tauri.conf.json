@@ -29,15 +29,12 @@
             "id": "tray_main"
         },
         "security": {
-            "csp": "default-src 'self'"
+            "csp": null
         }
     },
     "bundle": {
         "active": true,
         "category": "Utility",
-        "android": {
-            "minSdkVersion": 28
-        },
         "iOS": {
             "minimumSystemVersion": "13.0"
         },

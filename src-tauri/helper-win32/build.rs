@@ -31,22 +31,19 @@ fn main() {
     expose_env("APPLICATION_NAME", application_name);
     // expose_env("APPLICATION_ICON", application_icon);
 
-    if std::env::var("CARGO_CFG_TARGET_OS").unwrap() == "windows" {
-        let mut res = winresource::WindowsResource::new();
+    let mut res = winresource::WindowsResource::new();
 
-        res.set_icon(application_icon);
+    // These strings appear in the UAC prompt and file properties
+    // Only if it's signed binary.
+    res.set("FileDescription", "Volumize Firewall Helper");
+    res.set("ProductName", application_name);
+    res.set("CompanyName", application_name);
+    res.set("LegalCopyright", "Copyright © 2026 {Author}");
+    res.set_icon(application_icon);
+    res.set_manifest_file("manifest.xml");
 
-        // These strings appear in the UAC prompt and file properties
-        // Only if it's signed binary.
-        res.set("FileDescription", "Volumize Firewall Helper");
-        res.set("ProductName", application_name);
-        res.set("CompanyName", application_name);
-        res.set("LegalCopyright", "Copyright © 2026 {Author}");
-        res.set_manifest_file("manifest.xml");
-
-        #[cfg(not(debug_assertions))]
-        res.compile().expect("Failed to compile Windows resources");
-    }
+    #[cfg(not(debug_assertions))]
+    res.compile().expect("Failed to compile Windows resources");
 }
 
 fn expose_env(key: &str, value: &str) {

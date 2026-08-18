@@ -3,10 +3,9 @@ use windows::Win32::Media::Audio::IAudioSessionManager2;
 use super::com_scope::ComManager;
 use super::{convert, util, VolumeController};
 
-use crate::types::shared::{
-    AppIdentifier, AudioDevice, DeviceControl, DeviceIdentifier, VolumeControllerError,
-    VolumeResult,
-};
+use crate::types::shared::{DeviceControl, VolumeControllerError, VolumeResult};
+
+use shared_types::{AppIdentifier, AudioDevice, DeviceIdentifier};
 
 impl DeviceControl for VolumeController {
     fn get_device_applications(

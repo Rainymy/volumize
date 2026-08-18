@@ -3,11 +3,10 @@ use tokio::sync::mpsc::unbounded_channel;
 
 use crate::{
     server::service_discovery,
-    types::{
-        shared::{AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumePercent},
-        volume::{VolumeCommand, VolumeCommandSender},
-    },
+    types::volume::{VolumeCommand, VolumeCommandSender},
 };
+
+use shared_types::{AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumePercent};
 
 // ============================ Master ============================
 #[tauri::command]

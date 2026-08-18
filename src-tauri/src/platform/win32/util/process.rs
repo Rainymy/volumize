@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use windows::Win32::{
     Foundation::{CloseHandle, HANDLE, MAX_PATH},
     System::{
@@ -30,7 +28,7 @@ impl HandleGuard {
         }
     }
 
-    fn get_process_path(&self) -> Option<PathBuf> {
+    fn get_process_path(&self) -> Option<String> {
         let mut process_path_buf = [0u16; MAX_PATH as usize];
         unsafe {
             // Get full process path
@@ -42,7 +40,7 @@ impl HandleGuard {
                 if path_str.is_empty() {
                     None
                 } else {
-                    Some(PathBuf::from(path_str))
+                    Some(path_str)
                 }
             } else {
                 None
@@ -59,7 +57,7 @@ impl Drop for HandleGuard {
     }
 }
 
-pub fn get_process_info(process_id: u32) -> (String, Option<PathBuf>) {
+pub fn get_process_info(process_id: u32) -> (String, Option<String>) {
     let access_bits = PROCESS_QUERY_INFORMATION | PROCESS_VM_READ;
     let process_handle = unsafe {
         match OpenProcess(access_bits, false, process_id) {

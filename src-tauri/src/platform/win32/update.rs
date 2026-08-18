@@ -20,9 +20,10 @@ use windows::{
         AUDIO_VOLUME_NOTIFICATION_DATA,
     },
 };
-// use windows_core::implement;
 
-use crate::types::shared::{DeviceIdentifier, EntityState, Identifier, UpdateChange};
+use crate::types::shared::{EntityState, Identifier, UpdateChange};
+
+use shared_types::DeviceIdentifier;
 
 #[derive(Clone)]
 struct AudioInfo {

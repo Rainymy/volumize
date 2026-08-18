@@ -1,7 +1,7 @@
 use futures_util::future::{select, Either};
 use serde_json::json;
 use std::sync::mpsc::{Receiver, Sender};
-use std::{path::PathBuf, time::Duration};
+use std::time::Duration;
 use tauri::{async_runtime as rt, AppHandle, Emitter, EventTarget, Manager};
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::time::interval;
@@ -131,7 +131,7 @@ fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeController
 
             let path = match get_app.process.path {
                 Some(path) => path,
-                None => PathBuf::new(),
+                None => String::new(),
             };
 
             let error = VolumeControllerError::Unknown("Could not extract icon from path.".into());

@@ -16,13 +16,15 @@ serde_json = "1.0.150"
 json-patch = "4.2.0"
 
 [dependencies]
+shared-types = { path = "../shared-types" }
+
 # -------- Tauri Dependencies --------
 tauri = { version = "2.11.5", features = ["tray-icon"] }
 tauri-plugin-opener = "2.5.4"
 tauri-plugin-os = "2.3.2"
 tauri-plugin-websocket = "2.4.2"
 # ----- Data Conversion handling -----
-serde = { version = "1.0.228", features = ["derive"] }
+serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.150"
 # ------------ Parallelism ------------
 futures-util = "0.3.32"

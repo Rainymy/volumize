@@ -1,9 +1,10 @@
 use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
 
 use crate::types::shared::{
-    AudioVolume, DeviceIdentifier, DeviceVolumeControl, VolumeControllerError, VolumePercent,
-    VolumeResult, VolumeValidation,
+    DeviceVolumeControl, VolumeControllerError, VolumeResult, VolumeValidation,
 };
+
+use shared_types::{AudioVolume, DeviceIdentifier, VolumePercent};
 
 use super::VolumeController;
 

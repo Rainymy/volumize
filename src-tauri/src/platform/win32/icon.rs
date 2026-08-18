@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use windows::Win32::{
     Foundation::GetLastError,
     Graphics::Gdi::{
@@ -179,7 +177,7 @@ fn bitmap_to_image(data: IconData) -> Option<Vec<u8>> {
     Some(encoded_image.into_inner())
 }
 
-pub fn extract_icon(path: PathBuf) -> Option<Vec<u8>> {
+pub fn extract_icon(path: String) -> Option<Vec<u8>> {
     struct ComGuard;
     impl ComGuard {
         fn new() -> Option<Self> {
@@ -196,7 +194,7 @@ pub fn extract_icon(path: PathBuf) -> Option<Vec<u8>> {
     // RAII
     let _com = ComGuard::new()?;
 
-    let hicon: HICON = match extract_hicon(path.to_str()?) {
+    let hicon: HICON = match extract_hicon(&path) {
         Ok(hicon) => hicon,
         Err(err) => {
             eprintln!("HICON Error: {}", err);

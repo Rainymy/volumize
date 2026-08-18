@@ -17,7 +17,7 @@ use windows::{
 };
 
 use super::util;
-use crate::types::shared::DeviceIdentifier;
+use shared_types::DeviceIdentifier;
 
 static INITIALIZED: AtomicBool = AtomicBool::new(false);
 

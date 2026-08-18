@@ -6,9 +6,9 @@ use std::{
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 
-use super::shared::{
-    AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumePercent, VolumeResult,
-};
+use shared_types::{AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumePercent};
+
+use crate::types::shared::VolumeResult;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]

@@ -1,11 +1,7 @@
 // #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use thiserror::Error;
 
-pub type VolumePercent = f32;
-pub type AppIdentifier = u32;
-pub type DeviceIdentifier = String;
 pub const UPDATE_EVENT_NAME: &str = "update";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,53 +65,6 @@ impl UpdateChange {
 
 pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SessionType {
-    Application,
-    Device,
-    System,
-    Unknown,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SessionDirection {
-    Render,
-    Capture,
-    Unknown,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProcessInfo {
-    pub id: AppIdentifier,
-    pub name: String,
-    pub path: Option<PathBuf>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AudioApplication {
-    pub process: ProcessInfo,
-    pub session_type: SessionType,
-    pub direction: SessionDirection,
-    pub volume: AudioVolume,
-    pub device_id: DeviceIdentifier,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AudioDevice {
-    pub id: DeviceIdentifier,
-    pub name: String,
-    pub friendly_name: String,
-    pub direction: SessionDirection,
-    pub is_default: bool,
-    pub volume: AudioVolume,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct AudioVolume {
-    pub current: VolumePercent,
-    pub muted: bool,
-}
-
 #[derive(Debug, Error)]
 pub enum VolumeControllerError {
     #[error("Device not found: {0}")]
@@ -134,6 +83,10 @@ pub enum VolumeControllerError {
     #[error("Unknown error: {0}")]
     Unknown(String),
 }
+
+use shared_types::{
+    AppIdentifier, AudioApplication, AudioDevice, AudioVolume, DeviceIdentifier, VolumePercent,
+};
 
 pub trait DeviceVolumeControl {
     fn get_device_volume(&self, device_id: DeviceIdentifier) -> VolumeResult<VolumePercent>;
@@ -176,14 +129,5 @@ impl VolumeValidation for AudioVolume {
             return Err(VolumeControllerError::InvalidVolumePercentage(volume));
         }
         Ok(Self::new(volume))
-    }
-}
-
-impl AudioVolume {
-    fn new(volume: VolumePercent) -> Self {
-        Self {
-            current: volume,
-            muted: false,
-        }
     }
 }

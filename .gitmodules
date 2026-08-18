@@ -1,0 +1,3 @@
+[submodule "shared-types"]
+	path = shared-types
+	url = https://github.com/Rainymy/volumize-shared-type.git

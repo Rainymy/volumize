@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use windows::{
     core::{Interface, PWSTR},
     Win32::{
@@ -11,10 +13,12 @@ use windows::{
     },
 };
 
-use crate::types::shared::{
+use shared_types::{
     AudioApplication, AudioDevice, AudioVolume, DeviceIdentifier, ProcessInfo, SessionDirection,
-    SessionType, VolumeResult,
+    SessionType,
 };
+
+use crate::types::shared::VolumeResult;
 
 use super::{com_scope::ComManager, util};
 
@@ -144,6 +148,8 @@ pub fn get_display_name(session_control: &IAudioSessionControl2, pid: u32) -> St
 
     let (process_name, process_path) = util::get_process_info(pid);
     if let Some(path) = process_path {
+        let path = PathBuf::from(path);
+
         // Read Executeable FileDescription.
         let window_title = util::get_main_window_title(&path);
         return window_title.unwrap_or(process_name);

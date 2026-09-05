@@ -7,7 +7,9 @@ use tokio::{net::TcpStream, sync::mpsc};
 use tokio_tungstenite::{accept_async, tungstenite::Message, WebSocketStream};
 use uuid::Uuid;
 
-use super::{incoming::handle_incoming_messages, ClientInfo, ClientMap};
+use crate::server::websocket::{ClientInfo, ClientMap};
+
+use super::incoming::handle_incoming_messages;
 
 pub async fn handle_client(
     stream: TcpStream,

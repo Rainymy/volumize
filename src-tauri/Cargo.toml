@@ -41,6 +41,8 @@ ctrlc = "3.5.2"
 uuid = { version = "1.23.5", features = ["v4"] }
 image = "0.25.10"
 # -------------- Optional --------------
+serialport = "4.10.0"
+# -------------- Optional --------------
 thiserror = "2.0.18"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]

@@ -2,9 +2,10 @@ use std::error::Error;
 
 use crate::{
     server::{
+        serial::start_serial_thread,
         service_register::start_service_register,
-        start_websocket_server,
         volume_control::{spawn_update_thread, spawn_volume_thread},
+        websocket::start_websocket_server,
     },
     types::{shared::UpdateChange, storage::Storage},
 };
@@ -35,6 +36,7 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
         Err(e) => eprintln!("Failed to start WebSocket server: {}", e),
     }
 
+    start_serial_thread(app_handle);
     start_service_register(settings.port_address, app_handle, settings.duration);
 
     Ok(())

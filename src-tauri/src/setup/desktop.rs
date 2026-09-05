@@ -1,7 +1,7 @@
 use tauri::{Manager, Result as TauriResult};
 
 use crate::{
-    server::{ServiceDiscovery, WebSocketServerState},
+    server::{websocket::WebSocketServerState, ServiceDiscovery},
     types::{click::DoubleClickState, storage::Storage, volume::VolumeCommandSender},
 };
 

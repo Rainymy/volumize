@@ -6,7 +6,7 @@ use tauri::{async_runtime as rt, AppHandle, Emitter, EventTarget, Manager};
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::time::interval;
 
-use crate::server::WebSocketServerState;
+use crate::server::websocket::WebSocketServerState;
 use crate::types::shared::UPDATE_EVENT_NAME;
 use crate::{
     platform,

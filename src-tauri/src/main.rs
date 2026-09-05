@@ -10,7 +10,7 @@ mod types;
 use tauri::{AppHandle, Manager};
 
 use crate::{
-    server::{ServiceDiscovery, WebSocketServerState},
+    server::{websocket::WebSocketServerState, ServiceDiscovery},
     types::volume::VolumeCommandSender,
 };
 

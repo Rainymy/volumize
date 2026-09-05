@@ -2748,6 +2748,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "mio-serial"
+version = "5.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d4ba3f20276f21b7cad3f1b54c97489cf096a3894fd627cc6951cb3abdd4c60"
+dependencies = [
+ "log",
+ "mio",
+ "nix 0.31.3",
+ "serialport",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "moxcms"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5072,6 +5085,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-serial"
+version = "5.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd00f5f8b1e01c3e5afccd9e42ed80c2ad2df6d007877f29f8592c62e69cd116"
+dependencies = [
+ "cfg-if",
+ "futures-core",
+ "futures-sink",
+ "log",
+ "mio-serial",
+ "serialport",
+ "tokio",
+]
+
+[[package]]
 name = "tokio-tungstenite"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5551,6 +5579,7 @@ dependencies = [
  "tauri-plugin-websocket",
  "thiserror 2.0.20",
  "tokio",
+ "tokio-serial",
  "tokio-tungstenite 0.30.0",
  "tokio-util",
  "uuid",

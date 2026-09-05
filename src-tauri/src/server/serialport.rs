@@ -1,12 +1,12 @@
-use serialport::{SerialPortType, UsbPortInfo};
+use tokio_serial::{SerialPortType, UsbPortInfo};
 
-struct PortInfo {
-    name: String,
-    info: UsbPortInfo,
+pub struct UsbPort {
+    pub name: String,
+    pub info: UsbPortInfo,
 }
 
-fn get_available_devices() -> Vec<PortInfo> {
-    let ports = match serialport::available_ports() {
+fn get_available_devices() -> Vec<UsbPort> {
+    let ports = match tokio_serial::available_ports() {
         Ok(ports) => ports,
         Err(_) => Vec::new(),
     };
@@ -17,22 +17,20 @@ fn get_available_devices() -> Vec<PortInfo> {
     for p in ports {
         println!("Port: {}", p.port_name);
         match p.port_type {
-            SerialPortType::UsbPort(info) => {
-                result.push(PortInfo {
-                    name: p.port_name,
-                    info: info,
-                });
-            }
-            SerialPortType::PciPort => println!("  Type: PCI"),
-            SerialPortType::BluetoothPort => println!("  Type: Bluetooth"),
-            SerialPortType::Unknown => println!("  Type: Unknown"),
+            SerialPortType::UsbPort(info) => result.push(UsbPort {
+                name: p.port_name,
+                info: info,
+            }),
+            SerialPortType::PciPort => {}
+            SerialPortType::BluetoothPort => {}
+            SerialPortType::Unknown => {}
         }
     }
 
     result
 }
 
-fn find_device() -> Option<PortInfo> {
+pub fn find_device() -> Option<UsbPort> {
     use shared_types::info::SERIAL_NUMBER;
     let devices = get_available_devices();
 

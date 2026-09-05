@@ -40,8 +40,9 @@ ctrlc = "3.5.2"
 # -------- Extra Functionality ---------
 uuid = { version = "1.23.5", features = ["v4"] }
 image = "0.25.10"
-# -------------- Optional --------------
+# --------------- Serial ---------------
 serialport = "4.10.0"
+tokio-serial = "5.5.0"
 # -------------- Optional --------------
 thiserror = "2.0.18"
 

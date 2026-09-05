@@ -8,6 +8,8 @@ use tokio_util::sync::CancellationToken;
 
 mod handle;
 mod incoming;
+pub mod serial;
+mod serialport;
 pub mod service_discovery;
 pub mod service_register;
 pub mod volume_control;

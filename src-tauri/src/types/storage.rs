@@ -6,11 +6,12 @@ use std::{
 };
 use tauri::{AppHandle, Manager};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Settings {
     pub duration: super::tray::Discovery,
     pub port_address: u16,
     pub exit_to_tray: bool,
+    pub serial_name: Option<String>,
 }
 
 impl Default for Settings {
@@ -19,6 +20,7 @@ impl Default for Settings {
             duration: Default::default(),
             port_address: 9002,
             exit_to_tray: true,
+            serial_name: None,
         }
     }
 }
@@ -61,9 +63,9 @@ impl Storage {
         }
     }
 
-    pub fn update(&self, value: Settings) {
+    pub fn update(&self, value: &Settings) {
         if let Ok(mut item) = self.settings.lock() {
-            *item = value;
+            *item = value.clone();
         }
     }
 

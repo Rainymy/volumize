@@ -36,7 +36,7 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
         Err(e) => eprintln!("Failed to start WebSocket server: {}", e),
     }
 
-    start_serial_thread(app_handle);
+    start_serial_thread(settings.serial_name, app_handle);
     start_service_register(settings.port_address, app_handle, settings.duration);
 
     Ok(())

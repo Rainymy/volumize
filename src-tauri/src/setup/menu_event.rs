@@ -53,7 +53,7 @@ pub fn menu_event(app: &AppHandle, event: MenuEvent) {
                 }
             }
 
-            storage.update(settings);
+            storage.update(&settings);
             start_service_register(settings.port_address, app, discover);
 
             if let Err(e) = super::setup::setup_tray_system(&app) {

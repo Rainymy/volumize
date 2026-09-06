@@ -30,11 +30,12 @@ fn get_available_devices() -> Vec<UsbPort> {
     result
 }
 
-pub fn find_device() -> Option<UsbPort> {
+pub fn find_devices() -> Vec<UsbPort> {
     use shared_types::info::SERIAL_NUMBER;
     let devices = get_available_devices();
 
     devices
         .into_iter()
-        .find(|d| d.info.serial_number == Some(SERIAL_NUMBER.to_string()))
+        .filter(|d| d.info.serial_number == Some(SERIAL_NUMBER.to_string()))
+        .collect::<Vec<_>>()
 }

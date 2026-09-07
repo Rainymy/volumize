@@ -30,6 +30,7 @@ pub struct Storage {
     settings: Arc<Mutex<Settings>>,
 }
 
+use std::io::Result;
 impl Storage {
     fn settings_path(&self, app: &AppHandle) -> PathBuf {
         #[cfg(not(target_os = "ios"))]
@@ -43,6 +44,18 @@ impl Storage {
         fs::create_dir_all(&dir).ok();
         dir.push("settings.json");
         dir
+    }
+
+    pub fn with_save<F>(&self, app: &AppHandle, f: F) -> Result<Settings>
+    where
+        F: FnOnce(&mut Settings),
+    {
+        let mut settings = self.get();
+        self.save(app, &settings)?;
+        f(&mut settings);
+        self.update(&settings);
+
+        Ok(settings)
     }
 
     pub fn get(&self) -> Settings {

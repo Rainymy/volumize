@@ -40,30 +40,32 @@ pub fn menu_event(app: &AppHandle, event: MenuEvent) {
                 eprintln!("{}", e);
             }
         }
-        rest => {
+        rest if rest.starts_with("s_") => {
+            let serial_port = rest.strip_prefix("s_").unwrap_or_default();
+
+            let storage = app.app_handle().state::<Storage>();
+            let save_result = storage.with_save(app, |settings| {
+                settings.serial_name = Some(serial_port.into())
+            });
+            match save_result {
+                Ok(_) => {}
+                Err(e) => eprintln!("{}", e),
+            }
+
+            start_serial_thread(Some(serial_port.into()), app.app_handle());
+        }
+        rest if rest.starts_with("d_") => {
+            let rest = rest.strip_prefix("d_").unwrap_or_default();
             let discover = match Discovery::from_str(rest) {
                 Ok(value) => value,
                 Err(_) => return,
             };
 
-            let sould_save = match discover {
-                Discovery::OnDuration(_) => false,
-                _ => true,
-            };
-
             let storage = app.app_handle().state::<Storage>();
-            let mut settings = storage.get();
-
-            settings.duration = discover;
-
-            if sould_save {
-                if let Err(err) = storage.save(app, &settings) {
-                    eprintln!("{}", err);
-                }
+            match storage.with_save(app, |settings| settings.duration = discover) {
+                Ok(settings) => start_service_register(settings.port_address, app, discover),
+                Err(e) => eprintln!("{}", e),
             }
-
-            storage.update(&settings);
-            start_service_register(settings.port_address, app, discover);
 
             if let Err(e) = super::setup::setup_tray_system(&app) {
                 eprintln!("{}", e);

@@ -37,6 +37,7 @@ pub fn create_tray(handle: &tauri::AppHandle) -> TauriResult<Menu<Wry>> {
         // Serial and discovery
         let _ = tray_menu.append(&communication);
         let _ = tray_menu.append(&separator);
+        let _ = tray_menu.append(&serial_sub_menu(handle)?);
         let _ = tray_menu.append(&discovery_sub_menu(handle)?);
         let _ = tray_menu.append(&separator);
     }
@@ -130,6 +131,35 @@ fn app_version(handle: &tauri::AppHandle) -> tauri::Result<MenuItem<Wry>> {
         false,
         None::<&str>,
     )
+}
+
+fn serial_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> {
+    let devices = find_devices();
+
+    let serial_state = handle.state::<SerialState>();
+    let serial_port = match serial_state.serial_port.clone() {
+        Some(port) => port,
+        None => "<None>".to_string(),
+    };
+
+    let current_info = format!("Serial: {}", serial_port);
+    let status_info = MenuItem::new(handle, current_info, false, None::<&str>)?;
+
+    let mut submenu = SubmenuBuilder::new(handle, "Serial ports")
+        .item(&status_info)
+        .item(&PredefinedMenuItem::separator(handle)?);
+
+    for device in &devices {
+        submenu = submenu.item(&MenuItem::with_id(
+            handle,
+            &format!("s_{}", device.name),
+            device.name.clone(),
+            true,
+            None::<&str>,
+        )?);
+    }
+
+    submenu.build()
 }
 
 fn discovery_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> {

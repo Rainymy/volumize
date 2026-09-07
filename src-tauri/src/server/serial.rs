@@ -16,12 +16,12 @@ use crate::server::serialport::find_devices;
 // State
 // ---------------------------------------------------------------------
 
-/// Channel used to push raw bytes/frames *out* to the serial device.
 pub type SerialSender = mpsc::UnboundedSender<Vec<u8>>;
 
+#[allow(dead_code)]
 pub struct RunningSerial {
     pub name: String,
-    pub handle: tokio::task::JoinHandle<()>,
+    pub handle: rt::JoinHandle<()>,
     pub cancel: CancellationToken,
     pub sender: SerialSender,
 }
@@ -36,6 +36,7 @@ impl RunningSerial {
 #[derive(Default)]
 pub struct SerialState {
     pub server: Arc<rt::Mutex<Option<RunningSerial>>>,
+    pub serial_port: Option<String>,
 }
 
 // ---------------------------------------------------------------------
@@ -52,7 +53,7 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
 
     let (tx, rx) = mpsc::unbounded_channel::<Vec<u8>>();
 
-    let new_handle = tokio::spawn(async move {
+    let new_handle = rt::spawn(async move {
         let port = match find_devices()
             .into_iter()
             .find(|d| Some(d.name.clone()) == serial_path)
@@ -99,7 +100,7 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
     let new_server = RunningSerial {
         name: "Serial port".into(),
         handle: new_handle,
-        cancel,
+        cancel: cancel,
         sender: tx,
     };
 

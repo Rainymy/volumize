@@ -21,9 +21,7 @@ use windows::{
     },
 };
 
-use crate::types::shared::{EntityState, Identifier, UpdateChange};
-
-use shared_types::DeviceIdentifier;
+use shared_types::{DeviceIdentifier, EntityState, Identifier, UpdateChange};
 
 #[derive(Clone)]
 struct AudioInfo {

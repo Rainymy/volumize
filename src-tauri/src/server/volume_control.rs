@@ -1,17 +1,20 @@
 use futures_util::future::{select, Either};
 use serde_json::json;
+use shared_types::protocol::{Envelope, RawFrame};
+use shared_types::UpdateChange;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 use tauri::{async_runtime as rt, AppHandle, Emitter, EventTarget, Manager};
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::time::interval;
 
+use crate::server::serial::SerialState;
 use crate::server::websocket::WebSocketServerState;
 use crate::types::shared::UPDATE_EVENT_NAME;
 use crate::{
     platform,
     types::{
-        shared::{UpdateChange, VolumeControllerError, VolumeControllerTrait},
+        shared::{VolumeControllerError, VolumeControllerTrait},
         volume::{VolumeCommand, VolumeCommandSender, VolumeServer},
     },
 };
@@ -31,7 +34,7 @@ pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>)
             loop {
                 match select(Box::pin(interval.tick()), Box::pin(rx.recv())).await {
                     Either::Left(_) => {
-                        println!("Periodic check: {}", count);
+                        println!("[spawn_volume_thread] Periodic check: {}", count);
                         // if count >= 20 {
                         //     break; // Temp: Exit after 20 checks
                         // };
@@ -92,6 +95,13 @@ pub fn spawn_update_thread(app_handle: &AppHandle, sender: Receiver<UpdateChange
             let clients = websocket_server.clients.blocking_lock();
             for (_id, client) in clients.iter() {
                 let _ = client.1.send(event_str.clone().into());
+            }
+            // ================ SEND TO SERIAL CLIENTS =================
+            let serial_state = app_handle.state::<SerialState>();
+            let serial_clients = serial_state.server.blocking_lock();
+            if let Some(serial_server) = serial_clients.as_ref() {
+                let buffer = RawFrame::encode(&Envelope::Event(msg)).build();
+                let _ = serial_server.sender.send(buffer);
             }
             // ====================== RECEIVE END ======================
         }

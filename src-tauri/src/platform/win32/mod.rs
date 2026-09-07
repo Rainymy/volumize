@@ -1,7 +1,8 @@
+use shared_types::UpdateChange;
 use std::sync::mpsc::Sender;
 use std::sync::Mutex;
 
-use crate::types::shared::{UpdateChange, VolumeControllerTrait};
+use crate::types::shared::VolumeControllerTrait;
 
 mod com_scope;
 

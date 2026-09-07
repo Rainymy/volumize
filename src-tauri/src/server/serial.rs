@@ -10,7 +10,10 @@ use tokio::{
 use tokio_serial::{SerialPortBuilderExt, SerialStream};
 use tokio_util::sync::CancellationToken;
 
-use crate::server::serialport::find_devices;
+use crate::{
+    server::serialport::find_devices,
+    types::volume::{VolumeCommand, VolumeCommandSender},
+};
 
 // ---------------------------------------------------------------------
 // State
@@ -145,6 +148,16 @@ async fn handle_incoming(mut read: ReadHalf<SerialStream>, app_handle: AppHandle
         match read_frame(&mut read).await {
             Ok(buffer) => match RawFrame::decode(&buffer) {
                 Ok(frame) => {
+                    let state = app_handle.state::<VolumeCommandSender>();
+
+                    // TODO: FIX THIS HOLY AMAZING ENUM/STRUCT to send a MESSAGE
+                    // wtf is ?????????????
+                    // REWORK THIS PIECE OF CODE
+                    let _ = state.send(VolumeCommand::DeviceMute {
+                        request_id: String::new(),
+                        id: String::new(),
+                    });
+
                     if let Err(e) = app_handle.emit("serial-frame", &frame) {
                         eprintln!("Failed to emit serial-frame event: {}", e);
                     }
@@ -157,9 +170,6 @@ async fn handle_incoming(mut read: ReadHalf<SerialStream>, app_handle: AppHandle
                             message: format!("decode error: {}", e),
                         },
                     );
-                    // Keep listening rather than killing the whole task on
-                    // a single bad frame; break instead if you want to
-                    // treat this as fatal.
                 }
             },
             Err(e) => {

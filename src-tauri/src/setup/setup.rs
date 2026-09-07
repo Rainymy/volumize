@@ -7,9 +7,10 @@ use crate::{
         volume_control::{spawn_update_thread, spawn_volume_thread},
         websocket::start_websocket_server,
     },
-    types::{shared::UpdateChange, storage::Storage},
+    types::storage::Storage,
 };
 
+use shared_types::UpdateChange;
 use tauri::{tray::TrayIconBuilder, App, Manager};
 
 pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {

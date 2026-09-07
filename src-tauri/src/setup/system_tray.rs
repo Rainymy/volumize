@@ -1,43 +1,60 @@
-use std::time::Duration;
-
 use tauri::{
     menu::{CheckMenuItemBuilder, Menu, MenuItem, PredefinedMenuItem, Submenu, SubmenuBuilder},
-    {Manager, Result as TauriResult, Wry},
+    Manager, Result as TauriResult, Wry,
 };
-use tauri_plugin_autostart::ManagerExt;
 
-use crate::types::storage::Storage;
-use crate::types::tray::Discovery;
+use crate::{
+    server::{serial::SerialState, serialport::find_devices},
+    setup::get_main_window,
+    types::storage::Storage,
+    types::tray::Discovery,
+};
 
 pub fn create_tray(handle: &tauri::AppHandle) -> TauriResult<Menu<Wry>> {
+    let is_minimized =
+        get_main_window(handle).map_or(false, |w| w.is_minimized().unwrap_or_default());
+
     let show = MenuItem::with_id(handle, "show", "Show", true, None::<&str>)?;
     let refresh_token = MenuItem::with_id(handle, "refresh", "Quick refresh", true, None::<&str>)?;
-
-    let app_name = handle
-        .config()
-        .product_name
-        .clone()
-        .unwrap_or("application".into());
+    let system_info = MenuItem::new(handle, "System info", false, None::<&str>)?;
+    let communication = MenuItem::new(handle, "Communication", false, None::<&str>)?;
 
     let separator = PredefinedMenuItem::separator(handle)?;
-    let quit = PredefinedMenuItem::quit(handle, Some(&format!("Quit {app_name}")))?;
+    let quit = PredefinedMenuItem::quit(handle, Some("Quit"))?;
 
     let tray_menu = Menu::new(handle)?;
     let _ = tray_menu.append(&app_version(handle)?);
-    let _ = tray_menu.append(&separator);
-    let _ = tray_menu.append(&show);
-    let _ = tray_menu.append(&refresh_token);
-    let _ = tray_menu.append(&exit_to_tray_menu(handle)?);
-    let _ = tray_menu.append(&separator);
-    let _ = tray_menu.append(&auto_start_sub_menu(handle)?);
-    let _ = tray_menu.append(&discovery_sub_menu(handle)?);
-    let _ = tray_menu.append(&separator);
+    {
+        // Simple action
+        let _ = tray_menu.append(&separator);
+        if is_minimized {
+            let _ = tray_menu.append(&show);
+        }
+        let _ = tray_menu.append(&refresh_token);
+        let _ = tray_menu.append(&separator);
+    }
+    {
+        // Serial and discovery
+        let _ = tray_menu.append(&communication);
+        let _ = tray_menu.append(&separator);
+        let _ = tray_menu.append(&discovery_sub_menu(handle)?);
+        let _ = tray_menu.append(&separator);
+    }
+    {
+        // System configurations
+        let _ = tray_menu.append(&system_info);
+        let _ = tray_menu.append(&separator);
+        let _ = tray_menu.append(&exit_to_tray_menu(handle)?);
+        let _ = tray_menu.append(&auto_start_sub_menu(handle)?);
+        let _ = tray_menu.append(&separator);
+    }
     let _ = tray_menu.append(&quit);
 
     Ok(tray_menu)
 }
 
 fn auto_start_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> {
+    use tauri_plugin_autostart::ManagerExt;
     let is_auto_start_enabled = handle.autolaunch().is_enabled().unwrap_or(false);
     let is_enabled_text = if is_auto_start_enabled {
         "Enabled"
@@ -49,9 +66,8 @@ fn auto_start_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>>
     } else {
         "Enable"
     };
-    let status_info = MenuItem::with_id(
+    let status_info = MenuItem::new(
         handle,
-        "auto_start_info",
         format!("Status: {}", is_enabled_text),
         false,
         None::<&str>,
@@ -74,12 +90,10 @@ fn auto_start_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>>
 
 fn exit_to_tray_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> {
     let settings = handle.state::<Storage>().get();
-
     let exit_to_tray = settings.exit_to_tray;
 
-    let status_info = MenuItem::with_id(
+    let status_info = MenuItem::new(
         handle,
-        "",
         format!(
             "Status: {}",
             if exit_to_tray { "Enabled" } else { "Disabled" }
@@ -107,7 +121,7 @@ fn app_version(handle: &tauri::AppHandle) -> tauri::Result<MenuItem<Wry>> {
     let package_info = handle.package_info();
 
     let version = package_info.version.to_string();
-    let name = package_info.name.to_string();
+    let name = package_info.name.clone();
 
     MenuItem::with_id(
         handle,
@@ -144,6 +158,8 @@ fn checked_menu_item(item: Discovery, settings: Discovery) -> CheckMenuItemBuild
 }
 
 fn timer_submenu(timer_secs: u32, discovery: Discovery) -> CheckMenuItemBuilder {
+    use std::time::Duration;
+
     let duration = Duration::from_secs(u64::from(timer_secs) * 60);
     let id = Discovery::OnDuration(duration).to_string();
     let text = format!("On for {} minute", timer_secs);

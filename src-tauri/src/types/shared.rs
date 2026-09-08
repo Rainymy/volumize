@@ -5,6 +5,9 @@ pub const UPDATE_EVENT_NAME: &str = "update";
 
 pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 
+/// Represents an error that can occur during volume controller operations.
+///
+/// TODO: This needs cleaning up. Too many unnecessary variants.
 #[derive(Debug, Error)]
 pub enum VolumeControllerError {
     #[error("Device not found: {0}")]
@@ -20,8 +23,6 @@ pub enum VolumeControllerError {
     WindowsApiError(#[from] windows::core::Error),
     #[error("Serialization/deserialization error: {0}")]
     SerdeError(#[from] serde_json::Error),
-    #[error("Unknown error: {0}")]
-    Unknown(String),
 }
 
 use shared_types::{
@@ -29,7 +30,7 @@ use shared_types::{
 };
 
 pub trait DeviceVolumeControl {
-    fn get_device_volume(&self, device_id: DeviceIdentifier) -> VolumeResult<VolumePercent>;
+    fn get_device_volume(&self, device_id: DeviceIdentifier) -> VolumeResult<AudioVolume>;
     fn set_device_volume(&self, id: DeviceIdentifier, volume: VolumePercent) -> VolumeResult<()>;
     fn mute_device(&self, id: DeviceIdentifier) -> VolumeResult<()>;
     fn unmute_device(&self, id: DeviceIdentifier) -> VolumeResult<()>;

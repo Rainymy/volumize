@@ -9,13 +9,23 @@ use shared_types::{AudioVolume, DeviceIdentifier, VolumePercent};
 use super::VolumeController;
 
 impl DeviceVolumeControl for VolumeController {
-    fn get_device_volume(&self, device_id: DeviceIdentifier) -> VolumeResult<VolumePercent> {
+    fn get_device_volume(&self, device_id: DeviceIdentifier) -> VolumeResult<AudioVolume> {
         let endpoint: IAudioEndpointVolume = self.com.with_generic_device_activate(&device_id)?;
-        unsafe {
+        let volume = unsafe {
             endpoint
                 .GetMasterVolumeLevelScalar()
-                .map_err(|err| VolumeControllerError::WindowsApiError(err))
-        }
+                .map_err(|err| VolumeControllerError::WindowsApiError(err))?
+        };
+        let is_muted = unsafe {
+            endpoint
+                .GetMute()
+                .map_err(|err| VolumeControllerError::WindowsApiError(err))?
+                .as_bool()
+        };
+        Ok(AudioVolume {
+            current: volume,
+            muted: is_muted,
+        })
     }
 
     fn set_device_volume(

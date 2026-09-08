@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use serde::Serialize;
 use shared_types::{protocol::RawFrame, reader::read_frame};
 use tauri::{async_runtime as rt, AppHandle, Manager};
 use tokio::{
@@ -10,14 +9,7 @@ use tokio::{
 use tokio_serial::{SerialPortBuilderExt, SerialStream};
 use tokio_util::sync::CancellationToken;
 
-use crate::{
-    server::serialport::find_devices,
-    types::volume::{VolumeCommand, VolumeCommandSender},
-};
-
-// ---------------------------------------------------------------------
-// State
-// ---------------------------------------------------------------------
+use crate::{server::serialport::find_devices, types::volume::VolumeCommandSender};
 
 pub type SerialSender = mpsc::UnboundedSender<Vec<u8>>;
 
@@ -36,16 +28,14 @@ impl RunningSerial {
     }
 }
 
+// TODO: server field can be std::sync::Mutex. instead of async Mutex.
 #[derive(Default)]
 pub struct SerialState {
     pub server: Arc<rt::Mutex<Option<RunningSerial>>>,
     pub serial_port: Option<String>,
 }
 
-// ---------------------------------------------------------------------
-// Spawn
-// ---------------------------------------------------------------------
-
+/// This function is going to **PANIC** when serial is detected.
 pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) {
     let state = app_handle.state::<SerialState>();
     let server_slot = state.server.clone();
@@ -79,8 +69,8 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
 
         let (read_half, write_half) = tokio::io::split(com);
 
-        let mut write_task = tokio::spawn(handle_outgoing(write_half, rx));
-        let mut read_task = tokio::spawn(handle_incoming(read_half, app_handle_clone.clone()));
+        let mut write_task = rt::spawn(handle_outgoing(write_half, rx));
+        let mut read_task = rt::spawn(handle_incoming(read_half, app_handle_clone.clone()));
 
         tokio::select! {
             _ = cancel_clone.cancelled() => {
@@ -109,13 +99,9 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
 
     let mut current = server_slot.blocking_lock();
     if let Some(old) = current.replace(new_server) {
-        tokio::spawn(old.shutdown());
+        rt::block_on(old.shutdown());
     }
 }
-
-// ---------------------------------------------------------------------
-// Outgoing (app -> device)
-// ---------------------------------------------------------------------
 
 async fn handle_outgoing(
     mut write: WriteHalf<SerialStream>,
@@ -124,8 +110,6 @@ async fn handle_outgoing(
     use tokio::io::AsyncWriteExt;
 
     while let Some(data) = rx.recv().await {
-        // If your protocol needs framing/encoding on the way out, do it
-        // here, e.g.: let data = RawFrame::encode(&data);
         if let Err(e) = write.write_all(&data).await {
             eprintln!("Error writing to serial port: {}", e);
             break;
@@ -133,53 +117,26 @@ async fn handle_outgoing(
     }
 }
 
-// ---------------------------------------------------------------------
-// Incoming (device -> app)
-// ---------------------------------------------------------------------
-
-#[derive(Clone, Serialize)]
-struct SerialErrorPayload {
-    message: String,
-}
+// #[derive(Clone, Serialize)]
+// struct SerialErrorPayload {
+//     message: String,
+// }
 
 async fn handle_incoming(mut read: ReadHalf<SerialStream>, app_handle: AppHandle) {
-    use tauri::Emitter;
+    // use tauri::Emitter;
     loop {
         match read_frame(&mut read).await {
             Ok(buffer) => match RawFrame::decode(&buffer) {
                 Ok(frame) => {
                     let state = app_handle.state::<VolumeCommandSender>();
-
-                    // TODO: FIX THIS HOLY AMAZING ENUM/STRUCT to send a MESSAGE
-                    // wtf is ?????????????
-                    // REWORK THIS PIECE OF CODE
-                    let _ = state.send(VolumeCommand::DeviceMute {
-                        request_id: String::new(),
-                        id: String::new(),
-                    });
-
-                    if let Err(e) = app_handle.emit("serial-frame", &frame) {
-                        eprintln!("Failed to emit serial-frame event: {}", e);
-                    }
+                    let _ = state.send(frame);
                 }
                 Err(e) => {
                     eprintln!("Failed to decode frame: {}", e);
-                    let _ = app_handle.emit(
-                        "serial-error",
-                        SerialErrorPayload {
-                            message: format!("decode error: {}", e),
-                        },
-                    );
                 }
             },
             Err(e) => {
                 eprintln!("Failed to read frame: {}", e);
-                let _ = app_handle.emit(
-                    "serial-error",
-                    SerialErrorPayload {
-                        message: format!("read error: {}", e),
-                    },
-                );
                 break;
             }
         }

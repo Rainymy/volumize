@@ -242,6 +242,7 @@ impl IAudioSessionNotification_Impl for SessionNotification_Impl {
 
         let entry = app_map.entry(pid).or_insert_with(|| {
             println!("[NEW APP] {} (PID: {})", display_name, pid);
+
             AudioInfo {
                 name: display_name.clone(),
                 sessions: vec![],

@@ -1,26 +1,31 @@
 use futures_util::future::{select, Either};
 use serde_json::json;
-use shared_types::protocol::{Envelope, RawFrame};
-use shared_types::UpdateChange;
+use shared_types::protocol::{
+    Command, CommandRequest, CommandResponse, Envelope, RawFrame, Response,
+};
+use shared_types::{Identifier, UpdateChange};
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 use tauri::{async_runtime as rt, AppHandle, Emitter, EventTarget, Manager};
-use tokio::sync::mpsc::unbounded_channel;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::time::interval;
 
 use crate::server::serial::SerialState;
 use crate::server::websocket::WebSocketServerState;
 use crate::types::shared::UPDATE_EVENT_NAME;
+use crate::types::volume::CommandClient;
 use crate::{
     platform,
     types::{
-        shared::{VolumeControllerError, VolumeControllerTrait},
-        volume::{VolumeCommand, VolumeCommandSender, VolumeServer},
+        shared::VolumeControllerTrait,
+        volume::{VolumeCommandSender, VolumeServer},
     },
 };
 
 pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>) {
-    let (tx, mut rx) = unbounded_channel::<VolumeCommand>();
+    let (tx, mut rx) = unbounded_channel::<Envelope>();
+    let (response_tx, response_rx) = unbounded_channel::<Envelope>();
+    let handle_clone = app_handle.clone();
 
     let thread_handle = std::thread::spawn(move || {
         let controller = platform::make_controller(sender);
@@ -35,14 +40,13 @@ pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>)
                 match select(Box::pin(interval.tick()), Box::pin(rx.recv())).await {
                     Either::Left(_) => {
                         println!("[spawn_volume_thread] Periodic check: {}", count);
-                        // if count >= 20 {
-                        //     break; // Temp: Exit after 20 checks
-                        // };
                         count += 1;
                         controller.check_and_reinit();
                     }
                     Either::Right((command_result, _)) => match command_result {
-                        Some(command) => execute_command(command, &controller),
+                        Some(command) => {
+                            execute_command(&handle_clone, command, &controller, &response_tx)
+                        }
                         None => break,
                     },
                 }
@@ -59,12 +63,18 @@ pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>)
         thread_handle: Some(thread_handle),
     };
 
+    let new_client = CommandClient::new(new_server.tx.clone(), response_rx);
+
     let state = app_handle.state::<VolumeCommandSender>();
     let current_server = match state.server.lock() {
         Ok(mut current) => current.replace(new_server),
         Err(_) => None,
     };
 
+    let current_client = state.client.blocking_lock().replace(new_client);
+    if let Some(old_client) = current_client {
+        old_client.shutdown();
+    }
     if let Some(mut old) = current_server {
         let _ = old
             .shutdown()
@@ -109,63 +119,109 @@ pub fn spawn_update_thread(app_handle: &AppHandle, sender: Receiver<UpdateChange
     });
 }
 
-fn execute_command(command: VolumeCommand, controller: &Box<dyn VolumeControllerTrait>) {
-    match command {
-        // Master Controll
-        VolumeCommand::GetPlaybackDevices { sender, .. } => {
-            let _ = sender.send(controller.get_playback_devices());
-        }
-        VolumeCommand::DeviceSetVolume { id, volume, .. } => {
-            let _ = controller.set_device_volume(id, volume);
-        }
-        VolumeCommand::DeviceGetVolume { id, sender, .. } => {
-            let _ = sender.send(controller.get_device_volume(id));
-        }
-        VolumeCommand::DeviceMute { id, .. } => {
-            let _ = controller.mute_device(id);
-        }
-        VolumeCommand::DeviceUnmute { id, .. } => {
-            let _ = controller.unmute_device(id);
-        }
-        // Application Controll
-        VolumeCommand::ApplicationGetIcon { id, sender, .. } => {
-            let error = VolumeControllerError::ApplicationNotFound("Application not found".into());
+fn execute_command(
+    _handle: &AppHandle,
+    envelope: Envelope,
+    controller: &Box<dyn VolumeControllerTrait>,
+    response_tx: &UnboundedSender<Envelope>,
+) {
+    let Envelope::Command(CommandRequest { id, command }) = envelope else {
+        return; // ignore anything that isn't a command
+    };
 
-            let get_app = match controller.get_application(id) {
+    let response = handle_command(command, controller);
+    let _ = response_tx.send(Envelope::Response(CommandResponse { id, response }));
+}
+
+fn handle_command(command: Command, controller: &Box<dyn VolumeControllerTrait>) -> Response {
+    match command {
+        Command::GetApplication { app_id } => match controller.get_application(app_id) {
+            Ok(app) => Response::Application(app),
+            Err(e) => Response::Error {
+                message: e.to_string(),
+            },
+        },
+
+        Command::GetApplications { device_id } => {
+            match controller.get_device_applications(device_id.clone()) {
+                Ok(apps) => Response::ApplicationList { device_id, apps },
+                Err(e) => Response::Error {
+                    message: e.to_string(),
+                },
+            }
+        }
+
+        Command::GetIcon { app_id } => {
+            let app = match controller.get_application(app_id) {
                 Ok(app) => app,
-                Err(_) => {
-                    let _ = sender.send(Err(error));
-                    return ();
+                Err(e) => {
+                    return Response::Error {
+                        message: e.to_string(),
+                    }
                 }
             };
 
-            let path = match get_app.process.path {
-                Some(path) => path,
-                None => String::new(),
-            };
+            let path = app.process.path.unwrap_or_default();
+            let data = platform::extract_icon(path).unwrap_or_default();
+            Response::Icon { app_id, data }
+        }
 
-            let error = VolumeControllerError::Unknown("Could not extract icon from path.".into());
-            let app_icon = platform::extract_icon(path).ok_or(error);
-            let _ = sender.send(app_icon);
+        Command::GetPlaybackDevices => match controller.get_playback_devices() {
+            Ok(devices) => Response::DeviceList(devices),
+            Err(e) => Response::Error {
+                message: e.to_string(),
+            },
+        },
+
+        Command::GetVolume { id } => {
+            let result = match id.clone() {
+                Identifier::App(app_id) => controller.get_app_volume(app_id),
+                Identifier::Device(device_id) => controller.get_device_volume(device_id),
+            };
+            match result {
+                Ok(volume) => Response::Volume { id, volume },
+                Err(e) => Response::Error {
+                    message: e.to_string(),
+                },
+            }
         }
-        VolumeCommand::GetApplication { id, sender, .. } => {
-            let _ = sender.send(controller.get_application(id));
+
+        Command::SetMute { id, mute } => {
+            let result = match id {
+                Identifier::App(app_id) => {
+                    if mute {
+                        controller.mute_app(app_id)
+                    } else {
+                        controller.unmute_app(app_id)
+                    }
+                }
+                Identifier::Device(device_id) => {
+                    if mute {
+                        controller.mute_device(device_id)
+                    } else {
+                        controller.unmute_device(device_id)
+                    }
+                }
+            };
+            match result {
+                Ok(_) => Response::ACK,
+                Err(e) => Response::Error {
+                    message: e.to_string(),
+                },
+            }
         }
-        VolumeCommand::GetDeviceApplications { id, sender, .. } => {
-            let _ = sender.send(controller.get_device_applications(id));
-        }
-        VolumeCommand::ApplicationSetVolume { id, volume, .. } => {
-            let _ = controller.set_app_volume(id, volume);
-        }
-        VolumeCommand::ApplicationGetVolume { id, sender, .. } => {
-            let result = controller.get_app_volume(id).unwrap_or_default();
-            let _ = sender.send(Ok(result.current));
-        }
-        VolumeCommand::ApplicationUnmute { id, .. } => {
-            let _ = controller.unmute_app(id);
-        }
-        VolumeCommand::ApplicationMute { id, .. } => {
-            let _ = controller.mute_app(id);
+
+        Command::SetVolume { id, volume } => {
+            let result = match id {
+                Identifier::App(app_id) => controller.set_app_volume(app_id, volume),
+                Identifier::Device(device_id) => controller.set_device_volume(device_id, volume),
+            };
+            match result {
+                Ok(_) => Response::ACK,
+                Err(e) => Response::Error {
+                    message: e.to_string(),
+                },
+            }
         }
     }
 }

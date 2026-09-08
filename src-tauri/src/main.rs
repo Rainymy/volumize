@@ -49,9 +49,12 @@ fn main() {
 }
 
 fn shutdown_background_threads(app_handle: &AppHandle) {
-    if let Err(e) = app_handle.state::<VolumeCommandSender>().shutdown() {
-        eprintln!("Volume thread shutdown error: {}", e);
-    }
+    let volume_sender = app_handle.state::<VolumeCommandSender>();
+    tauri::async_runtime::block_on(async {
+        if let Err(e) = volume_sender.shutdown().await {
+            eprintln!("Volume thread shutdown error: {}", e);
+        }
+    });
 
     let service_state = app_handle.state::<ServiceDiscovery>();
     tauri::async_runtime::block_on(async {

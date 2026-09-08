@@ -19,7 +19,7 @@ pub fn create_tauri_app() -> TauriResult<tauri::App> {
             tauri_plugin_autostart::MacosLauncher::default(),
             None,
         ))
-        .manage(VolumeCommandSender::new())
+        .manage(VolumeCommandSender::default())
         .manage(WebSocketServerState::default())
         .manage(ServiceDiscovery::default())
         .manage(DoubleClickState::new(None))

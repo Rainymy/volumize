@@ -1,152 +1,129 @@
 use std::{
+    collections::HashMap,
     sync::{Arc, Mutex},
     thread::JoinHandle,
+    time::Duration,
 };
 
-use serde::{Deserialize, Serialize};
+use tauri::async_runtime as rt;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+use tokio::sync::{mpsc, oneshot};
+use tokio_util::sync::CancellationToken;
 
-use shared_types::{AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumePercent};
+use shared_types::protocol::{
+    next_request_id, Command, CommandRequest, CommandResponse, Envelope, RequestId, Response,
+};
 
-use crate::types::shared::VolumeResult;
+type PendingRequests = Arc<Mutex<HashMap<RequestId, oneshot::Sender<Response>>>>;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "snake_case")]
-pub enum VolumeCommand {
-    // ===================== DEVICE ======================
-    DeviceGetVolume {
-        request_id: String,
-        id: DeviceIdentifier,
-        #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<VolumePercent>>,
-    },
-    DeviceSetVolume {
-        request_id: String,
-        id: DeviceIdentifier,
-        volume: VolumePercent,
-    },
-    DeviceMute {
-        request_id: String,
-        id: DeviceIdentifier,
-    },
-    DeviceUnmute {
-        request_id: String,
-        id: DeviceIdentifier,
-    },
-
-    // =================== Application ===================
-    GetApplication {
-        request_id: String,
-        id: AppIdentifier,
-        #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<AudioApplication>>,
-    },
-    ApplicationGetIcon {
-        request_id: String,
-        id: AppIdentifier,
-        #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<Vec<u8>>>,
-    },
-    ApplicationGetVolume {
-        request_id: String,
-        id: AppIdentifier,
-        #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<VolumePercent>>,
-    },
-    ApplicationSetVolume {
-        request_id: String,
-        id: AppIdentifier,
-        volume: VolumePercent,
-    },
-    ApplicationMute {
-        request_id: String,
-        id: AppIdentifier,
-    },
-    ApplicationUnmute {
-        request_id: String,
-        id: AppIdentifier,
-    },
-
-    // ===================== MANAGER =====================
-    GetDeviceApplications {
-        request_id: String,
-        id: DeviceIdentifier,
-        #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<Vec<AppIdentifier>>>,
-    },
-    GetPlaybackDevices {
-        request_id: String,
-        #[serde(skip, default = "default_sender")]
-        sender: UnboundedSender<VolumeResult<Vec<AudioDevice>>>,
-    },
-}
-fn default_sender<T>() -> UnboundedSender<T> {
-    unbounded_channel().0
+#[derive(Clone, Debug)]
+pub struct CommandClient {
+    sender: mpsc::UnboundedSender<Envelope>,
+    pending: PendingRequests,
+    cancel: CancellationToken,
 }
 
-impl VolumeCommand {
-    pub fn get_name(&self) -> String {
-        let serde_value = match serde_json::to_value(&self) {
-            Ok(value) => value,
-            Err(_) => serde_json::Value::Null,
-        };
+impl CommandClient {
+    pub fn new(
+        sender: mpsc::UnboundedSender<Envelope>,
+        receiver: mpsc::UnboundedReceiver<Envelope>,
+    ) -> Self {
+        let pending = Arc::new(Mutex::new(HashMap::new()));
+        let cancel = CancellationToken::new();
 
-        let obj = match serde_value.as_object() {
-            Some(value) => value,
-            None => &serde_json::Map::new(),
-        };
+        spawn_dispatcher(receiver, pending.clone(), cancel.clone());
 
-        for key in obj.keys() {
-            return key.to_string();
-        }
-
-        if let Some(name) = serde_value.as_str() {
-            return name.to_string();
-        }
-
-        match serde_json::to_string(&self) {
-            Ok(name) => name,
-            Err(_) => "unknown_name".into(),
+        Self {
+            sender,
+            pending,
+            cancel: cancel,
         }
     }
 
-    pub fn get_request_id(&self) -> String {
-        let serde_value = match serde_json::to_value(&self) {
-            Ok(value) => value,
-            Err(_) => serde_json::Value::Null,
-        };
+    pub async fn request(&self, command: &Command) -> Result<Response, String> {
+        let id = next_request_id();
+        let (tx, rx) = oneshot::channel();
+        self.pending.lock().unwrap().insert(id, tx);
 
-        let obj = match serde_value.as_object() {
-            Some(value) => value,
-            None => &serde_json::Map::new(),
-        };
-
-        for value in obj.values() {
-            let v_request_id = &value["request_id"];
-            let id = match v_request_id.as_str() {
-                Some(id) => id,
-                None => continue,
-            };
-
-            return id.to_string();
+        let envelope = Envelope::Command(CommandRequest {
+            id,
+            command: command.clone(),
+        });
+        if self.sender.send(envelope).is_err() {
+            self.pending.lock().unwrap().remove(&id);
+            return Err("Failed to send request".to_string());
         }
 
-        String::new()
+        // optional: wrap in tokio::time::timeout(...) to avoid leaking on a lost response
+        match tokio::time::timeout(Duration::from_secs(15), rx).await {
+            Ok(Ok(response)) => Ok(response),
+            Ok(Err(e)) => {
+                // Request was cancelled/Failed to respond
+                Err(e.to_string())
+            }
+            Err(_) => {
+                // Timeout
+                Err("Timeout".to_string())
+            }
+        }
+    }
+
+    pub fn shutdown(&self) {
+        self.cancel.cancel();
     }
 }
 
+fn spawn_dispatcher(
+    mut receiver: mpsc::UnboundedReceiver<Envelope>,
+    pending: PendingRequests,
+    shutdown: CancellationToken,
+) {
+    fn handle_envelope(envelope: Envelope, pending: PendingRequests) {
+        match envelope {
+            Envelope::Response(CommandResponse { id, response }) => {
+                if let Some(tx) = pending.lock().unwrap().remove(&id) {
+                    let _ = tx.send(response);
+                }
+            }
+            Envelope::Event(_event) => {
+                // route to event/broadcast
+            }
+            Envelope::Command(_) => {
+                // shouldn't arrive on this side; ignore or log
+            }
+        }
+    }
+
+    rt::spawn(async move {
+        loop {
+            tokio::select! {
+                _ = shutdown.cancelled() => break,
+                maybe_envelope = receiver.recv() => {
+                    match maybe_envelope {
+                        Some(envelope) => handle_envelope(envelope, pending.clone()),
+                        None => break, // channel closed, sender side is gone
+                    }
+                }
+            }
+        }
+
+        // drain: fail any requests still waiting, instead of leaving them hanging
+        for (_, tx) in pending.lock().unwrap().drain() {
+            let _ = tx.send(Response::Error {
+                message: "dispatcher shut down".into(),
+            });
+        }
+    });
+}
+
+#[derive(Default)]
 pub struct VolumeCommandSender {
     pub server: Arc<Mutex<Option<VolumeServer>>>,
+    pub client: Arc<rt::Mutex<Option<CommandClient>>>,
 }
 
 impl VolumeCommandSender {
-    pub fn new() -> Self {
-        Self {
-            server: Default::default(),
-        }
-    }
-
-    pub fn send(&self, cmd: VolumeCommand) -> Result<(), String> {
+    pub fn send(&self, cmd: Envelope) -> Result<(), String> {
         let server = match self.server.lock() {
             Ok(server) => server,
             Err(err) => return Err(format!("Failed to lock server: {}", err)),
@@ -158,11 +135,27 @@ impl VolumeCommandSender {
         }
     }
 
-    pub fn shutdown(&self) -> Result<(), String> {
+    pub async fn request(&self, cmd: &Command) -> Result<Response, String> {
+        // Some how send the command and wait for a response
+        let server = self.client.blocking_lock();
+        let response = match server.as_ref() {
+            Some(server) => server.request(&cmd.clone()).await,
+            None => Err("No server".to_string()),
+        };
+        response.map_err(|_| "No response".to_string())
+    }
+
+    pub async fn shutdown(&self) -> Result<(), String> {
         let server_guard = match self.server.lock() {
             Ok(mut server) => server.take(),
             Err(err) => return Err(format!("Failed to lock server: {}", err)),
         };
+
+        self.client
+            .lock()
+            .await
+            .as_ref()
+            .map(|client| client.shutdown());
 
         match server_guard {
             Some(mut server) => server.shutdown(),
@@ -172,17 +165,17 @@ impl VolumeCommandSender {
 }
 
 pub struct VolumeServer {
-    pub tx: UnboundedSender<VolumeCommand>,
+    pub tx: UnboundedSender<Envelope>,
     pub thread_handle: Option<JoinHandle<()>>,
 }
 
 impl VolumeServer {
-    fn send(&self, cmd: VolumeCommand) -> Result<(), String> {
+    fn send(&self, cmd: Envelope) -> Result<(), String> {
         self.tx.send(cmd).map_err(|e| format!("Send failed: {}", e))
     }
 
     fn close_channel(&mut self) {
-        let (new_tx, _) = unbounded_channel::<VolumeCommand>();
+        let (new_tx, _) = unbounded_channel::<Envelope>();
         // Replace the sender with a new one and drop the original
         let old_tx = std::mem::replace(&mut self.tx, new_tx);
         drop(old_tx); // Explicitly drop the sender

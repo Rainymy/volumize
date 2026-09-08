@@ -1,62 +1,104 @@
 use tauri::State;
-use tokio::sync::mpsc::unbounded_channel;
 
-use crate::{
-    server::service_discovery,
-    types::volume::{VolumeCommand, VolumeCommandSender},
+use crate::{server::service_discovery, types::volume::VolumeCommandSender};
+
+use shared_types::{
+    protocol::{Command, Response},
+    AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, Identifier, VolumePercent,
 };
 
-use shared_types::{AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, VolumePercent};
+// TODO: Tauri command should return a proper ERROR:s, String should be fine.
 
 // ============================ Master ============================
 #[tauri::command]
-pub fn device_set_volume(
+pub async fn device_set_volume(
     id: DeviceIdentifier,
     volume: VolumePercent,
-    state: State<VolumeCommandSender>,
-) {
-    let _ = state.send(VolumeCommand::DeviceSetVolume {
-        id,
-        volume,
-        request_id: String::new(),
-    });
+    state: State<'_, VolumeCommandSender>,
+) -> Result<(), ()> {
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
+        None => return Err(()),
+    };
+
+    let _response = client
+        .request(&Command::SetVolume {
+            id: Identifier::Device(id),
+            volume,
+        })
+        .await
+        .map_err(|_| ())?;
+
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn device_get_volume(
     id: DeviceIdentifier,
     state: State<'_, VolumeCommandSender>,
-) -> Result<f32, ()> {
-    let (tx, mut rx) = unbounded_channel();
-
-    let _ = state.send(VolumeCommand::DeviceGetVolume {
-        id,
-        sender: tx,
-        request_id: String::new(),
-    });
-
-    let value = match rx.recv().await {
-        Some(v) => v,
+) -> Result<VolumePercent, ()> {
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
         None => return Err(()),
     };
 
-    value.map_err(|_| ())
+    let response = client
+        .request(&Command::GetVolume {
+            id: Identifier::Device(id),
+        })
+        .await
+        .map_err(|_| ())?;
+
+    match response {
+        Response::Volume { id: _id, volume } => Ok(volume.current),
+        _ => Err(()),
+    }
 }
 
 #[tauri::command]
-pub fn device_mute(id: DeviceIdentifier, state: State<VolumeCommandSender>) {
-    let _ = state.send(VolumeCommand::DeviceMute {
-        id,
-        request_id: String::new(),
-    });
+pub async fn device_mute(
+    id: DeviceIdentifier,
+    state: State<'_, VolumeCommandSender>,
+) -> Result<(), ()> {
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
+        None => return Err(()),
+    };
+
+    let _response = client
+        .request(&Command::SetMute {
+            id: Identifier::Device(id),
+            mute: true,
+        })
+        .await
+        .map_err(|_| ())?;
+
+    Ok(())
 }
 
 #[tauri::command]
-pub fn device_unmute(id: DeviceIdentifier, state: State<VolumeCommandSender>) {
-    let _ = state.send(VolumeCommand::DeviceUnmute {
-        id,
-        request_id: String::new(),
-    });
+pub async fn device_unmute(
+    id: DeviceIdentifier,
+    state: State<'_, VolumeCommandSender>,
+) -> Result<(), ()> {
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
+        None => return Err(()),
+    };
+
+    let _response = client
+        .request(&Command::SetMute {
+            id: Identifier::Device(id),
+            mute: false,
+        })
+        .await
+        .map_err(|_| ())?;
+
+    Ok(())
 }
 
 // ========================= Application ===========================
@@ -65,20 +107,21 @@ pub async fn application_get_icon(
     id: AppIdentifier,
     state: State<'_, VolumeCommandSender>,
 ) -> Result<Vec<u8>, ()> {
-    let (tx, mut rx) = unbounded_channel();
-
-    let _ = state.send(VolumeCommand::ApplicationGetIcon {
-        id,
-        sender: tx,
-        request_id: String::new(),
-    });
-
-    let value = match rx.recv().await {
-        Some(v) => v,
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
         None => return Err(()),
     };
 
-    value.map_err(|_| ())
+    let response = client
+        .request(&Command::GetIcon { app_id: id })
+        .await
+        .map_err(|_| ())?;
+
+    match response {
+        Response::Icon { data, .. } => Ok(data),
+        _ => Err(()),
+    }
 }
 
 #[tauri::command]
@@ -86,40 +129,45 @@ pub async fn get_application(
     id: AppIdentifier,
     state: State<'_, VolumeCommandSender>,
 ) -> Result<AudioApplication, ()> {
-    let (tx, mut rx) = unbounded_channel();
-
-    let _ = state.send(VolumeCommand::GetApplication {
-        id,
-        sender: tx,
-        request_id: String::new(),
-    });
-
-    let value = match rx.recv().await {
-        Some(v) => v,
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
         None => return Err(()),
     };
 
-    value.map_err(|_| ())
+    let response = client
+        .request(&Command::GetApplication { app_id: id })
+        .await
+        .map_err(|_| ())?;
+
+    match response {
+        Response::Application(app) => Ok(app),
+        _ => Err(()),
+    }
 }
 
 #[tauri::command]
 pub async fn application_get_volume(
     id: AppIdentifier,
     state: State<'_, VolumeCommandSender>,
-) -> Result<Option<VolumePercent>, ()> {
-    let (tx, mut rx) = unbounded_channel();
+) -> Result<VolumePercent, ()> {
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
+        None => return Err(()),
+    };
 
-    let _ = state.send(VolumeCommand::ApplicationGetVolume {
-        id,
-        sender: tx,
-        request_id: String::new(),
-    });
+    let response = client
+        .request(&Command::GetVolume {
+            id: Identifier::App(id),
+        })
+        .await
+        .map_err(|_| ())?;
 
-    if let Some(value) = rx.recv().await {
-        return Ok(value.ok());
+    match response {
+        Response::Volume { volume, .. } => Ok(volume.current),
+        _ => Err(()),
     }
-
-    Err(())
 }
 
 #[tauri::command]
@@ -127,53 +175,89 @@ pub async fn application_set_volume(
     id: AppIdentifier,
     volume: VolumePercent,
     state: State<'_, VolumeCommandSender>,
-) -> Result<(), String> {
-    state.send(VolumeCommand::ApplicationSetVolume {
-        id,
-        volume,
-        request_id: String::new(),
-    })
+) -> Result<(), ()> {
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
+        None => return Err(()),
+    };
+
+    let _response = client
+        .request(&Command::SetVolume {
+            id: Identifier::App(id),
+            volume,
+        })
+        .await;
+
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn application_mute(
     id: AppIdentifier,
     state: State<'_, VolumeCommandSender>,
-) -> Result<(), String> {
-    state.send(VolumeCommand::ApplicationMute {
-        id,
-        request_id: String::new(),
-    })
+) -> Result<(), ()> {
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
+        None => return Err(()),
+    };
+
+    let _response = client
+        .request(&Command::SetMute {
+            id: Identifier::App(id),
+            mute: true,
+        })
+        .await
+        .map_err(|_| ())?;
+
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn application_unmute(
     id: AppIdentifier,
     state: State<'_, VolumeCommandSender>,
-) -> Result<(), String> {
-    state.send(VolumeCommand::ApplicationUnmute {
-        id,
-        request_id: String::new(),
-    })
+) -> Result<(), ()> {
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
+        None => return Err(()),
+    };
+
+    let _response = client
+        .request(&Command::SetMute {
+            id: Identifier::App(id),
+            mute: false,
+        })
+        .await
+        .map_err(|_| ())?;
+
+    Ok(())
 }
 
 // =========================== Playback ============================
 #[tauri::command]
 pub async fn get_playback_devices(
     state: State<'_, VolumeCommandSender>,
-) -> Result<Vec<AudioDevice>, ()> {
-    let (tx, mut rx) = unbounded_channel();
+) -> Result<Vec<AudioDevice>, String> {
+    let client_lock = state.client.lock().await;
+    // dbg!("{:#?}", &client_lock);
 
-    let _ = state.send(VolumeCommand::GetPlaybackDevices {
-        sender: tx,
-        request_id: String::new(),
-    });
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
+        None => return Err("No client".to_string()),
+    };
 
-    if let Some(value) = rx.recv().await {
-        return value.map_err(|_err| ());
+    let response = client
+        .request(&Command::GetPlaybackDevices)
+        .await
+        .map_err(|_e| "Requset failed")?;
+
+    match response {
+        Response::DeviceList(devices) => Ok(devices),
+        _ => Err("Unexpected response".to_string()),
     }
-
-    Err(())
 }
 
 #[tauri::command]
@@ -181,19 +265,21 @@ pub async fn get_device_applications(
     id: DeviceIdentifier,
     state: State<'_, VolumeCommandSender>,
 ) -> Result<Vec<AppIdentifier>, ()> {
-    let (tx, mut rx) = unbounded_channel();
+    let client_lock = state.client.lock().await;
+    let client = match client_lock.as_ref() {
+        Some(client) => client,
+        None => return Err(()),
+    };
 
-    let _ = state.send(VolumeCommand::GetDeviceApplications {
-        id,
-        sender: tx,
-        request_id: String::new(),
-    });
+    let response = client
+        .request(&Command::GetApplications { device_id: id })
+        .await
+        .map_err(|_| ())?;
 
-    if let Some(value) = rx.recv().await {
-        return Ok(value.unwrap_or(vec![]));
+    match response {
+        Response::ApplicationList { apps, .. } => Ok(apps),
+        _ => Err(()),
     }
-
-    Err(())
 }
 
 // ========================= Miscellaneous =========================

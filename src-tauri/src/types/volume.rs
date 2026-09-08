@@ -16,11 +16,12 @@ use shared_types::protocol::{
 
 type PendingRequests = Arc<Mutex<HashMap<RequestId, oneshot::Sender<Response>>>>;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct CommandClient {
     sender: mpsc::UnboundedSender<Envelope>,
     pending: PendingRequests,
     cancel: CancellationToken,
+    handle: rt::JoinHandle<()>,
 }
 
 impl CommandClient {
@@ -31,12 +32,13 @@ impl CommandClient {
         let pending = Arc::new(Mutex::new(HashMap::new()));
         let cancel = CancellationToken::new();
 
-        spawn_dispatcher(receiver, pending.clone(), cancel.clone());
+        let handle = spawn_dispatcher(receiver, pending.clone(), cancel.clone());
 
         Self {
             sender,
             pending,
             cancel: cancel,
+            handle: handle,
         }
     }
 
@@ -68,8 +70,16 @@ impl CommandClient {
         }
     }
 
-    pub fn shutdown(&self) {
+    fn close_channel(&mut self) {
+        let (tx, _rx) = mpsc::unbounded_channel::<Envelope>();
+        let old = std::mem::replace(&mut self.sender, tx);
+        drop(old);
+    }
+
+    pub fn shutdown(&mut self) {
+        self.close_channel();
         self.cancel.cancel();
+        self.handle.abort();
     }
 }
 
@@ -77,7 +87,7 @@ fn spawn_dispatcher(
     mut receiver: mpsc::UnboundedReceiver<Envelope>,
     pending: PendingRequests,
     shutdown: CancellationToken,
-) {
+) -> rt::JoinHandle<()> {
     fn handle_envelope(envelope: Envelope, pending: PendingRequests) {
         match envelope {
             Envelope::Response(CommandResponse { id, response }) => {
@@ -94,7 +104,7 @@ fn spawn_dispatcher(
         }
     }
 
-    rt::spawn(async move {
+    let handle = rt::spawn(async move {
         loop {
             tokio::select! {
                 _ = shutdown.cancelled() => break,
@@ -114,6 +124,8 @@ fn spawn_dispatcher(
             });
         }
     });
+
+    handle
 }
 
 #[derive(Default)]
@@ -151,11 +163,10 @@ impl VolumeCommandSender {
             Err(err) => return Err(format!("Failed to lock server: {}", err)),
         };
 
-        self.client
-            .lock()
-            .await
-            .as_ref()
-            .map(|client| client.shutdown());
+        let mut client = self.client.lock().await;
+        if let Some(mut old) = std::mem::replace(&mut *client, None) {
+            old.shutdown();
+        }
 
         match server_guard {
             Some(mut server) => server.shutdown(),

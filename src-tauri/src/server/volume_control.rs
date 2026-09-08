@@ -33,7 +33,7 @@ pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>)
         rt::block_on(async move {
             let mut interval = interval(Duration::from_millis(3000));
             interval.tick().await; // Skip the first immediate tick.
-            println!("Main loop starting");
+            println!("[spawn_volume_thread] Main loop starting");
 
             let mut count = 1;
             loop {
@@ -55,7 +55,7 @@ pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>)
             controller.cleanup();
         });
 
-        println!("Thread ended")
+        println!("[spawn_volume_thread] Thread ended")
     });
 
     let new_server = VolumeServer {
@@ -72,13 +72,13 @@ pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>)
     };
 
     let current_client = state.client.blocking_lock().replace(new_client);
-    if let Some(old_client) = current_client {
+    if let Some(mut old_client) = current_client {
         old_client.shutdown();
     }
     if let Some(mut old) = current_server {
         let _ = old
             .shutdown()
-            .inspect_err(|e| eprintln!("Shutdown error: {}", e));
+            .inspect_err(|e| eprintln!("[spawn_volume_thread] Shutdown error: {}", e));
     }
 }
 

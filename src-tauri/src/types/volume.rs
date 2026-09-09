@@ -149,7 +149,7 @@ impl VolumeCommandSender {
 
     pub async fn request(&self, cmd: &Command) -> Result<Response, String> {
         // Some how send the command and wait for a response
-        let server = self.client.blocking_lock();
+        let server = self.client.lock().await;
         let response = match server.as_ref() {
             Some(server) => server.request(&cmd.clone()).await,
             None => Err("No server".to_string()),

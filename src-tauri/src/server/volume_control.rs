@@ -135,24 +135,22 @@ fn execute_command(
 
 fn handle_command(command: Command, controller: &Box<dyn VolumeControllerTrait>) -> Response {
     match command {
-        Command::GetApplication { app_id } => match controller.get_application(app_id) {
+        Command::GetApplication { id } => match controller.get_application(id) {
             Ok(app) => Response::Application(app),
             Err(e) => Response::Error {
                 message: e.to_string(),
             },
         },
 
-        Command::GetApplications { device_id } => {
-            match controller.get_device_applications(device_id.clone()) {
-                Ok(apps) => Response::ApplicationList { device_id, apps },
-                Err(e) => Response::Error {
-                    message: e.to_string(),
-                },
-            }
-        }
+        Command::GetApplications { id } => match controller.get_device_applications(id.clone()) {
+            Ok(apps) => Response::ApplicationList { id, apps },
+            Err(e) => Response::Error {
+                message: e.to_string(),
+            },
+        },
 
-        Command::GetIcon { app_id } => {
-            let app = match controller.get_application(app_id) {
+        Command::GetIcon { id } => {
+            let app = match controller.get_application(id) {
                 Ok(app) => app,
                 Err(e) => {
                     return Response::Error {
@@ -163,7 +161,7 @@ fn handle_command(command: Command, controller: &Box<dyn VolumeControllerTrait>)
 
             let path = app.process.path.unwrap_or_default();
             let data = platform::extract_icon(path).unwrap_or_default();
-            Response::Icon { app_id, data }
+            Response::Icon { id, data }
         }
 
         Command::GetPlaybackDevices => match controller.get_playback_devices() {

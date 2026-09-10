@@ -1,15 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-
+import type { AudioDevice } from "$type/bindings";
 import { DEBOUNCE_DELAY, TAURI_UPDATE_EVENT, UPDATE_CENTER_EVENT } from "$type/constant";
 import type { TauriConnection } from "$type/navigation";
 import type { UpdateEvent } from "$type/update";
-import type {
-    AppIdentifier,
-    AudioDevice,
-    DeviceIdentifier,
-    VolumePercent,
-} from "$type/volume";
+import type { AppIdentifier, DeviceIdentifier, VolumePercent } from "$type/volume";
 import { debounce, debouncePerKey } from "$util/debounce";
 import { isVolumePercent } from "$util/volume";
 import {

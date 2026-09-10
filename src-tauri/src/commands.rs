@@ -3,7 +3,7 @@ use tauri::State;
 use crate::{server::service_discovery, types::volume::VolumeCommandSender};
 
 use shared_types::{
-    protocol::{Command, Response},
+    protocol::{Command, CommandResponse, Response},
     AppIdentifier, AudioApplication, AudioDevice, DeviceIdentifier, Identifier, VolumePercent,
 };
 
@@ -23,7 +23,7 @@ pub async fn device_set_volume(
     };
 
     let _response = client
-        .request(&Command::SetVolume {
+        .request(Command::SetVolume {
             id: Identifier::Device(id),
             volume,
         })
@@ -45,12 +45,13 @@ pub async fn device_get_volume(
     };
 
     let response = client
-        .request(&Command::GetVolume {
+        .request(Command::GetVolume {
             id: Identifier::Device(id),
         })
         .await
         .map_err(|_| ())?;
 
+    let CommandResponse { id: _id, response } = response;
     match response {
         Response::Volume { id: _id, volume } => Ok(volume.current),
         _ => Err(()),
@@ -69,7 +70,7 @@ pub async fn device_mute(
     };
 
     let _response = client
-        .request(&Command::SetMute {
+        .request(Command::SetMute {
             id: Identifier::Device(id),
             mute: true,
         })
@@ -91,7 +92,7 @@ pub async fn device_unmute(
     };
 
     let _response = client
-        .request(&Command::SetMute {
+        .request(Command::SetMute {
             id: Identifier::Device(id),
             mute: false,
         })
@@ -114,10 +115,11 @@ pub async fn application_get_icon(
     };
 
     let response = client
-        .request(&Command::GetIcon { app_id: id })
+        .request(Command::GetIcon { id })
         .await
         .map_err(|_| ())?;
 
+    let CommandResponse { id: _id, response } = response;
     match response {
         Response::Icon { data, .. } => Ok(data),
         _ => Err(()),
@@ -136,10 +138,11 @@ pub async fn get_application(
     };
 
     let response = client
-        .request(&Command::GetApplication { app_id: id })
+        .request(Command::GetApplication { id })
         .await
         .map_err(|_| ())?;
 
+    let CommandResponse { id: _id, response } = response;
     match response {
         Response::Application(app) => Ok(app),
         _ => Err(()),
@@ -158,12 +161,13 @@ pub async fn application_get_volume(
     };
 
     let response = client
-        .request(&Command::GetVolume {
+        .request(Command::GetVolume {
             id: Identifier::App(id),
         })
         .await
         .map_err(|_| ())?;
 
+    let CommandResponse { id: _id, response } = response;
     match response {
         Response::Volume { volume, .. } => Ok(volume.current),
         _ => Err(()),
@@ -183,7 +187,7 @@ pub async fn application_set_volume(
     };
 
     let _response = client
-        .request(&Command::SetVolume {
+        .request(Command::SetVolume {
             id: Identifier::App(id),
             volume,
         })
@@ -204,7 +208,7 @@ pub async fn application_mute(
     };
 
     let _response = client
-        .request(&Command::SetMute {
+        .request(Command::SetMute {
             id: Identifier::App(id),
             mute: true,
         })
@@ -226,7 +230,7 @@ pub async fn application_unmute(
     };
 
     let _response = client
-        .request(&Command::SetMute {
+        .request(Command::SetMute {
             id: Identifier::App(id),
             mute: false,
         })
@@ -250,10 +254,11 @@ pub async fn get_playback_devices(
     };
 
     let response = client
-        .request(&Command::GetPlaybackDevices)
+        .request(Command::GetPlaybackDevices)
         .await
         .map_err(|_e| "Requset failed")?;
 
+    let CommandResponse { id: _id, response } = response;
     match response {
         Response::DeviceList(devices) => Ok(devices),
         _ => Err("Unexpected response".to_string()),
@@ -272,10 +277,11 @@ pub async fn get_device_applications(
     };
 
     let response = client
-        .request(&Command::GetApplications { device_id: id })
+        .request(Command::GetApplications { id: id })
         .await
         .map_err(|_| ())?;
 
+    let CommandResponse { id: _id, response } = response;
     match response {
         Response::ApplicationList { apps, .. } => Ok(apps),
         _ => Err(()),

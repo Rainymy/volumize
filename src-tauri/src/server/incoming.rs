@@ -1,8 +1,8 @@
 use std::error::Error;
 
 use futures_util::{stream::SplitStream, StreamExt};
-use serde_json::json;
-use shared_types::protocol::{CommandRequest, CommandResponse, Envelope};
+use shared_types::protocol::{Command, CommandRequest, CommandResponse};
+use shared_types::Identifier;
 use tauri::{AppHandle, Manager};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
@@ -52,36 +52,35 @@ pub async fn handle_incoming_messages(
 }
 
 async fn handle_volume_command(
-    envelope: Envelope,
+    command: CommandRequest,
     client_id: &str,
     clients: &ClientMap,
     app_handle: &AppHandle,
 ) -> Result<(), Box<dyn Error>> {
-    let Envelope::Command(CommandRequest { id, command }) = envelope else {
-        return Ok(());
-    };
-
     let state = app_handle.state::<VolumeCommandSender>();
-    let response = state.request(&command).await?;
+    let response = state.request(command.command).await?;
 
     let client_lock = clients.lock().await;
     let (_, client_sender) = client_lock.get(client_id).ok_or("Client not found")?;
 
-    let outgoing = Envelope::Response(CommandResponse { id, response });
-
-    let respons = create_json_response("volume", &outgoing);
+    let respons = serde_json::to_string(&CommandResponse {
+        id: command.id,
+        response: response.response,
+    })?;
     client_sender.send(respons.into()).map_err(|e| e.into())
 }
 
-fn create_json_response<T: serde::Serialize>(name: &str, data: &T) -> String {
-    json!({
-        "type": name,
-        "data": data
-    })
-    .to_string()
-}
-
-fn parse_action(action: &str) -> Result<Envelope, serde_json::Error> {
+fn parse_action(action: &str) -> Result<CommandRequest, serde_json::Error> {
     println!("Parsing action: {}", action);
-    serde_json::from_str::<Envelope>(action)
+
+    let command = CommandRequest {
+        id: 123,
+        command: Command::SetMute {
+            id: Identifier::App(123),
+            mute: true,
+        },
+    };
+    println!("Expected: {}", serde_json::to_string(&command)?);
+
+    serde_json::from_str::<CommandRequest>(action)
 }

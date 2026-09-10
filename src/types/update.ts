@@ -1,69 +1,24 @@
+import type { ChangeType, Identifier } from "./bindings";
 import { TAURI_UPDATE_EVENT } from "./constant";
-import type { AppIdentifier, DeviceIdentifier, VolumePercent } from "./volume";
 
-const appId = "app";
-const deviceId = "device";
-
-export type Identifier =
-    | {
-          type: typeof appId;
-          content: AppIdentifier;
-      }
-    | {
-          type: typeof deviceId;
-          content: DeviceIdentifier;
-      };
-
-type IsAppIdentifier = Extract<Identifier, { type: typeof appId }>;
-export function isAppIdentifier(id: Identifier): id is IsAppIdentifier {
-    return id.type === appId;
+export function isAppIdentifier(id: Identifier) {
+    return id.type === "app";
 }
 
-type IsDeviceIdentifier = Extract<Identifier, { type: typeof deviceId }>;
-export function isDeviceIdentifier(id: Identifier): id is IsDeviceIdentifier {
-    return id.type === deviceId;
+export function isDeviceIdentifier(id: Identifier) {
+    return id.type === "device";
 }
 
-export type EntityType = "device" | "application";
-export type EntityState = "disconnect" | "created";
-
-const iconPathChange = "iconPathChange";
-const audioVolume = "audioVolume";
-const stateChange = "stateChange";
-
-export type ChangeType =
-    | {
-          kind: typeof audioVolume;
-          volume: VolumePercent;
-          mute: boolean;
-      }
-    | {
-          kind: typeof iconPathChange;
-          path: string;
-      }
-    | {
-          kind: typeof stateChange;
-          state: EntityState;
-      };
-
-export interface UpdateChange {
-    id: Identifier;
-    change: ChangeType;
+export function isAudioVolumeChange(change: ChangeType) {
+    return change.kind === "audioVolume";
 }
 
-type isAudioVolumeChange = Extract<ChangeType, { kind: typeof audioVolume }>;
-export function isAudioVolumeChange(change: ChangeType): change is isAudioVolumeChange {
-    return change.kind === audioVolume;
+export function isIconPathChange(change: ChangeType) {
+    return change.kind === "iconPathChange";
 }
 
-type isIconPathChange = Extract<ChangeType, { kind: typeof iconPathChange }>;
-export function isIconPathChange(change: ChangeType): change is isIconPathChange {
-    return change.kind === iconPathChange;
-}
-
-type isStateChange = Extract<ChangeType, { kind: typeof stateChange }>;
-export function isStateChange(change: ChangeType): change is isStateChange {
-    return change.kind === stateChange;
+export function isStateChange(change: ChangeType) {
+    return change.kind === "stateChange";
 }
 
 export type UpdatePayload = { id: Identifier; change: ChangeType };
@@ -74,14 +29,25 @@ export type UpdateEvent = {
 
 export type DataEvent = { type: string; data: object };
 export type RequestAcceptedEvent = { type: string; data: "REQUEST ACCEPTED" };
-export type ResponseEvent = { channel: string; data: object };
+export type ResponseEvent = {
+    type: "CommandResponse";
+    id: number;
+    response: object;
+};
+
+export function isResponse(event: unknown): event is ResponseEvent {
+    const data = event as ResponseEvent;
+
+    const is_type = data.type === "CommandResponse";
+    const is_id = typeof data.id === "number";
+    const is_response = typeof data.response === "object";
+
+    return is_type && is_id && is_response;
+}
 
 export function isDataEvent(event: unknown): event is DataEvent {
     const data = event as DataEvent;
-    if (typeof data.type !== "string" || typeof data.data !== "object") {
-        return false;
-    }
-    return true;
+    return typeof data.type === "string" && typeof data.data === "object";
 }
 
 export function isUpdateEvent(event: unknown): event is UpdateEvent {

@@ -42,15 +42,12 @@ impl CommandClient {
         }
     }
 
-    pub async fn request(&self, command: &Command) -> Result<Response, String> {
+    pub async fn request(&self, command: Command) -> Result<CommandResponse, String> {
         let id = next_request_id();
         let (tx, rx) = oneshot::channel();
-        self.pending.lock().unwrap().insert(id, tx);
+        self.pending.lock().unwrap().insert(id.clone(), tx);
 
-        let envelope = Envelope::Command(CommandRequest {
-            id,
-            command: command.clone(),
-        });
+        let envelope = Envelope::Command(CommandRequest { id, command });
         if self.sender.send(envelope).is_err() {
             self.pending.lock().unwrap().remove(&id);
             return Err("Failed to send request".to_string());
@@ -58,15 +55,9 @@ impl CommandClient {
 
         // optional: wrap in tokio::time::timeout(...) to avoid leaking on a lost response
         match tokio::time::timeout(Duration::from_secs(15), rx).await {
-            Ok(Ok(response)) => Ok(response),
-            Ok(Err(e)) => {
-                // Request was cancelled/Failed to respond
-                Err(e.to_string())
-            }
-            Err(_) => {
-                // Timeout
-                Err("Timeout".to_string())
-            }
+            Ok(Ok(response)) => Ok(CommandResponse { id, response }),
+            Ok(Err(e)) => Err(e.to_string()),
+            Err(_) => Err("Timeout".to_string()),
         }
     }
 
@@ -120,7 +111,7 @@ fn spawn_dispatcher(
         // drain: fail any requests still waiting, instead of leaving them hanging
         for (_, tx) in pending.lock().unwrap().drain() {
             let _ = tx.send(Response::Error {
-                message: "dispatcher shut down".into(),
+                message: "dispatcher shutdown".into(),
             });
         }
     });
@@ -147,11 +138,10 @@ impl VolumeCommandSender {
         }
     }
 
-    pub async fn request(&self, cmd: &Command) -> Result<Response, String> {
-        // Some how send the command and wait for a response
+    pub async fn request(&self, cmd: Command) -> Result<CommandResponse, String> {
         let server = self.client.lock().await;
         let response = match server.as_ref() {
-            Some(server) => server.request(&cmd.clone()).await,
+            Some(server) => server.request(cmd).await,
             None => Err("No server".to_string()),
         };
         response.map_err(|_| "No response".to_string())

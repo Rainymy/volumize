@@ -2,7 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { DEBOUNCE_DELAY, UPDATE_CENTER_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
 import type { WebConnection } from "$type/navigation";
-import { isDataEvent, isRequestAcceptedEvent, isUpdateEvent } from "$type/update";
+import {
+    Identifier,
+    isDataEvent,
+    isRequestAcceptedEvent,
+    isResponse,
+    isUpdateEvent,
+} from "$type/update";
 import type {
     AppIdentifier,
     AudioApplication,
@@ -12,7 +18,7 @@ import type {
 } from "$type/volume";
 import { debounce, debouncePerKey } from "$util/debounce";
 import { tryParseURL } from "$util/temp";
-import { uuid } from "$util/uuid";
+import { uuid_number } from "$util/uuid";
 import { isVolumePercent } from "$util/volume";
 import {
     ATauriVolumeController,
@@ -52,8 +58,14 @@ export class WebsocketTauriVolumeController
                 return;
             }
 
-            if (isDataEvent(data) || isRequestAcceptedEvent(data)) {
-                const data2 = { channel: data.type, data: data.data };
+            if (!isResponse(data)) {
+                console.warn("Is Not correct response: ", data);
+                return;
+            }
+
+            if (isDataEvent(data.response) || isRequestAcceptedEvent(data.response)) {
+                // TODO: Validate incoming id against cached ids.
+                const data2 = { channel: data.id.toString(), data: data.response.data };
                 const payload = { detail: data2.data };
                 this.listener.dispatchEvent(new CustomEvent(data2.channel, payload));
                 return;
@@ -109,17 +121,26 @@ export class WebsocketTauriVolumeController
         return null;
     }
 
-    private parse_params(action: T_RUST_INVOKE, data?: PARAM_ACTION): SEND_ACTION {
-        const unique_id = uuid();
+    private parse_params(action: T_RUST_INVOKE, param?: PARAM_ACTION): SEND_ACTION {
+        const unique_id = uuid_number();
 
         return {
             action: action,
-            request_id: unique_id,
+            request_id: unique_id.toString(),
             data: JSON.stringify({
-                [action]: { ...(data ?? {}), request_id: unique_id },
+                type: "CommandRequest",
+                id: unique_id,
+                command: {
+                    type: action,
+                    ...(param && { data: param }),
+                },
             }),
         };
     }
+
+    // private identity_params(identity: Identifier) {
+    //     identity
+    // }
 
     /* ============== DEVICES ============== */
     getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debouncePerKey(
@@ -235,8 +256,13 @@ export class WebsocketTauriVolumeController
         debouncePerKey(async (id: DeviceIdentifier) => {
             const invoke_action = RUST_INVOKE.GET_DEVICE_APPLICATIONS;
             const data = this.parse_params(invoke_action, { id });
-            const applications_ids = await this.sendEvent<AppIdentifier[]>(data);
-            return applications_ids ?? [];
+
+            type Response_Device = {
+                id: string;
+                apps: AppIdentifier[];
+            };
+            const applications_ids = await this.sendEvent<Response_Device>(data);
+            return applications_ids?.apps ?? [];
         }, DEBOUNCE_DELAY.NORMAL);
 
     discoverServer: ITauriVolumeController["discoverServer"] = debounce(async () => {

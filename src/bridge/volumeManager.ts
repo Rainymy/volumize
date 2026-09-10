@@ -1,6 +1,6 @@
+import type { UpdateChange } from "$type/bindings";
 import { UPDATE_CENTER_EVENT, UPDATE_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
-import type { UpdateChange } from "$type/update";
 import { is_desktop } from "./generic";
 import { TauriVolumeController } from "./tauri_volume";
 import { WebsocketTauriVolumeController } from "./websocket_volume";

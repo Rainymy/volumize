@@ -14,32 +14,3 @@ export enum SessionDirection {
     Capture = "Capture",
     Unknown = "Unknown",
 }
-
-export interface ProcessInfo {
-    id: AppIdentifier;
-    name: string;
-    path: string | null;
-}
-
-export interface AudioVolume {
-    current: VolumePercent;
-    muted: boolean;
-}
-
-export interface AudioApplication {
-    process: ProcessInfo;
-    session_type: SessionType;
-    direction: SessionDirection;
-    volume: AudioVolume;
-    sound_playing: boolean;
-    device_id: DeviceIdentifier;
-}
-
-export interface AudioDevice {
-    id: DeviceIdentifier;
-    name: string;
-    friendly_name: string;
-    direction: SessionDirection;
-    is_default: boolean;
-    volume: AudioVolume;
-}

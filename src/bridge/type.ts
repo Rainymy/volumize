@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noDuplicateEnumValues: temp solution */
 import type { TauriConnection, WebConnection } from "$type/navigation";
 import type {
     AppIdentifier,
@@ -12,23 +13,23 @@ export enum RUST_INVOKE {
     HEARTBEAT = "heartbeat",
 
     // ============= DEVICE =============
-    DEVICE_GET_VOLUME = "device_get_volume",
-    DEVICE_SET_VOLUME = "device_set_volume",
-    DEVICE_MUTE = "device_mute",
-    DEVICE_UNMUTE = "device_unmute",
+    DEVICE_GET_VOLUME = "get_volume",
+    DEVICE_SET_VOLUME = "set_volume",
+    DEVICE_MUTE = "set_mute",
+    DEVICE_UNMUTE = "set_mute",
 
     // =========== APPLICATION ===========
     GET_APPLICATION = "get_application",
 
-    APPLICATION_GET_ICON = "application_get_icon",
-    APPLICATION_GET_VOLUME = "application_get_volume",
-    APPLICATION_SET_VOLUME = "application_set_volume",
-    APPLICATION_MUTE = "application_mute",
-    APPLICATION_UNMUTE = "application_unmute",
+    APPLICATION_GET_ICON = "get_icon",
+    APPLICATION_GET_VOLUME = `get_volume`,
+    APPLICATION_SET_VOLUME = "set_volume",
+    APPLICATION_MUTE = "set_mute",
+    APPLICATION_UNMUTE = "set_mute",
 
     // ============= MANAGER =============
     GET_PLAYBACK_DEVICES = "get_playback_devices",
-    GET_DEVICE_APPLICATIONS = "get_device_applications",
+    GET_DEVICE_APPLICATIONS = "get_applications",
 }
 
 export type T_RUST_INVOKE = `${RUST_INVOKE}`;

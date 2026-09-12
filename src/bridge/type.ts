@@ -41,6 +41,8 @@ export interface ITauriVolumeController {
     close(): Promise<void>;
 
     // ============= DEVICE =============
+    deviceGetIcon(id: DeviceIdentifier): Promise<Uint8Array | null>;
+
     deviceGetVolume(id: DeviceIdentifier): Promise<VolumePercent>;
     deviceSetVolume(id: DeviceIdentifier, percent: number): Promise<unknown>;
     deviceMute(id: DeviceIdentifier): Promise<unknown>;

@@ -158,6 +158,19 @@ export class WebsocketTauriVolumeController
         DEBOUNCE_DELAY.NORMAL,
     );
 
+    deviceGetIcon: ITauriVolumeController["deviceGetIcon"] = debounce(
+        async (id: DeviceIdentifier) => {
+            const data = this.parse_params({
+                type: "get_icon",
+                data: { id: this.id_device(id) },
+            });
+            type REvent = Extract<Response, { type: "icon" }>["data"];
+            const icon = await this.sendEvent<REvent>(data);
+            return new Uint8Array(icon?.data ?? []);
+        },
+        DEBOUNCE_DELAY.NORMAL,
+    );
+
     deviceGetVolume: ITauriVolumeController["deviceGetVolume"] = debounce(
         async (id: DeviceIdentifier) => {
             const data = this.parse_params({

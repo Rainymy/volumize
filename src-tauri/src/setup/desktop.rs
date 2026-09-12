@@ -49,14 +49,14 @@ fn spectra_builder() -> tauri_specta::Builder<tauri::Wry> {
     use crate::types::shared::{UPDATE_EVENT_NAME, VOLUME_LABEL_EVENT, WEBSOCKET_PORT};
     use shared_types::{
         protocol::{CommandRequest, CommandResponse},
-        UpdateChange,
+        UpdateChangeEvent,
     };
     use tauri_specta::collect_commands;
 
     let collected_types = specta::Types::default()
         .register::<CommandRequest>()
         .register::<CommandResponse>()
-        .register::<UpdateChange>();
+        .register::<UpdateChangeEvent>();
 
     tauri_specta::Builder::<tauri::Wry>::new()
         .types(&collected_types)

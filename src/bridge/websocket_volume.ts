@@ -1,10 +1,9 @@
 import {
-    type AudioApplication,
-    type AudioDevice,
     type Command,
     type CommandRequest,
     commands,
     type Identifier,
+    type Response,
 } from "$type/bindings";
 import { DEBOUNCE_DELAY, UPDATE_CENTER_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
@@ -56,33 +55,31 @@ export class WebsocketTauriVolumeController
                 return;
             }
 
+            if (isUpdateEvent(data)) {
+                const payload = { detail: data };
+                const __evt__ = new CustomEvent(UPDATE_CENTER_EVENT, payload);
+                document.body.dispatchEvent(__evt__);
+                return;
+            }
+
             if (!isResponse(data)) {
                 console.warn("Is Not correct response: ", data);
                 return;
             }
 
+            // TODO: Validate incoming id against cached ids.
             const response = data.response;
 
             if (isRequestAcceptedEvent(response)) {
-                // console.log("Accepted Response: ", response);
                 const channel = data.id.toString();
                 this.listener.dispatchEvent(new CustomEvent(channel));
                 return;
             }
 
             if (isDataEvent(response)) {
-                // TODO: Validate incoming id against cached ids.
                 const channel = data.id.toString();
                 const payload = { detail: response.data };
                 this.listener.dispatchEvent(new CustomEvent(channel, payload));
-                return;
-            }
-
-            console.log("Update Event: ", data);
-            if (isUpdateEvent(response)) {
-                const payload = { detail: data };
-                const __evt__ = new CustomEvent(UPDATE_CENTER_EVENT, payload);
-                document.body.dispatchEvent(__evt__);
                 return;
             }
 
@@ -154,7 +151,8 @@ export class WebsocketTauriVolumeController
     getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debouncePerKey(
         async () => {
             const data = this.parse_params({ type: "get_playback_devices" });
-            const devices = await this.sendEvent<AudioDevice[]>(data);
+            type REvent = Extract<Response, { type: "device_list" }>["data"];
+            const devices = await this.sendEvent<REvent>(data);
             return devices ?? [];
         },
         DEBOUNCE_DELAY.NORMAL,
@@ -166,8 +164,9 @@ export class WebsocketTauriVolumeController
                 type: "get_volume",
                 data: { id: this.id_device(id) },
             });
-            const volume = await this.sendEvent<VolumePercent>(data);
-            return volume ?? (0.0 as VolumePercent);
+            type REvent = Extract<Response, { type: "volume" }>["data"];
+            const volume = await this.sendEvent<REvent>(data);
+            return (volume?.volume ?? 0.0) as VolumePercent;
         },
         DEBOUNCE_DELAY.NORMAL,
     );
@@ -215,7 +214,8 @@ export class WebsocketTauriVolumeController
                 type: "get_application",
                 data: { id },
             });
-            return await this.sendEvent<AudioApplication>(data);
+            type REvent = Extract<Response, { type: "application" }>["data"];
+            return await this.sendEvent<REvent>(data);
         },
         DEBOUNCE_DELAY.NORMAL,
     );
@@ -226,7 +226,10 @@ export class WebsocketTauriVolumeController
                 type: "get_icon",
                 data: { id: this.id_app(id) },
             });
-            return await this.sendEvent<Uint8Array | null>(data);
+            type Icon = Extract<Response, { type: "icon" }>["data"];
+            const icon = await this.sendEvent<Icon>(data);
+
+            return new Uint8Array(icon?.data ?? []);
         },
         DEBOUNCE_DELAY.NORMAL,
     );
@@ -237,8 +240,9 @@ export class WebsocketTauriVolumeController
                 type: "get_volume",
                 data: { id: this.id_app(id) },
             });
-            const volume = await this.sendEvent<VolumePercent>(data);
-            return volume ?? (0.0 as VolumePercent);
+            type Volume = Extract<Response, { type: "volume" }>["data"];
+            const volume = await this.sendEvent<Volume>(data);
+            return (volume?.volume.current ?? 0.0) as VolumePercent;
         },
         DEBOUNCE_DELAY.NORMAL,
     );
@@ -263,7 +267,7 @@ export class WebsocketTauriVolumeController
                 type: "set_mute",
                 data: { id: this.id_app(id), mute: true },
             });
-            return await this.sendEvent<VolumePercent>(data);
+            return await this.sendEvent(data);
         },
         DEBOUNCE_DELAY.NORMAL,
     );
@@ -274,7 +278,7 @@ export class WebsocketTauriVolumeController
                 type: "set_mute",
                 data: { id: this.id_app(id), mute: false },
             });
-            return await this.sendEvent<VolumePercent>(data);
+            return await this.sendEvent(data);
         },
         DEBOUNCE_DELAY.NORMAL,
     );
@@ -286,11 +290,8 @@ export class WebsocketTauriVolumeController
                 data: { id },
             });
 
-            type Response_Device = {
-                id: string;
-                apps: AppIdentifier[];
-            };
-            const applications_ids = await this.sendEvent<Response_Device>(data);
+            type REvent = Extract<Response, { type: "application_list" }>["data"];
+            const applications_ids = await this.sendEvent<REvent>(data);
             return applications_ids?.apps ?? [];
         }, DEBOUNCE_DELAY.NORMAL);
 

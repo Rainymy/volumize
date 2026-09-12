@@ -33,25 +33,27 @@ export class ConnectSocket {
     }
 
     heartbeat = debounce(async () => {
+        const beat_promise = new Promise<boolean>((resolve) => {
+            const cleanup_handler = this.socket?.addListener((message) => {
+                if (message.type === "Pong") {
+                    cleanup_handler?.();
+                    resolve(true);
+                }
+            });
+
+            setTimeout(() => {
+                cleanup_handler?.();
+                resolve(false);
+            }, HEARTBEAT.WAIT_FOR_BEAT);
+        });
+
         const did_send = await this.send([], "Ping");
         if (!did_send) {
             console.error("Failed to send heartbeat");
             return false;
         }
 
-        return await new Promise<boolean>((resolve) => {
-            const cleanup_handler = this.socket?.addListener((message) => {
-                if (message.type === "Pong") {
-                    resolve(true);
-                    cleanup_handler?.();
-                }
-            });
-
-            setTimeout(() => {
-                resolve(false);
-                cleanup_handler?.();
-            }, HEARTBEAT.WAIT_FOR_BEAT);
-        });
+        return await beat_promise;
     }, DEBOUNCE_DELAY.FAST);
 
     addListener(cb: (arg: Message) => void) {

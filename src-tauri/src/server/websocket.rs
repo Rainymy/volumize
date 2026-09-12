@@ -22,6 +22,12 @@ pub struct ClientInfo {
     pub address: String,
 }
 
+impl ClientInfo {
+    pub fn new(id: String, address: String) -> Self {
+        Self { id, address }
+    }
+}
+
 type ClientSender = UnboundedSender<Message>;
 pub type ClientMap = Arc<rt::Mutex<HashMap<String, (ClientInfo, ClientSender)>>>;
 

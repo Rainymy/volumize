@@ -1,24 +1,21 @@
-use futures_util::future::{select, Either};
-use serde_json::json;
-use shared_types::protocol::{
-    Command, CommandRequest, CommandResponse, Envelope, RawFrame, Response,
+use shared_types::{
+    protocol::{Command, CommandRequest, CommandResponse, Envelope, RawFrame, Response},
+    Identifier, UpdateChange, UpdateChangeEvent,
 };
-use shared_types::{Identifier, UpdateChange};
+
+use futures_util::future::{select, Either};
 use std::sync::mpsc::{Receiver, Sender};
-use std::time::Duration;
 use tauri::{async_runtime as rt, AppHandle, Emitter, EventTarget, Manager};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
-use tokio::time::interval;
+use tokio::time::{interval, Duration};
+use tokio_tungstenite::tungstenite::Message;
 
-use crate::server::serial::SerialState;
-use crate::server::websocket::WebSocketServerState;
-use crate::types::shared::{UPDATE_EVENT_NAME, VOLUME_LABEL_EVENT};
-use crate::types::volume::CommandClient;
 use crate::{
     platform,
+    server::{serial::SerialState, websocket::WebSocketServerState},
     types::{
-        shared::VolumeControllerTrait,
-        volume::{VolumeCommandSender, VolumeServer},
+        shared::{VolumeControllerTrait, UPDATE_EVENT_NAME, VOLUME_LABEL_EVENT},
+        volume::{CommandClient, VolumeCommandSender, VolumeServer},
     },
 };
 
@@ -39,6 +36,7 @@ pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>)
             loop {
                 match select(Box::pin(interval.tick()), Box::pin(rx.recv())).await {
                     Either::Left(_) => {
+                        // Sanity check: periodically print to check if the thread is still running.
                         println!("[spawn_volume_thread] Periodic check: {}", count);
                         count += 1;
                         controller.check_and_reinit();
@@ -96,22 +94,32 @@ pub fn spawn_update_thread(app_handle: &AppHandle, sender: Receiver<UpdateChange
                 eprintln!("Error emitting update event: {}", err);
             }
             // =============== SEND TO WEBSOCKET CLIENTS ===============
-            let event_str = json! ({
-                "event": UPDATE_EVENT_NAME,
-                "payload": &msg
-            })
-            .to_string();
-            let websocket_server = app_handle.state::<WebSocketServerState>();
-            let clients = websocket_server.clients.blocking_lock();
-            for (_id, client) in clients.iter() {
-                let _ = client.1.send(event_str.clone().into());
+            {
+                let event = UpdateChangeEvent::new(UPDATE_EVENT_NAME, &msg);
+                let event_str = serde_json::to_string(&event).unwrap_or_default();
+
+                let websocket_server = app_handle.state::<WebSocketServerState>();
+                let clients = websocket_server.clients.blocking_lock();
+
+                for (_id, client) in clients.iter() {
+                    if let Err(err) = client.1.send(Message::Text(event_str.clone().into())) {
+                        eprintln!("Error sending update event to websocket client: {}", err);
+                    }
+                }
             }
+
             // ================ SEND TO SERIAL CLIENTS =================
-            let serial_state = app_handle.state::<SerialState>();
-            let serial_clients = serial_state.server.blocking_lock();
-            if let Some(serial_server) = serial_clients.as_ref() {
-                let buffer = RawFrame::encode(&Envelope::Event(msg)).build();
-                let _ = serial_server.sender.send(buffer);
+            {
+                let serial_state = app_handle.state::<SerialState>();
+                let serial_clients = serial_state.server.blocking_lock();
+
+                if let Some(serial_server) = serial_clients.as_ref() {
+                    let buffer = RawFrame::encode(&Envelope::Event(msg)).build();
+                    let _ = serial_server.sender.send(buffer);
+                    // if let Err(err) = serial_server.sender.send(buffer) {
+                    //     eprintln!("Error sending update event to serial client: {}", err);
+                    // }
+                }
             }
             // ====================== RECEIVE END ======================
         }

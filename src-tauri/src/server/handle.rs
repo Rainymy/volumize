@@ -36,10 +36,7 @@ pub async fn handle_client(
     clients.lock().await.insert(
         client_id.clone(),
         (
-            ClientInfo {
-                id: client_id.clone(),
-                address: peer_addr.to_string(),
-            },
+            ClientInfo::new(client_id.clone(), peer_addr.to_string()),
             tx,
         ),
     );

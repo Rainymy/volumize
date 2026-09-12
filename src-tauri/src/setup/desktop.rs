@@ -28,16 +28,14 @@ pub fn create_tauri_app() -> TauriResult<tauri::App> {
         .manage(Storage::default())
         .setup(super::setup)
         .on_menu_event(super::menu_event)
-        .on_window_event(|_window, _event| {
-            let storage = _window.app_handle().state::<Storage>();
-            let should_exit_to_tray = storage.get().exit_to_tray;
-
-            if should_exit_to_tray {
+        .on_window_event(|window, _event| {
+            let storage = window.app_handle().state::<Storage>();
+            if storage.get().exit_to_tray {
                 // Turn off exit to tray functionality to test other features.
                 #[cfg(not(debug_assertions))]
                 {
                     if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
-                        let _ = _window.hide();
+                        let _ = window.hide();
                         api.prevent_close();
                     }
                 }

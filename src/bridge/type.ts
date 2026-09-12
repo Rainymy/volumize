@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/suspicious/noDuplicateEnumValues: temp solution */
-import type { AudioApplication, AudioDevice } from "$type/bindings";
+import type { AudioApplication, AudioDevice, Identifier } from "$type/bindings";
 import type { TauriConnection, WebConnection } from "$type/navigation";
 import type { AppIdentifier, DeviceIdentifier, VolumePercent } from "$type/volume";
 
@@ -29,7 +29,7 @@ export enum RUST_INVOKE {
 
 export type T_RUST_INVOKE = `${RUST_INVOKE}`;
 export type PARAM_ACTION = {
-    id: DeviceIdentifier | AppIdentifier;
+    id: Identifier;
     volume?: VolumePercent;
 };
 

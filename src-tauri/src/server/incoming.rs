@@ -1,8 +1,7 @@
 use std::error::Error;
 
 use futures_util::{stream::SplitStream, StreamExt};
-use shared_types::protocol::{Command, CommandRequest, CommandResponse};
-use shared_types::Identifier;
+use shared_types::protocol::{CommandRequest, CommandResponse};
 use tauri::{AppHandle, Manager};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
@@ -27,7 +26,12 @@ pub async fn handle_incoming_messages(
                         eprintln!("Failed to handle volume command: {}", error)
                     }
                 }
-                Err(err) => eprintln!("Parse error: {}\n - Original: {}", err, text),
+                Err(err) => {
+                    eprintln!("------------------------------------------------------------");
+                    eprintln!("Parsing action: {}", text);
+                    eprintln!("Parse error: {}\n - Original: {}", err, text);
+                    eprintln!("------------------------------------------------------------");
+                }
             },
             Ok(Message::Close(_)) => {
                 println!("Client {} closed connection", client_id);
@@ -67,20 +71,12 @@ async fn handle_volume_command(
         id: command.id,
         response: response.response,
     })?;
-    client_sender.send(respons.into()).map_err(|e| e.into())
+
+    client_sender
+        .send(Message::Text(respons.into()))
+        .map_err(|e| e.into())
 }
 
 fn parse_action(action: &str) -> Result<CommandRequest, serde_json::Error> {
-    println!("Parsing action: {}", action);
-
-    let command = CommandRequest {
-        id: 123,
-        command: Command::SetMute {
-            id: Identifier::App(123),
-            mute: true,
-        },
-    };
-    println!("Expected: {}", serde_json::to_string(&command)?);
-
     serde_json::from_str::<CommandRequest>(action)
 }

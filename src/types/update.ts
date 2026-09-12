@@ -1,4 +1,11 @@
-import { type ChangeType, type Identifier, UPDATE_EVENT_NAME } from "./bindings";
+import {
+    type ChangeType,
+    type CommandResponse,
+    type Identifier,
+    type Response,
+    UPDATE_EVENT_NAME,
+    type UpdateChange,
+} from "./bindings";
 
 export function isAppIdentifier(id: Identifier) {
     return id.type === "app" && typeof id.content === "number";
@@ -20,26 +27,20 @@ export function isStateChange(change: ChangeType) {
     return change.kind === "stateChange";
 }
 
-export type UpdatePayload = { id: Identifier; change: ChangeType };
 export type UpdateEvent = {
     event: typeof UPDATE_EVENT_NAME;
-    payload: UpdatePayload;
+    payload: UpdateChange;
 };
 
-export type DataEvent = { type: string; data: object };
-export type RequestAcceptedEvent = { type: string; data: "REQUEST ACCEPTED" };
-export type ResponseEvent = {
-    type: "CommandResponse";
-    id: number;
-    response: object;
-};
+export type RequestAcceptedEvent = Extract<Response, { type: "a_c_k" }>;
+export type DataEvent = Exclude<Response, RequestAcceptedEvent>;
 
-export function isResponse(event: unknown): event is ResponseEvent {
-    const data = event as ResponseEvent;
+export function isResponse(event: unknown): event is CommandResponse {
+    const data = event as CommandResponse;
 
     const is_type = data.type === "CommandResponse";
     const is_id = typeof data.id === "number";
-    const is_response = typeof data.response === "object";
+    const is_response = typeof data.response.type === "string";
 
     return is_type && is_id && is_response;
 }
@@ -56,11 +57,11 @@ export function isUpdateEvent(event: unknown): event is UpdateEvent {
 
 export function isRequestAcceptedEvent(event: unknown): event is RequestAcceptedEvent {
     const data = event as RequestAcceptedEvent;
-    return typeof data.type === "string" && data.data === "REQUEST ACCEPTED";
+    return data.type === "a_c_k";
 }
 
-export function isUpdatePayload(payload: unknown): payload is UpdatePayload {
-    const data = payload as UpdatePayload;
+export function isUpdatePayload(payload: unknown): payload is UpdateChange {
+    const data = payload as UpdateChange;
 
     const isUpdateChange = [
         isAudioVolumeChange(data.change),

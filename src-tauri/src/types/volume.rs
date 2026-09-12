@@ -54,7 +54,7 @@ impl CommandClient {
         }
 
         // optional: wrap in tokio::time::timeout(...) to avoid leaking on a lost response
-        match tokio::time::timeout(Duration::from_secs(15), rx).await {
+        match tokio::time::timeout(Duration::from_secs(5), rx).await {
             Ok(Ok(response)) => Ok(CommandResponse { id, response }),
             Ok(Err(e)) => Err(e.to_string()),
             Err(_) => Err("Timeout".to_string()),
@@ -140,11 +140,10 @@ impl VolumeCommandSender {
 
     pub async fn request(&self, cmd: Command) -> Result<CommandResponse, String> {
         let server = self.client.lock().await;
-        let response = match server.as_ref() {
+        match server.as_ref() {
             Some(server) => server.request(cmd).await,
             None => Err("No server".to_string()),
-        };
-        response.map_err(|_| "No response".to_string())
+        }
     }
 
     pub async fn shutdown(&self) -> Result<(), String> {

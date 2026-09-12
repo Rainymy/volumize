@@ -34,3 +34,11 @@ impl VolumeControllerTrait for VolumeController {
 pub fn extract_icon(_path: String) -> Option<Vec<u8>> {
     None
 }
+
+pub fn extract_system_icon() -> Option<Vec<u8>> {
+    None
+}
+
+pub fn extract_device_icon(_name: String) -> Option<Vec<u8>> {
+    None
+}

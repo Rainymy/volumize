@@ -48,14 +48,8 @@ pub async fn broadcast_discover(timeout: Duration) -> Result<String, Box<dyn std
         Either::Right((result, _)) => result?,
     };
 
-    let response = String::from_utf8_lossy(&buf[..len]);
-    // Parse "SERVER:8080" format
-    let port = response
-        .split(":")
-        .nth(1)
-        .ok_or("Invalid server response format")?
-        .parse::<u32>()
-        .unwrap_or(0);
+    let port =
+        ServiceDiscovery::decode_response(&buf[..len]).ok_or("Invalid server response format")?;
 
     Ok(format!("{}:{}", addr.ip(), port))
 }

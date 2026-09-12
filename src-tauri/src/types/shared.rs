@@ -1,7 +1,9 @@
 // #![allow(dead_code)]
 use thiserror::Error;
 
-pub const UPDATE_EVENT_NAME: &str = "update";
+pub const UPDATE_EVENT_NAME: &str = "update_event";
+pub const VOLUME_LABEL_EVENT: &str = "volume-control-panel";
+pub const WEBSOCKET_PORT: u16 = 9002;
 
 pub type VolumeResult<T> = Result<T, VolumeControllerError>;
 

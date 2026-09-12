@@ -5,17 +5,22 @@ import { volumeController } from "$bridge/volumeManager";
 import { Card } from "$component/card";
 import { useAsyncSignalEffect } from "$hook/useAsyncSignalEffect";
 import { useURLObjectIcon } from "$hook/useURLObjectIcon";
-import { UPDATE_EVENT } from "$type/constant";
+import {
+    type AudioApplication,
+    type AudioDevice,
+    UPDATE_EVENT_NAME,
+    type UpdateChange,
+} from "$type/bindings";
 import type { EventType } from "$type/generic";
-import { isAppIdentifier, isAudioVolumeChange, type UpdateChange } from "$type/update";
-import type { AppIdentifier, AudioApplication, AudioDevice } from "$type/volume";
+import { isAppIdentifier, isAudioVolumeChange } from "$type/update";
+import type { AppIdentifier } from "$type/volume";
 
 function DeviceMaster__({ master }: { master: AudioDevice }) {
     return (
         <Card
             isMuted={master.volume.muted}
             title={master.friendly_name}
-            volume={master.volume.current}
+            volume={master.volume.current ?? 0}
             icon={<MdOutlineSpeaker />}
             onButtonClick={() => {
                 return volumeController.toggleMuteMaster(master.id, master.volume.muted);
@@ -61,9 +66,9 @@ function DeviceApplications__({ id }: { id: AppIdentifier }) {
             }
         }
 
-        document.body.addEventListener(UPDATE_EVENT, updateHandle);
+        document.body.addEventListener(UPDATE_EVENT_NAME, updateHandle);
         return () => {
-            document.body.removeEventListener(UPDATE_EVENT, updateHandle);
+            document.body.removeEventListener(UPDATE_EVENT_NAME, updateHandle);
         };
     }, [app?.process.id]);
 
@@ -75,7 +80,7 @@ function DeviceApplications__({ id }: { id: AppIdentifier }) {
         <Card
             isMuted={app.volume.muted}
             title={app.process.name}
-            volume={app.volume.current}
+            volume={app.volume.current ?? 0}
             icon={base64}
             onButtonClick={() => {
                 volumeController.toggleMuteApp(app.process.id, app.volume.muted);

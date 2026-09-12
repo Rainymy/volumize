@@ -55,4 +55,20 @@ impl ServiceDiscovery {
             None => Ok(()),
         }
     }
+
+    fn server_response(msg: &[u8], port: u16) -> Option<String> {
+        if msg == Self::DISCOVERY_MSG.as_bytes() {
+            Some(format!("SERVER:{}", port))
+        } else {
+            None
+        }
+    }
+
+    fn decode_response(msg: &[u8]) -> Option<u16> {
+        let response = String::from_utf8_lossy(msg);
+        let port = response
+            .strip_prefix("SERVER:")
+            .and_then(|s| s.parse().ok())?;
+        Some(port)
+    }
 }

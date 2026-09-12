@@ -1,5 +1,6 @@
 import WebSocket, { type Message } from "@tauri-apps/plugin-websocket";
-import { DEBOUNCE_DELAY, HEARTBEAT, PORT } from "$type/constant";
+import { WEBSOCKET_PORT } from "$type/bindings";
+import { DEBOUNCE_DELAY, HEARTBEAT } from "$type/constant";
 import { debounce } from "$util/debounce";
 
 type AddListener = ReturnType<WebSocket["addListener"]>;
@@ -8,7 +9,7 @@ type PayloadOf<T extends Message["type"]> = Extract<Message, { type: T }>["data"
 
 export class ConnectSocket {
     public socket: WebSocket | null = null;
-    private connect_URL: string = `ws://127.0.0.1:${PORT.DEFAULT}`;
+    private connect_URL: string = `ws://127.0.0.1:${WEBSOCKET_PORT}`;
     private listeners: AddListener[] = [];
 
     set_url(url: string, port: number) {

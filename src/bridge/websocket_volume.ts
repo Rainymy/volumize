@@ -1,21 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { AudioApplication, AudioDevice } from "$type/bindings";
 import { DEBOUNCE_DELAY, UPDATE_CENTER_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
 import type { WebConnection } from "$type/navigation";
 import {
-    Identifier,
     isDataEvent,
     isRequestAcceptedEvent,
     isResponse,
     isUpdateEvent,
 } from "$type/update";
-import type {
-    AppIdentifier,
-    AudioApplication,
-    AudioDevice,
-    DeviceIdentifier,
-    VolumePercent,
-} from "$type/volume";
+import type { AppIdentifier, DeviceIdentifier, VolumePercent } from "$type/volume";
 import { debounce, debouncePerKey } from "$util/debounce";
 import { tryParseURL } from "$util/temp";
 import { uuid_number } from "$util/uuid";
@@ -65,7 +59,10 @@ export class WebsocketTauriVolumeController
 
             if (isDataEvent(data.response) || isRequestAcceptedEvent(data.response)) {
                 // TODO: Validate incoming id against cached ids.
-                const data2 = { channel: data.id.toString(), data: data.response.data };
+                const data2 = {
+                    channel: data.id.toString(),
+                    data: data.response.data,
+                };
                 const payload = { detail: data2.data };
                 this.listener.dispatchEvent(new CustomEvent(data2.channel, payload));
                 return;
@@ -137,10 +134,6 @@ export class WebsocketTauriVolumeController
             }),
         };
     }
-
-    // private identity_params(identity: Identifier) {
-    //     identity
-    // }
 
     /* ============== DEVICES ============== */
     getPlaybackDevices: ITauriVolumeController["getPlaybackDevices"] = debouncePerKey(

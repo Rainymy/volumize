@@ -7,12 +7,12 @@ import { AppInput } from "$base/input";
 import { is_desktop } from "$bridge/generic";
 import { useStartConnection } from "$hook/useWebsocket";
 import { server_port, server_url } from "$model/server_url";
+import { WEBSOCKET_PORT } from "$type/bindings";
 import { PORT } from "$type/constant";
 import { CONNECTION_MODE } from "$type/navigation";
 import { getNumber } from "$util/generic";
 import { classnames } from "$util/react";
 import { tryParseURL } from "$util/temp";
-
 import style from "./index.module.less";
 
 export function ServerURLComponent() {
@@ -83,7 +83,7 @@ function ServerInput({ start }: { start: () => Promise<void> }) {
                     min={PORT.MIN}
                     max={PORT.MAX}
                     name={FORM_NAME_PORT}
-                    placeholder={PORT.DEFAULT.toString()}
+                    placeholder={WEBSOCKET_PORT.toString()}
                     defaultValue={connect_port}
                     className={classnames([style.form_input, "flex-grow-2"])}
                     onClick={() => setErrorText("")}

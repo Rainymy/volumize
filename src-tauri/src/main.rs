@@ -70,22 +70,3 @@ fn shutdown_background_threads(app_handle: &AppHandle) {
         }
     });
 }
-
-#[test]
-fn export_types() {
-    use shared_types::{
-        protocol::{CommandRequest, CommandResponse},
-        UpdateChange,
-    };
-    use specta_typescript::Typescript;
-
-    let collected_types = specta::Types::default()
-        .register::<CommandRequest>()
-        .register::<CommandResponse>()
-        .register::<UpdateChange>();
-
-    tauri_specta::Builder::<tauri::Wry>::new()
-        .types(&collected_types)
-        .export(Typescript::default(), "../src/types/bindings.ts")
-        .expect("Failed to export typescript bindings");
-}

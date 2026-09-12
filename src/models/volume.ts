@@ -1,7 +1,7 @@
 import { atom } from "jotai";
-
+import type { AudioApplication, AudioDevice } from "$type/bindings";
 import { ConnectionState } from "$type/navigation";
-import type { AppIdentifier, AudioApplication, AudioDevice } from "$type/volume";
+import type { AppIdentifier } from "$type/volume";
 
 export const connection_state = atom(ConnectionState.DISCONNECTED);
 

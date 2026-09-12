@@ -1,12 +1,7 @@
 /** biome-ignore-all lint/suspicious/noDuplicateEnumValues: temp solution */
+import type { AudioApplication, AudioDevice } from "$type/bindings";
 import type { TauriConnection, WebConnection } from "$type/navigation";
-import type {
-    AppIdentifier,
-    AudioApplication,
-    AudioDevice,
-    DeviceIdentifier,
-    VolumePercent,
-} from "$type/volume";
+import type { AppIdentifier, DeviceIdentifier, VolumePercent } from "$type/volume";
 
 export enum RUST_INVOKE {
     DISCOVER_SERVER_ADDRESS = "discover_server_address",

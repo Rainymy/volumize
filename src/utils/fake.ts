@@ -1,4 +1,5 @@
-import { type AudioDevice, SessionDirection, type VolumePercent } from "$type/volume";
+import type { AudioDevice } from "$type/bindings";
+import type { VolumePercent } from "$type/volume";
 
 export function generate_random_device(): AudioDevice {
     const id = Math.random().toString(36).substring(2, 8);
@@ -12,7 +13,7 @@ export function generate_random_device(): AudioDevice {
 
     return {
         id,
-        direction: SessionDirection.Render,
+        direction: "Render",
         name,
         friendly_name,
         volume,

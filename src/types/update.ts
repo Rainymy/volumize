@@ -1,12 +1,11 @@
-import type { ChangeType, Identifier } from "./bindings";
-import { TAURI_UPDATE_EVENT } from "./constant";
+import { type ChangeType, type Identifier, UPDATE_EVENT_NAME } from "./bindings";
 
 export function isAppIdentifier(id: Identifier) {
-    return id.type === "app";
+    return id.type === "app" && typeof id.content === "number";
 }
 
 export function isDeviceIdentifier(id: Identifier) {
-    return id.type === "device";
+    return id.type === "device" && typeof id.content === "string";
 }
 
 export function isAudioVolumeChange(change: ChangeType) {
@@ -23,7 +22,7 @@ export function isStateChange(change: ChangeType) {
 
 export type UpdatePayload = { id: Identifier; change: ChangeType };
 export type UpdateEvent = {
-    event: typeof TAURI_UPDATE_EVENT;
+    event: typeof UPDATE_EVENT_NAME;
     payload: UpdatePayload;
 };
 
@@ -52,7 +51,7 @@ export function isDataEvent(event: unknown): event is DataEvent {
 
 export function isUpdateEvent(event: unknown): event is UpdateEvent {
     const data = event as UpdateEvent;
-    return data.event === TAURI_UPDATE_EVENT && isUpdatePayload(data.payload);
+    return data.event === UPDATE_EVENT_NAME && isUpdatePayload(data.payload);
 }
 
 export function isRequestAcceptedEvent(event: unknown): event is RequestAcceptedEvent {

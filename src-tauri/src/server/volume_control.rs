@@ -12,7 +12,7 @@ use tokio::time::interval;
 
 use crate::server::serial::SerialState;
 use crate::server::websocket::WebSocketServerState;
-use crate::types::shared::UPDATE_EVENT_NAME;
+use crate::types::shared::{UPDATE_EVENT_NAME, VOLUME_LABEL_EVENT};
 use crate::types::volume::CommandClient;
 use crate::{
     platform,
@@ -90,7 +90,7 @@ pub fn spawn_update_thread(app_handle: &AppHandle, sender: Receiver<UpdateChange
             println!("sending: {:?}", msg);
 
             // ==================== SEND TO WEBVIEW ====================
-            let target_event = EventTarget::labeled("volume-control-panel");
+            let target_event = EventTarget::labeled(VOLUME_LABEL_EVENT);
             let result = app_handle.emit_to(target_event, UPDATE_EVENT_NAME, &msg);
             if let Err(err) = result {
                 eprintln!("Error emitting update event: {}", err);
@@ -150,6 +150,12 @@ fn handle_command(command: Command, controller: &Box<dyn VolumeControllerTrait>)
         },
 
         Command::GetIcon { id } => {
+            let Identifier::App(id) = id else {
+                // TODO: Currently only app icons are supported
+                return Response::Error {
+                    message: "Invalid app identifier".to_string(),
+                };
+            };
             let app = match controller.get_application(id) {
                 Ok(app) => app,
                 Err(e) => {

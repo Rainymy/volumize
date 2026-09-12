@@ -160,8 +160,7 @@ async fn run_udp_responder(
             Either::Right((result, _)) => result?,
         };
 
-        if &buf[..len] == ServiceDiscovery::DISCOVERY_MSG.as_bytes() {
-            let response = format!("SERVER:{}", port);
+        if let Some(response) = ServiceDiscovery::server_response(&buf[..len], port) {
             socket.send_to(response.as_bytes(), addr).await?;
         }
     }

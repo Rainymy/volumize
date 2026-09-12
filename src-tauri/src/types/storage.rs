@@ -6,6 +6,8 @@ use std::{
 };
 use tauri::{AppHandle, Manager};
 
+use crate::types::shared::WEBSOCKET_PORT;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Settings {
     pub duration: super::tray::Discovery,
@@ -18,7 +20,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             duration: Default::default(),
-            port_address: 9002,
+            port_address: WEBSOCKET_PORT,
             exit_to_tray: true,
             serial_name: None,
         }
@@ -31,6 +33,7 @@ pub struct Storage {
 }
 
 use std::io::Result;
+
 impl Storage {
     fn settings_path(&self, app: &AppHandle) -> PathBuf {
         #[cfg(not(target_os = "ios"))]

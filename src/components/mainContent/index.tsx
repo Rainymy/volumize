@@ -5,16 +5,14 @@ import { volumeController } from "$bridge/volumeManager";
 import { DeviceApplications, DeviceMaster } from "$component/device";
 import { Heartbeat } from "$component/heartbeat";
 import { application_ids, device_list, selected_device_id } from "$model/volume";
-import { UPDATE_EVENT } from "$type/constant";
+import { UPDATE_EVENT_NAME, type UpdateChange } from "$type/bindings";
 import type { EventType } from "$type/generic";
 import {
     isAppIdentifier,
     isAudioVolumeChange,
     isDeviceIdentifier,
     isStateChange,
-    type UpdateChange,
 } from "$type/update";
-
 import style from "./index.module.less";
 
 /*                          UI Design
@@ -84,9 +82,9 @@ function DeviceListener() {
             }
         }
 
-        document.body.addEventListener(UPDATE_EVENT, updateHandle);
+        document.body.addEventListener(UPDATE_EVENT_NAME, updateHandle);
         return () => {
-            document.body.removeEventListener(UPDATE_EVENT, updateHandle);
+            document.body.removeEventListener(UPDATE_EVENT_NAME, updateHandle);
         };
     }, [setDevices]);
 
@@ -106,7 +104,7 @@ function ApplicationsListener() {
             if (data === undefined) return;
 
             if (isAppIdentifier(data.id) && isStateChange(data.change)) {
-                const id = data.id.content;
+                const id = data.id.content as number;
                 if (data.change.state === "created") {
                     setAppIds((prev) => [...prev, id]);
                 }
@@ -116,9 +114,9 @@ function ApplicationsListener() {
             }
         }
 
-        document.body.addEventListener(UPDATE_EVENT, handleUpdateEvent);
+        document.body.addEventListener(UPDATE_EVENT_NAME, handleUpdateEvent);
         return () => {
-            document.body.removeEventListener(UPDATE_EVENT, handleUpdateEvent);
+            document.body.removeEventListener(UPDATE_EVENT_NAME, handleUpdateEvent);
         };
     }, [setAppIds]);
 

@@ -1,11 +1,7 @@
-import { SessionType, type VolumePercent } from "$type/volume";
+import type { SessionType } from "$type/bindings";
+import type { VolumePercent } from "$type/volume";
 
-const PRIORITY_ORDER = [
-    SessionType.Device,
-    SessionType.System,
-    SessionType.Application,
-    SessionType.Unknown,
-];
+const PRIORITY_ORDER = ["Device", "System", "Application", "Unknown"];
 
 export function comparePriority(a: SessionType, b: SessionType): number {
     const indexA = PRIORITY_ORDER.indexOf(a);

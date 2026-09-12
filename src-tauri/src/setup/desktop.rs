@@ -1,13 +1,14 @@
 use tauri::{Manager, Result as TauriResult};
 
+use crate::commands;
 use crate::{
     server::{serial::SerialState, websocket::WebSocketServerState, ServiceDiscovery},
     types::{click::DoubleClickState, storage::Storage, volume::VolumeCommandSender},
 };
 
-use crate::commands;
-
 pub fn create_tauri_app() -> TauriResult<tauri::App> {
+    let builder = spectra_builder();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             super::show_window_visibility(app);
@@ -42,24 +43,47 @@ pub fn create_tauri_app() -> TauriResult<tauri::App> {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![
-            // Master volume controls
-            commands::device_get_volume,
-            commands::device_set_volume,
-            commands::device_mute,
-            commands::device_unmute,
-            // Application volume controls
+        .invoke_handler(builder.invoke_handler())
+        .build(tauri::generate_context!())
+}
+
+fn spectra_builder() -> tauri_specta::Builder<tauri::Wry> {
+    use crate::types::shared::{UPDATE_EVENT_NAME, VOLUME_LABEL_EVENT, WEBSOCKET_PORT};
+    use shared_types::{
+        protocol::{CommandRequest, CommandResponse},
+        UpdateChange,
+    };
+    use tauri_specta::collect_commands;
+
+    let collected_types = specta::Types::default()
+        .register::<CommandRequest>()
+        .register::<CommandResponse>()
+        .register::<UpdateChange>();
+
+    tauri_specta::Builder::<tauri::Wry>::new()
+        .types(&collected_types)
+        .commands(collect_commands![
+            commands::get_volume,
+            commands::set_volume,
+            commands::set_mute,
+            commands::set_unmute,
+            commands::get_icon,
+            // Application
             commands::get_application,
-            commands::application_get_icon,
-            commands::application_get_volume,
-            commands::application_set_volume,
-            commands::application_mute,
-            commands::application_unmute,
-            // Device controls
             commands::get_playback_devices,
             commands::get_device_applications,
             // Miscellaneous
-            commands::discover_server_address
+            commands::discover_server_address,
         ])
-        .build(tauri::generate_context!())
+        .constant(stringify!(UPDATE_EVENT_NAME), UPDATE_EVENT_NAME)
+        .constant(stringify!(VOLUME_LABEL_EVENT), VOLUME_LABEL_EVENT)
+        .constant(stringify!(WEBSOCKET_PORT), WEBSOCKET_PORT)
+}
+
+#[test]
+fn export_spectra() {
+    use specta_typescript::Typescript;
+    spectra_builder()
+        .export(Typescript::default(), "../src/types/bindings.ts")
+        .expect("Failed to export typescript bindings");
 }

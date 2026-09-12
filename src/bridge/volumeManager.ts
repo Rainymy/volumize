@@ -1,5 +1,5 @@
-import type { UpdateChange } from "$type/bindings";
-import { UPDATE_CENTER_EVENT, UPDATE_EVENT } from "$type/constant";
+import { UPDATE_EVENT_NAME, type UpdateChange } from "$type/bindings";
+import { UPDATE_CENTER_EVENT } from "$type/constant";
 import type { EventType } from "$type/generic";
 import { is_desktop } from "./generic";
 import { TauriVolumeController } from "./tauri_volume";
@@ -11,20 +11,18 @@ export const volumeController = is_desktop()
 
 // ============== SETUP UPDATE EVENT LISTENER ==============
 type TEventData = {
-    event: typeof UPDATE_EVENT;
+    event: typeof UPDATE_EVENT_NAME;
     id: number;
     payload: UpdateChange;
 };
 
-// Centralize event listener for audio audio/state changes. To easily propagate changes.
+// Centralize event listener for audio/state changes. To easily propagate changes.
 function central_update_handler(event: EventType<TEventData>) {
     // console.log("central_update_handler", event);
     if (!event.detail) {
         throw new Error("Event detail is undefined", event.detail);
     }
-    const data = new CustomEvent(UPDATE_EVENT, {
-        detail: event.detail.payload,
-    });
+    const data = new CustomEvent(UPDATE_EVENT_NAME, { detail: event.detail.payload });
     document.body.dispatchEvent(data);
 }
 

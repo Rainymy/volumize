@@ -1,9 +1,13 @@
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
-import { commands, UPDATE_EVENT_NAME, VOLUME_LABEL_EVENT } from "$type/bindings";
+import {
+    commands,
+    UPDATE_EVENT_NAME,
+    type UpdateChange,
+    VOLUME_LABEL_EVENT,
+} from "$type/bindings";
 import { DEBOUNCE_DELAY, UPDATE_CENTER_EVENT } from "$type/constant";
 import type { TauriConnection } from "$type/navigation";
-import type { UpdateEvent } from "$type/update";
 import type { AppIdentifier, DeviceIdentifier, VolumePercent } from "$type/volume";
 import { debounce, debouncePerKey } from "$util/debounce";
 import { isVolumePercent } from "$util/volume";
@@ -22,11 +26,12 @@ export class TauriVolumeController
 
     async setup(_url: string, _port: number) {
         await this.close();
-        this.listener = await listen<UpdateEvent>(
+        this.listener = await listen<UpdateChange>(
             UPDATE_EVENT_NAME,
             (event) => {
-                console.log("event.id:", event.id);
-                const data = new CustomEvent(UPDATE_CENTER_EVENT, { detail: event });
+                const data = new CustomEvent(UPDATE_CENTER_EVENT, {
+                    detail: event,
+                });
                 document.body.dispatchEvent(data);
             },
             { target: { kind: "AnyLabel", label: VOLUME_LABEL_EVENT } },
@@ -54,7 +59,10 @@ export class TauriVolumeController
 
     deviceGetVolume: ITauriVolumeController["deviceGetVolume"] = debounce(
         async (id: DeviceIdentifier) => {
-            const result = await commands.getVolume({ type: "device", content: id });
+            const result = await commands.getVolume({
+                type: "device",
+                content: id,
+            });
 
             if (result.status === "error") {
                 console.log("Error getting volume:", result.error);
@@ -87,7 +95,10 @@ export class TauriVolumeController
 
     deviceMute: ITauriVolumeController["deviceMute"] = debounce(
         async (id: DeviceIdentifier) => {
-            const result = await commands.setMute({ type: "device", content: id });
+            const result = await commands.setMute({
+                type: "device",
+                content: id,
+            });
 
             if (result.status === "error") {
                 console.log("Error muting device:", result.error);
@@ -99,7 +110,10 @@ export class TauriVolumeController
 
     deviceUnmute: ITauriVolumeController["deviceUnmute"] = debounce(
         async (id: DeviceIdentifier) => {
-            const result = await commands.setUnmute({ type: "device", content: id });
+            const result = await commands.setUnmute({
+                type: "device",
+                content: id,
+            });
 
             if (result.status === "error") {
                 console.log("Error unmuting device:", result.error);
@@ -152,7 +166,10 @@ export class TauriVolumeController
 
     applicationGetVolume: ITauriVolumeController["applicationGetVolume"] = debounce(
         async (id: AppIdentifier) => {
-            const result = await commands.getVolume({ type: "app", content: id });
+            const result = await commands.getVolume({
+                type: "app",
+                content: id,
+            });
 
             if (result.status === "error") {
                 console.log("Error getting volume:", result.error);
@@ -192,7 +209,10 @@ export class TauriVolumeController
 
     applicationUnmute: ITauriVolumeController["applicationUnmute"] = debounce(
         async (id: AppIdentifier) => {
-            const result = await commands.setUnmute({ type: "app", content: id });
+            const result = await commands.setUnmute({
+                type: "app",
+                content: id,
+            });
 
             if (result.status === "error") {
                 console.log("Error unmuting:", result.error);

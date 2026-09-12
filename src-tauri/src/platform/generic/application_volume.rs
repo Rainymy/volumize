@@ -1,16 +1,14 @@
-use crate::types::shared::{
-    AppIdentifier, ApplicationVolumeControl, AudioApplication, AudioVolume, VolumeControllerError,
-    VolumePercent, VolumeResult,
-};
+use crate::types::shared::{ApplicationVolumeControl, VolumeResult};
+use shared_types::{AppIdentifier, AudioApplication, AudioVolume, VolumePercent};
 
 use super::VolumeController;
 
 impl ApplicationVolumeControl for VolumeController {
     fn get_application(&self, _id: AppIdentifier) -> VolumeResult<AudioApplication> {
-        Err(VolumeControllerError::Unknown("Not implemented".into()))
+        Ok(AudioApplication::default())
     }
     fn get_app_volume(&self, _app: AppIdentifier) -> VolumeResult<AudioVolume> {
-        Err(VolumeControllerError::Unknown("Not implemented".into()))
+        Ok(AudioVolume::default())
     }
 
     fn set_app_volume(&self, _app: AppIdentifier, _volume: VolumePercent) -> VolumeResult<()> {

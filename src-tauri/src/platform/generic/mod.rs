@@ -1,6 +1,8 @@
-use std::{path::PathBuf, sync::mpsc::Sender};
+use std::sync::mpsc::Sender;
 
-use crate::types::shared::{DeviceVolumeControl, UpdateChange, VolumeControllerTrait};
+use shared_types::UpdateChange;
+
+use crate::types::shared::{DeviceVolumeControl, VolumeControllerTrait};
 
 pub struct VolumeController;
 
@@ -29,6 +31,6 @@ impl VolumeControllerTrait for VolumeController {
     }
 }
 
-pub fn extract_icon(_path: PathBuf) -> Option<Vec<u8>> {
+pub fn extract_icon(_path: String) -> Option<Vec<u8>> {
     None
 }

@@ -1,12 +1,12 @@
-use crate::types::shared::DeviceIdentifier;
-use crate::types::shared::{VolumePercent, VolumeResult};
+use shared_types::{AudioVolume, DeviceIdentifier, VolumePercent};
 
-use super::DeviceVolumeControl;
-use super::VolumeController;
+use crate::types::shared::VolumeResult;
+
+use super::{DeviceVolumeControl, VolumeController};
 
 impl DeviceVolumeControl for VolumeController {
-    fn get_device_volume(&self, _id: DeviceIdentifier) -> VolumeResult<VolumePercent> {
-        Ok(0.0)
+    fn get_device_volume(&self, _id: DeviceIdentifier) -> VolumeResult<AudioVolume> {
+        Ok(AudioVolume::default())
     }
 
     fn set_device_volume(

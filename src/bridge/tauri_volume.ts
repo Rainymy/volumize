@@ -137,6 +137,19 @@ export class TauriVolumeController
         },
         DEBOUNCE_DELAY.NORMAL,
     );
+    deviceGetIcon: ITauriVolumeController["deviceGetIcon"] = debouncePerKey(
+        async (id: DeviceIdentifier) => {
+            const result = await commands.getIcon({ type: "device", content: id });
+
+            if (result.status === "error") {
+                console.log("Error getting device icon:", result.error);
+                return null;
+            }
+
+            return new Uint8Array(result.data);
+        },
+        DEBOUNCE_DELAY.NORMAL,
+    );
     applicationGetIcon: ITauriVolumeController["applicationGetIcon"] = debouncePerKey(
         async (id: AppIdentifier) => {
             const result = await commands.getIcon({ type: "app", content: id });

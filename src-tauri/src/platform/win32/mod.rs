@@ -15,7 +15,7 @@ mod update;
 mod convert;
 mod util;
 
-pub use icon::extract_icon;
+pub use icon::{extract_device_icon, extract_icon, extract_system_icon};
 
 type VolumeSender = Sender<UpdateChange>;
 pub struct VolumeController {

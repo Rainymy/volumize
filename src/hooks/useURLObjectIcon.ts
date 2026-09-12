@@ -4,7 +4,7 @@ import { volumeController } from "$bridge/volumeManager";
 import { bufferToBlob } from "$util/generic";
 import { useAsyncSignalEffect } from "./useAsyncSignalEffect";
 
-export function useURLObjectIcon(id: number | undefined) {
+export function useURLObjectIcon(id: number | string | undefined) {
     const [urlObject, setUrlObject] = useState<string | null>(null);
 
     useAsyncSignalEffect(
@@ -13,7 +13,15 @@ export function useURLObjectIcon(id: number | undefined) {
                 return;
             }
 
-            const data = await volumeController.applicationGetIcon(id);
+            let data = null;
+
+            if (typeof id !== "string") {
+                data = await volumeController.applicationGetIcon(id);
+            } else {
+                data = await volumeController.deviceGetIcon(id);
+                console.log(data);
+            }
+
             if (signal.aborted || data === null) {
                 return;
             }

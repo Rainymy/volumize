@@ -16,12 +16,14 @@ import { isAppIdentifier, isAudioVolumeChange } from "$type/update";
 import type { AppIdentifier } from "$type/volume";
 
 function DeviceMaster__({ master }: { master: AudioDevice }) {
+    const base64 = useURLObjectIcon(master.id);
+
     return (
         <Card
             isMuted={master.volume.muted}
             title={master.friendly_name}
             volume={master.volume.current ?? 0}
-            icon={<MdOutlineSpeaker />}
+            icon={base64 ?? <MdOutlineSpeaker />}
             onButtonClick={() => {
                 return volumeController.toggleMuteMaster(master.id, master.volume.muted);
             }}

@@ -158,8 +158,7 @@ fn handle_command(command: Command, controller: &Box<dyn VolumeControllerTrait>)
         },
 
         Command::GetIcon { id } => {
-            // TODO: Currently only app icons are supported
-            match id {
+            let icon = match id {
                 Identifier::App(id) => {
                     let app = match controller.get_application(id) {
                         Ok(app) => app,
@@ -170,32 +169,17 @@ fn handle_command(command: Command, controller: &Box<dyn VolumeControllerTrait>)
                         }
                     };
 
-                    let path = app.process.path.unwrap_or_default();
-
                     if id == 0 {
-                        println!("Extracting system icon");
-                        return Response::Icon {
-                            id: Identifier::App(id),
-                            data: platform::extract_system_icon().unwrap_or_default(),
-                        };
-                    }
-
-                    Response::Icon {
-                        id: Identifier::App(id),
-                        data: platform::extract_icon(path).unwrap_or_default(),
+                        platform::extract_system_icon()
+                    } else {
+                        platform::extract_icon(app.process.path.unwrap_or_default())
                     }
                 }
-                Identifier::Device(id) => {
+                Identifier::Device(ref id) => {
                     let devices = controller.get_playback_devices().unwrap_or_default();
-                    let devices = devices.into_iter().find(|d| d.id == id);
+                    let devices = devices.into_iter().find(|d| d.id == *id);
                     match devices {
-                        Some(device) => {
-                            let icon_path = platform::extract_device_icon(device.id);
-                            Response::Icon {
-                                id: Identifier::Device(id),
-                                data: icon_path.unwrap_or_default(),
-                            }
-                        }
+                        Some(device) => platform::extract_device_icon(device.id),
                         None => {
                             return Response::Error {
                                 message: "Device not found".to_string(),
@@ -203,6 +187,10 @@ fn handle_command(command: Command, controller: &Box<dyn VolumeControllerTrait>)
                         }
                     }
                 }
+            };
+            Response::Icon {
+                id,
+                data: icon.unwrap_or_default(),
             }
         }
 

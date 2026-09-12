@@ -6,23 +6,18 @@ use windows::Win32::{
         BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, HBITMAP, HDC,
     },
     Media::Audio::{
-        eRender, IAudioSessionControl2, IAudioSessionManager2, IMMDevice, IMMDeviceEnumerator,
+        IAudioSessionControl2, IAudioSessionManager2, IMMDevice, IMMDeviceEnumerator,
         MMDeviceEnumerator,
     },
-    Storage::FileSystem::FILE_FLAGS_AND_ATTRIBUTES,
     System::Com::{
         CoCreateInstance, CoInitializeEx, CoUninitialize,
         StructuredStorage::PropVariantToStringAlloc, CLSCTX_ALL, COINIT_MULTITHREADED, STGM_READ,
     },
     UI::{
-        Shell::{
-            ExtractIconExW, PathParseIconLocationW, PropertiesSystem::IPropertyStore,
-            SHGetFileInfoW, SHFILEINFOW, SHGFI_ICON, SHGFI_LARGEICON,
-        },
+        Shell::{ExtractIconExW, PathParseIconLocationW, PropertiesSystem::IPropertyStore},
         WindowsAndMessaging::{DestroyIcon, GetIconInfoExW, HICON, ICONINFOEXW},
     },
 };
-use windows_core::PWSTR;
 
 use crate::platform::win32::com_scope::ComManager;
 
@@ -162,6 +157,8 @@ fn get_device_icon_location(device_id: String) -> windows::core::Result<String> 
 }
 
 fn extract_hicon(path: &str) -> windows::core::Result<HICON> {
+    use windows::core::{PCWSTR, PWSTR};
+
     let expanded_path = expand_env_strings(path)?;
     let expanded_path = expanded_path.strip_prefix('@').unwrap_or(&expanded_path);
 
@@ -171,7 +168,7 @@ fn extract_hicon(path: &str) -> windows::core::Result<HICON> {
     let mut large_icon = HICON::default();
     let extracted = unsafe {
         ExtractIconExW(
-            windows::core::PCWSTR(buffer.as_ptr()),
+            PCWSTR(buffer.as_ptr()),
             index,
             Some(&mut large_icon),
             None,
@@ -279,14 +276,14 @@ pub fn extract_system_icon() -> Option<Vec<u8>> {
                 .GetDefaultAudioEndpoint(ComManager::E_DATAFLOW, ComManager::E_ROLE)
                 .ok()?;
 
-            let session_manager: IAudioSessionManager2 = device.Activate(CLSCTX_ALL, None).unwrap();
-            let session_enumerator = session_manager.GetSessionEnumerator().unwrap();
+            let session_manager: IAudioSessionManager2 = device.Activate(CLSCTX_ALL, None).ok()?;
+            let session_enumerator = session_manager.GetSessionEnumerator().ok()?;
             let count = session_enumerator.GetCount().ok()?;
 
             let mut found_icon_path: Option<String> = None;
 
             for i in 0..count {
-                let session_control = session_enumerator.GetSession(i).unwrap();
+                let session_control = session_enumerator.GetSession(i).ok()?;
                 let session_control2: IAudioSessionControl2 =
                     match session_control.cast::<IAudioSessionControl2>() {
                         Ok(sc2) => sc2,

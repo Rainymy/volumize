@@ -32,6 +32,7 @@ impl RunningSerial {
 #[derive(Default)]
 pub struct SerialState {
     pub server: Arc<rt::Mutex<Option<RunningSerial>>>,
+    #[allow(dead_code)]
     pub serial_port: Option<String>,
 }
 
@@ -49,7 +50,7 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
     let new_handle = rt::spawn(async move {
         let port = match find_devices()
             .into_iter()
-            .find(|d| Some(d.name.clone()) == serial_path)
+            .find(|d| Some(&d.name) == serial_path.as_ref())
         {
             Some(port) => port,
             None => {
@@ -58,8 +59,10 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
             }
         };
 
-        let serial = tokio_serial::new(port.name, 115_200);
-        let com = match serial.open_native_async() {
+        println!("[start_serial_thread] Found serial device: {}", port.name);
+
+        let serial_builder = tokio_serial::new(&port.name, 115_200);
+        let serial_stream = match serial_builder.open_native_async() {
             Ok(com) => com,
             Err(e) => {
                 eprintln!("Failed to open serial port: {}", e);
@@ -67,7 +70,8 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
             }
         };
 
-        let (read_half, write_half) = tokio::io::split(com);
+        println!("[start_serial_thread] Connected to a serial port");
+        let (read_half, write_half) = tokio::io::split(serial_stream);
 
         let mut write_task = rt::spawn(handle_outgoing(write_half, rx));
         let mut read_task = rt::spawn(handle_incoming(read_half, app_handle_clone.clone()));
@@ -87,7 +91,7 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
             }
         }
 
-        println!("Serial thread finished for {:?}", serial_path);
+        println!("[start_serial_thread] Serial closed for {}", port.name);
     });
 
     let new_server = RunningSerial {
@@ -117,24 +121,23 @@ async fn handle_outgoing(
     }
 }
 
-// #[derive(Clone, Serialize)]
-// struct SerialErrorPayload {
-//     message: String,
-// }
-
 async fn handle_incoming(mut read: ReadHalf<SerialStream>, app_handle: AppHandle) {
-    // use tauri::Emitter;
     loop {
         match read_frame(&mut read).await {
-            Ok(buffer) => match RawFrame::decode(&buffer) {
-                Ok(frame) => {
-                    let state = app_handle.state::<VolumeCommandSender>();
-                    let _ = state.send(frame);
+            Ok(buffer) => {
+                println!("Received frame: {:?}", buffer);
+                match RawFrame::decode(&buffer) {
+                    Ok(frame) => {
+                        let state = app_handle.state::<VolumeCommandSender>();
+                        let _ = state
+                            .send(frame)
+                            .inspect_err(|e| eprintln!("Failed to send frame: {}", e));
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to decode frame: {}", e);
+                    }
                 }
-                Err(e) => {
-                    eprintln!("Failed to decode frame: {}", e);
-                }
-            },
+            }
             Err(e) => {
                 eprintln!("Failed to read frame: {}", e);
                 break;

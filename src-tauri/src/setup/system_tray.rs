@@ -4,9 +4,7 @@ use tauri::{
 };
 
 use crate::{
-    server::{serial::SerialState, serialport::find_devices},
-    setup::get_main_window,
-    types::storage::Storage,
+    server::serialport::find_devices, setup::get_main_window, types::storage::Storage,
     types::tray::Discovery,
 };
 
@@ -136,11 +134,8 @@ fn app_version(handle: &tauri::AppHandle) -> tauri::Result<MenuItem<Wry>> {
 fn serial_sub_menu(handle: &tauri::AppHandle) -> tauri::Result<Submenu<Wry>> {
     let devices = find_devices();
 
-    let serial_state = handle.state::<SerialState>();
-    let serial_port = match serial_state.serial_port.clone() {
-        Some(port) => port,
-        None => "<None>".to_string(),
-    };
+    let settings = handle.state::<Storage>().get();
+    let serial_port = settings.serial_name.unwrap_or_else(|| "<None>".to_string());
 
     let current_info = format!("Serial: {}", serial_port);
     let status_info = MenuItem::new(handle, current_info, false, None::<&str>)?;

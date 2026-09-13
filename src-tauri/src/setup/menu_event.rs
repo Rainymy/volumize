@@ -53,6 +53,10 @@ pub fn menu_event(app: &AppHandle, event: MenuEvent) {
             }
 
             start_serial_thread(Some(serial_port.into()), app.app_handle());
+
+            if let Err(e) = super::setup::setup_tray_system(&app) {
+                eprintln!("{}", e);
+            }
         }
         rest if rest.starts_with("d_") => {
             let rest = rest.strip_prefix("d_").unwrap_or_default();

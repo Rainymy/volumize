@@ -11,11 +11,8 @@ fn get_available_devices() -> Vec<UsbPort> {
         Err(_) => Vec::new(),
     };
 
-    println!("Available ports: {}", ports.len());
-
     let mut result = vec![];
     for p in ports {
-        println!("Port: {}", p.port_name);
         match p.port_type {
             SerialPortType::UsbPort(info) => result.push(UsbPort {
                 name: p.port_name,

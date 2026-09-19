@@ -1,5 +1,5 @@
 use shared_types::{
-    protocol::{Command, CommandRequest, CommandResponse, Envelope, RawFrame, Response},
+    protocol::{Command, CommandRequest, CommandResponse, Envelope, Response},
     Identifier, UpdateChange, UpdateChangeEvent,
 };
 
@@ -22,7 +22,6 @@ use crate::{
 pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>) {
     let (tx, mut rx) = unbounded_channel::<Envelope>();
     let (response_tx, response_rx) = unbounded_channel::<Envelope>();
-    let handle_clone = app_handle.clone();
 
     let thread_handle = std::thread::spawn(move || {
         let controller = platform::make_controller(sender);
@@ -42,9 +41,7 @@ pub fn spawn_volume_thread(app_handle: &AppHandle, sender: Sender<UpdateChange>)
                         controller.check_and_reinit();
                     }
                     Either::Right((command_result, _)) => match command_result {
-                        Some(command) => {
-                            execute_command(&handle_clone, command, &controller, &response_tx)
-                        }
+                        Some(command) => execute_command(command, &controller, &response_tx),
                         None => break,
                     },
                 }
@@ -85,7 +82,7 @@ pub fn spawn_update_thread(app_handle: &AppHandle, sender: Receiver<UpdateChange
 
     std::thread::spawn(move || {
         while let Ok(msg) = sender.recv() {
-            println!("sending: {:?}", msg);
+            println!("[spawn_update_thread] sending: {:?}", msg);
 
             // ==================== SEND TO WEBVIEW ====================
             let target_event = EventTarget::labeled(VOLUME_LABEL_EVENT);
@@ -114,8 +111,7 @@ pub fn spawn_update_thread(app_handle: &AppHandle, sender: Receiver<UpdateChange
                 let serial_clients = serial_state.server.blocking_lock();
 
                 if let Some(serial_server) = serial_clients.as_ref() {
-                    let buffer = RawFrame::encode(&Envelope::Event(msg)).build();
-                    let _ = serial_server.sender.send(buffer);
+                    let _ = serial_server.sender.send(Envelope::Event(msg));
                     // if let Err(err) = serial_server.sender.send(buffer) {
                     //     eprintln!("Error sending update event to serial client: {}", err);
                     // }
@@ -128,7 +124,6 @@ pub fn spawn_update_thread(app_handle: &AppHandle, sender: Receiver<UpdateChange
 }
 
 fn execute_command(
-    _handle: &AppHandle,
     envelope: Envelope,
     controller: &Box<dyn VolumeControllerTrait>,
     response_tx: &UnboundedSender<Envelope>,

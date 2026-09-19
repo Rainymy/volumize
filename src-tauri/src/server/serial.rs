@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use shared_types::{protocol::RawFrame, reader::read_frame};
+use shared_types::{
+    protocol::{CommandRequest, CommandResponse, Envelope, RawFrame, Response},
+    reader::read_frame,
+};
 use tauri::{async_runtime as rt, AppHandle, Manager};
 use tokio::{
     io::{ReadHalf, WriteHalf},
@@ -11,7 +14,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{server::serialport::find_devices, types::volume::VolumeCommandSender};
 
-pub type SerialSender = mpsc::UnboundedSender<Vec<u8>>;
+pub type SerialSender = mpsc::UnboundedSender<Envelope>;
 
 #[allow(dead_code)]
 pub struct RunningSerial {
@@ -45,7 +48,8 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
     let cancel = CancellationToken::new();
     let cancel_clone = cancel.clone();
 
-    let (tx, rx) = mpsc::unbounded_channel::<Vec<u8>>();
+    let (tx, rx) = mpsc::unbounded_channel::<Envelope>();
+    let tx_clone = tx.clone();
 
     let new_handle = rt::spawn(async move {
         let port = match find_devices()
@@ -54,7 +58,7 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
         {
             Some(port) => port,
             None => {
-                eprintln!("Serial device not found");
+                eprintln!("[start_serial_thread] Serial device not found");
                 return;
             }
         };
@@ -65,7 +69,7 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
         let serial_stream = match serial_builder.open_native_async() {
             Ok(com) => com,
             Err(e) => {
-                eprintln!("Failed to open serial port: {}", e);
+                eprintln!("[start_serial_thread] Failed to open serial port: {}", e);
                 return;
             }
         };
@@ -74,7 +78,11 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
         let (read_half, write_half) = tokio::io::split(serial_stream);
 
         let mut write_task = rt::spawn(handle_outgoing(write_half, rx));
-        let mut read_task = rt::spawn(handle_incoming(read_half, app_handle_clone.clone()));
+        let mut read_task = rt::spawn(handle_incoming(
+            read_half,
+            tx_clone,
+            app_handle_clone.clone(),
+        ));
 
         tokio::select! {
             _ = cancel_clone.cancelled() => {
@@ -109,39 +117,73 @@ pub fn start_serial_thread(serial_path: Option<String>, app_handle: &AppHandle) 
 
 async fn handle_outgoing(
     mut write: WriteHalf<SerialStream>,
-    mut rx: mpsc::UnboundedReceiver<Vec<u8>>,
+    mut rx: mpsc::UnboundedReceiver<Envelope>,
 ) {
     use tokio::io::AsyncWriteExt;
 
     while let Some(data) = rx.recv().await {
-        if let Err(e) = write.write_all(&data).await {
+        let frame = RawFrame::encode(&data).build();
+        println!("[handle_outgoing] Sending: {} bytes", frame.len());
+
+        if let Err(e) = write.write_all(&frame).await {
             eprintln!("Error writing to serial port: {}", e);
             break;
         }
     }
 }
 
-async fn handle_incoming(mut read: ReadHalf<SerialStream>, app_handle: AppHandle) {
+async fn handle_incoming(
+    mut read: ReadHalf<SerialStream>,
+    tx: mpsc::UnboundedSender<Envelope>,
+    app_handle: AppHandle,
+) {
     loop {
-        match read_frame(&mut read).await {
-            Ok(buffer) => {
-                println!("Received frame: {:?}", buffer);
-                match RawFrame::decode(&buffer) {
-                    Ok(frame) => {
-                        let state = app_handle.state::<VolumeCommandSender>();
-                        let _ = state
-                            .send(frame)
-                            .inspect_err(|e| eprintln!("Failed to send frame: {}", e));
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to decode frame: {}", e);
-                    }
-                }
-            }
+        let buffer = match read_frame(&mut read).await {
+            Ok(buffer) => buffer,
             Err(e) => {
-                eprintln!("Failed to read frame: {}", e);
-                break;
+                eprintln!("Failed to read incoming buffer: {}", e);
+                continue;
             }
+        };
+
+        let frame = match RawFrame::decode(&buffer) {
+            Ok(frame) => frame,
+            Err(e) => {
+                eprintln!("Failed to decode frame: {}", e);
+                continue;
+            }
+        };
+
+        eprintln!("[handle_incoming] Received: {:?}", frame);
+        let state = app_handle.state::<VolumeCommandSender>();
+        let Envelope::Command(CommandRequest { id: _id, command }) = frame else {
+            eprintln!("[handle_incoming] Invalid frame: {:?}", frame);
+
+            let _ = tx.send(Envelope::Response(CommandResponse {
+                id: 0,
+                response: Response::Error {
+                    message: "Invalid frame".to_string(),
+                },
+            }));
+            continue;
+        };
+
+        let mut client = state.client.lock().await;
+        let result = match client.as_mut() {
+            Some(client) => client.request(command).await,
+            None => Err("No client connected".to_string()),
+        };
+
+        let response = match result {
+            Ok(response) => response,
+            Err(e) => {
+                eprintln!("[handle_incoming] Failed to internal send frame: {}", e);
+                continue;
+            }
+        };
+
+        if let Err(err) = tx.send(Envelope::Response(response)) {
+            eprintln!("[handle_incoming] Failed to send frame outside: {}", err);
         }
     }
 }

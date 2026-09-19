@@ -16,6 +16,10 @@ use shared_types::protocol::{
 
 type PendingRequests = Arc<Mutex<HashMap<RequestId, oneshot::Sender<Response>>>>;
 
+/// This acts as a middleware between volume-control thread and requesting method.
+/// - It handles sending commands and receiving responses.
+///
+/// Any new thread that wants to "make" a request SHOULD use this.
 #[derive(Debug)]
 pub struct CommandClient {
     sender: mpsc::UnboundedSender<Envelope>,
@@ -53,7 +57,6 @@ impl CommandClient {
             return Err("Failed to send request".to_string());
         }
 
-        // optional: wrap in tokio::time::timeout(...) to avoid leaking on a lost response
         match tokio::time::timeout(Duration::from_secs(5), rx).await {
             Ok(Ok(response)) => Ok(CommandResponse { id, response }),
             Ok(Err(e)) => Err(e.to_string()),
@@ -126,18 +129,6 @@ pub struct VolumeCommandSender {
 }
 
 impl VolumeCommandSender {
-    pub fn send(&self, cmd: Envelope) -> Result<(), String> {
-        let server = match self.server.lock() {
-            Ok(server) => server,
-            Err(err) => return Err(format!("Failed to lock server: {}", err)),
-        };
-
-        match &*server {
-            Some(server) => server.send(cmd),
-            None => Err("No server".to_string()),
-        }
-    }
-
     pub async fn request(&self, cmd: Command) -> Result<CommandResponse, String> {
         let server = self.client.lock().await;
         match server.as_ref() {
@@ -170,10 +161,6 @@ pub struct VolumeServer {
 }
 
 impl VolumeServer {
-    fn send(&self, cmd: Envelope) -> Result<(), String> {
-        self.tx.send(cmd).map_err(|e| format!("Send failed: {}", e))
-    }
-
     fn close_channel(&mut self) {
         let (new_tx, _) = unbounded_channel::<Envelope>();
         // Replace the sender with a new one and drop the original
